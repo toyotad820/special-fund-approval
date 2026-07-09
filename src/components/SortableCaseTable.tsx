@@ -20,14 +20,16 @@ export type CaseRowData = {
   specialSubsidy: number;
   description: string;
   submitterName: string;
-  submittedAt: string; // ISO
+  submittedAt: string; // ISO（保留供預設排序用，不顯示為欄位）
   status: string;
 };
 
-type ColType = "text" | "number" | "date" | "status";
+type ColType = "text" | "number" | "status";
 type Col = { key: keyof CaseRowData; label: string; type: ColType };
 
+// 審核狀態擺第一欄；不含送單人、送出時間
 const COLUMNS: Col[] = [
+  { key: "status", label: "審核狀態", type: "status" },
   { key: "orderNo", label: "訂單編號", type: "text" },
   { key: "month", label: "月份", type: "text" },
   { key: "plateName", label: "領牌名稱", type: "text" },
@@ -40,12 +42,10 @@ const COLUMNS: Col[] = [
   { key: "discountTotal", label: "折讓總額", type: "number" },
   { key: "specialSubsidy", label: "特案支援金額", type: "number" },
   { key: "description", label: "特案內容說明", type: "text" },
-  { key: "submitterName", label: "送單人", type: "text" },
-  { key: "submittedAt", label: "送出時間", type: "date" },
-  { key: "status", label: "審核狀態", type: "status" },
 ];
 
-// 狀態排序權重
+const NUMBER_KEYS = COLUMNS.filter((c) => c.type === "number").map((c) => c.key);
+
 const STATUS_ORDER: Record<string, number> = {
   [STATUS.PENDING_SUOZHANG]: 1,
   [STATUS.PENDING_BUZHUGUAN]: 2,
@@ -54,24 +54,21 @@ const STATUS_ORDER: Record<string, number> = {
   [STATUS.APPROVED]: 5,
 };
 
-function fmtDateTime(iso: string): string {
-  const d = new Date(iso);
-  const p = (x: number) => String(x).padStart(2, "0");
-  return `${d.getFullYear()}/${p(d.getMonth() + 1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
-}
-
 export default function SortableCaseTable({
   rows,
   emptyText = "目前沒有案件",
+  showTotals = false,
 }: {
   rows: CaseRowData[];
   emptyText?: string;
+  showTotals?: boolean;
 }) {
   const router = useRouter();
-  const [sortKey, setSortKey] = useState<keyof CaseRowData>("submittedAt");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [sortKey, setSortKey] = useState<keyof CaseRowData | null>(null);
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
 
   const sorted = useMemo(() => {
+    if (!sortKey) return rows; // 預設維持伺服器排序（送出時間新→舊）
     const col = COLUMNS.find((c) => c.key === sortKey);
     const type = col?.type ?? "text";
     const arr = [...rows];
@@ -79,8 +76,6 @@ export default function SortableCaseTable({
       let cmp = 0;
       if (type === "number") {
         cmp = (a[sortKey] as number) - (b[sortKey] as number);
-      } else if (type === "date") {
-        cmp = new Date(a.submittedAt).getTime() - new Date(b.submittedAt).getTime();
       } else if (type === "status") {
         cmp = (STATUS_ORDER[a.status] ?? 99) - (STATUS_ORDER[b.status] ?? 99);
       } else {
@@ -90,6 +85,13 @@ export default function SortableCaseTable({
     });
     return arr;
   }, [rows, sortKey, sortDir]);
+
+  const totals = useMemo(() => {
+    const t: Record<string, number> = {};
+    for (const k of NUMBER_KEYS) t[k] = 0;
+    for (const r of rows) for (const k of NUMBER_KEYS) t[k] += r[k] as number;
+    return t;
+  }, [rows]);
 
   function toggleSort(key: keyof CaseRowData) {
     if (key === sortKey) {
@@ -156,13 +158,6 @@ export default function SortableCaseTable({
                     </td>
                   );
                 }
-                if (c.type === "date") {
-                  return (
-                    <td key={c.key} className="px-3 py-2 whitespace-nowrap text-slate-600">
-                      {fmtDateTime(v as string)}
-                    </td>
-                  );
-                }
                 if (c.key === "orderNo") {
                   return (
                     <td key={c.key} className="px-3 py-2 whitespace-nowrap font-mono font-medium text-blue-700">
@@ -186,6 +181,26 @@ export default function SortableCaseTable({
             </tr>
           ))}
         </tbody>
+        {showTotals && (
+          <tfoot className="bg-slate-50 border-t-2 border-slate-300 font-semibold">
+            <tr>
+              {COLUMNS.map((c, i) => {
+                if (c.type === "number") {
+                  return (
+                    <td key={c.key} className="px-3 py-2 text-right whitespace-nowrap tabular-nums text-slate-900">
+                      {money(totals[c.key])}
+                    </td>
+                  );
+                }
+                return (
+                  <td key={c.key} className="px-3 py-2 whitespace-nowrap text-slate-700">
+                    {i === 0 ? `合計 ${rows.length} 筆` : ""}
+                  </td>
+                );
+              })}
+            </tr>
+          </tfoot>
+        )}
       </table>
     </div>
   );

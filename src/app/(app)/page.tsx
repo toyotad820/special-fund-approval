@@ -71,9 +71,13 @@ function scopeLabel(role: string): string {
 export default async function DashboardPage() {
   const user = await requireUser();
 
-  // 課長專屬首頁：上方未結案件、下方本課本月明細（Excel 式可排序）
-  if (user.role === ROLE.KEZHANG) {
-    return <KezhangDashboard user={user} />;
+  // 課長／所長／部主管：兩區塊模式（未結案件 + 單位本月明細）
+  if (
+    user.role === ROLE.KEZHANG ||
+    user.role === ROLE.SUOZHANG ||
+    user.role === ROLE.BUZHUGUAN
+  ) {
+    return <RoleDashboard user={user} />;
   }
 
   const queueWhere = reviewQueueWhere(user);
@@ -153,72 +157,99 @@ export default async function DashboardPage() {
   );
 }
 
-async function KezhangDashboard({
+async function RoleDashboard({
   user,
 }: {
-  user: { name: string; storeCode: string; deptCode: string | null };
-}) {
-  const deptWhere = {
-    storeCode: user.storeCode,
-    deptCode: user.deptCode ?? "",
+  user: {
+    role: string;
+    name: string;
+    storeCode: string;
+    deptCode: string | null;
   };
+}) {
   const month = currentMonth();
+
+  // 依角色決定範圍、名稱、是否顯示「單位所有案件」區塊
+  let scopeWhere: { storeCode?: string; deptCode?: string };
+  let scopeName: string;
+  let subtitle: string;
+  let showMonthly: boolean;
+
+  if (user.role === ROLE.KEZHANG) {
+    scopeWhere = { storeCode: user.storeCode, deptCode: user.deptCode ?? "" };
+    scopeName = "本課";
+    subtitle = `課長 · ${user.storeCode}${user.deptCode ? ` ${user.deptCode} 課` : ""}`;
+    showMonthly = true;
+  } else if (user.role === ROLE.SUOZHANG) {
+    scopeWhere = { storeCode: user.storeCode };
+    scopeName = "本所";
+    subtitle = `所長 · ${user.storeCode}`;
+    showMonthly = true;
+  } else {
+    // 部主管：全部據點，不顯示「所有案件」區塊
+    scopeWhere = {};
+    scopeName = "全部";
+    subtitle = "部主管";
+    showMonthly = false;
+  }
 
   const [unresolved, monthly] = await Promise.all([
     prisma.case.findMany({
-      where: { ...deptWhere, status: { not: STATUS.APPROVED } },
+      where: { ...scopeWhere, status: { not: STATUS.APPROVED } },
       include: caseInclude,
       orderBy: { submittedAt: "desc" },
     }),
-    prisma.case.findMany({
-      where: { ...deptWhere, month },
-      include: caseInclude,
-      orderBy: { submittedAt: "desc" },
-    }),
+    showMonthly
+      ? prisma.case.findMany({
+          where: { ...scopeWhere, month },
+          include: caseInclude,
+          orderBy: { submittedAt: "desc" },
+        })
+      : Promise.resolve([]),
   ]);
+
+  const canAdd = user.role === ROLE.KEZHANG || user.role === ROLE.SUOZHANG;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <h1 className="text-lg font-bold text-slate-800">您好，{user.name}</h1>
-          <p className="text-sm text-slate-500">
-            課長 · {user.storeCode}
-            {user.deptCode ? ` ${user.deptCode} 課` : ""}
-          </p>
+          <p className="text-sm text-slate-500">{subtitle}</p>
         </div>
-        <Link
-          href="/cases/new"
-          className="rounded-lg bg-blue-600 text-white px-4 py-2 text-sm font-medium hover:bg-blue-700"
-        >
-          + 新增申請
-        </Link>
+        {canAdd && (
+          <Link
+            href="/cases/new"
+            className="rounded-lg bg-blue-600 text-white px-4 py-2 text-sm font-medium hover:bg-blue-700"
+          >
+            + 新增申請
+          </Link>
+        )}
       </div>
 
       <section>
         <h2 className="text-sm font-semibold text-slate-700 mb-2">
-          未結案件{" "}
-          <span className="text-blue-600">({unresolved.length})</span>
+          未結案件 <span className="text-blue-600">({unresolved.length})</span>
           <span className="text-xs text-slate-400 font-normal ml-2">
-            待審核／已駁回／已撤回
+            {scopeName}．待審核／已駁回／已撤回
           </span>
         </h2>
-        <SortableCaseTable
-          rows={unresolved.map(toRow)}
-          emptyText="沒有未結案件"
-        />
+        <SortableCaseTable rows={unresolved.map(toRow)} emptyText="沒有未結案件" />
       </section>
 
-      <section>
-        <h2 className="text-sm font-semibold text-slate-700 mb-2">
-          本課本月申請明細 · {month}{" "}
-          <span className="text-blue-600">({monthly.length})</span>
-        </h2>
-        <SortableCaseTable
-          rows={monthly.map(toRow)}
-          emptyText="本月尚無申請"
-        />
-      </section>
+      {showMonthly && (
+        <section>
+          <h2 className="text-sm font-semibold text-slate-700 mb-2">
+            {scopeName}本月申請明細 · {month}{" "}
+            <span className="text-blue-600">({monthly.length})</span>
+          </h2>
+          <SortableCaseTable
+            rows={monthly.map(toRow)}
+            emptyText="本月尚無申請"
+            showTotals
+          />
+        </section>
+      )}
     </div>
   );
 }
