@@ -73,9 +73,17 @@ export function canWithdraw(user: User, c: CaseLike): boolean {
   return c.submittedById === user.id && c.status === STATUS.PENDING_SUOZHANG;
 }
 
-// 送單人能否修改後重送
+// 送單人能否修改後重送（已駁回或已撤回）
 export function canResubmit(user: User, c: CaseLike): boolean {
-  return c.submittedById === user.id && c.status === STATUS.REJECTED;
+  return (
+    c.submittedById === user.id &&
+    (c.status === STATUS.REJECTED || c.status === STATUS.WITHDRAWN)
+  );
+}
+
+// 送單人能否刪除（僅限自己已撤回的案件）
+export function canDelete(user: User, c: CaseLike): boolean {
+  return c.submittedById === user.id && c.status === STATUS.WITHDRAWN;
 }
 
 // 是否逾期（進入目前關卡超過門檻天數且尚在待審）

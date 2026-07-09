@@ -7,10 +7,11 @@ import {
   canReview,
   canWithdraw,
   canResubmit,
+  canDelete,
   isOverdue,
 } from "@/lib/dal";
-import { withdrawCase } from "@/lib/actions";
-import { ACTION_LABEL } from "@/lib/constants";
+import { withdrawCase, deleteCase } from "@/lib/actions";
+import { ACTION_LABEL, STATUS } from "@/lib/constants";
 import { money, dt } from "@/lib/format";
 import { StatusBadge } from "@/components/CaseList";
 import ReviewPanel from "@/components/ReviewPanel";
@@ -113,16 +114,30 @@ export default async function CaseDetailPage({
         </form>
       )}
 
-      {/* 駁回後重送 */}
+      {/* 駁回 / 撤回後的處理 */}
       {canResubmit(user, c) && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-4 flex items-center justify-between">
-          <span className="text-sm text-rose-600">已被駁回，可修改後重送</span>
-          <Link
-            href={`/cases/${c.id}/edit`}
-            className="rounded-lg bg-blue-600 text-white px-4 py-2 text-sm font-medium hover:bg-blue-700"
-          >
-            修改後重送
-          </Link>
+        <div className="bg-white rounded-2xl border border-slate-200 p-4 flex items-center justify-between gap-3 flex-wrap">
+          <span className="text-sm text-slate-600">
+            {c.status === STATUS.REJECTED
+              ? "已被駁回，可修改後重送"
+              : "已撤回，可修改後重送或刪除"}
+          </span>
+          <div className="flex items-center gap-2">
+            {canDelete(user, c) && (
+              <form action={deleteCase}>
+                <input type="hidden" name="caseId" value={c.id} />
+                <button className="rounded-lg border border-rose-300 text-rose-600 px-4 py-2 text-sm hover:bg-rose-50">
+                  刪除
+                </button>
+              </form>
+            )}
+            <Link
+              href={`/cases/${c.id}/edit`}
+              className="rounded-lg bg-blue-600 text-white px-4 py-2 text-sm font-medium hover:bg-blue-700"
+            >
+              修改後重送
+            </Link>
+          </div>
         </div>
       )}
 

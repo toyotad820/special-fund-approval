@@ -5,7 +5,13 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "./prisma";
 import { getSession, requireUser } from "./session";
-import { canResubmit, canReview, canSubmit, canWithdraw } from "./dal";
+import {
+  canResubmit,
+  canReview,
+  canSubmit,
+  canWithdraw,
+  canDelete,
+} from "./dal";
 import { STATUS, ROLE } from "./constants";
 
 export type ActionState = {
@@ -297,4 +303,22 @@ export async function withdrawCase(formData: FormData) {
   ]);
 
   redirect(`/cases/${caseId}`);
+}
+
+// ---------- 刪除（僅限自己已撤回的案件） ----------
+
+export async function deleteCase(formData: FormData) {
+  const user = await requireUser();
+  const caseId = String(formData.get("caseId") ?? "");
+  const c = await prisma.case.findUnique({ where: { id: caseId } });
+  if (!c) redirect("/");
+  if (!canDelete(user, c!)) return;
+
+  // 先刪關聯的審核紀錄，再刪案件（無 cascade）
+  await prisma.$transaction([
+    prisma.approvalLog.deleteMany({ where: { caseId } }),
+    prisma.case.delete({ where: { id: caseId } }),
+  ]);
+
+  redirect("/");
 }

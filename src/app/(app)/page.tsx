@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { Prisma } from "@prisma/client";
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import {
@@ -161,6 +162,7 @@ async function RoleDashboard({
   user,
 }: {
   user: {
+    id: string;
     role: string;
     name: string;
     storeCode: string;
@@ -169,39 +171,61 @@ async function RoleDashboard({
 }) {
   const month = currentMonth();
 
-  // 依角色決定範圍、名稱、是否顯示「單位所有案件」區塊
-  let scopeWhere: { storeCode?: string; deptCode?: string };
-  let scopeName: string;
+  let unresolvedWhere: Prisma.CaseWhereInput;
+  let unresolvedTitle: string;
+  let unresolvedHint: string;
   let subtitle: string;
-  let showMonthly: boolean;
+  let scopeName = "";
+  let monthlyWhere: Prisma.CaseWhereInput | null = null;
 
   if (user.role === ROLE.KEZHANG) {
-    scopeWhere = { storeCode: user.storeCode, deptCode: user.deptCode ?? "" };
-    scopeName = "本課";
+    const dept = { storeCode: user.storeCode, deptCode: user.deptCode ?? "" };
+    unresolvedWhere = { ...dept, status: { not: STATUS.APPROVED } };
+    unresolvedTitle = "未結案件";
+    unresolvedHint = "本課．待審核／已駁回／已撤回";
     subtitle = `課長 · ${user.storeCode}${user.deptCode ? ` ${user.deptCode} 課` : ""}`;
-    showMonthly = true;
+    scopeName = "本課";
+    monthlyWhere = { ...dept, month };
   } else if (user.role === ROLE.SUOZHANG) {
-    scopeWhere = { storeCode: user.storeCode };
-    scopeName = "本所";
+    // 本所：待審核／已駁回，以及「本人」撤回的案件（不含課長撤案）
+    unresolvedWhere = {
+      storeCode: user.storeCode,
+      OR: [
+        {
+          status: {
+            in: [
+              STATUS.PENDING_SUOZHANG,
+              STATUS.PENDING_BUZHUGUAN,
+              STATUS.REJECTED,
+            ],
+          },
+        },
+        { status: STATUS.WITHDRAWN, submittedById: user.id },
+      ],
+    };
+    unresolvedTitle = "未結案件";
+    unresolvedHint = "本所．待審核／已駁回／本人撤回";
     subtitle = `所長 · ${user.storeCode}`;
-    showMonthly = true;
+    scopeName = "本所";
+    monthlyWhere = { storeCode: user.storeCode, month };
   } else {
-    // 部主管：全部據點，不顯示「所有案件」區塊
-    scopeWhere = {};
-    scopeName = "全部";
+    // 部主管：只顯示待部主管審核的案件
+    unresolvedWhere = { status: STATUS.PENDING_BUZHUGUAN };
+    unresolvedTitle = "待審核案件";
+    unresolvedHint = "待部主管審核";
     subtitle = "部主管";
-    showMonthly = false;
+    monthlyWhere = null;
   }
 
   const [unresolved, monthly] = await Promise.all([
     prisma.case.findMany({
-      where: { ...scopeWhere, status: { not: STATUS.APPROVED } },
+      where: unresolvedWhere,
       include: caseInclude,
       orderBy: { submittedAt: "desc" },
     }),
-    showMonthly
+    monthlyWhere
       ? prisma.case.findMany({
-          where: { ...scopeWhere, month },
+          where: monthlyWhere,
           include: caseInclude,
           orderBy: { submittedAt: "desc" },
         })
@@ -229,15 +253,16 @@ async function RoleDashboard({
 
       <section>
         <h2 className="text-sm font-semibold text-slate-700 mb-2">
-          未結案件 <span className="text-blue-600">({unresolved.length})</span>
+          {unresolvedTitle}{" "}
+          <span className="text-blue-600">({unresolved.length})</span>
           <span className="text-xs text-slate-400 font-normal ml-2">
-            {scopeName}．待審核／已駁回／已撤回
+            {unresolvedHint}
           </span>
         </h2>
-        <SortableCaseTable rows={unresolved.map(toRow)} emptyText="沒有未結案件" />
+        <SortableCaseTable rows={unresolved.map(toRow)} emptyText="沒有案件" />
       </section>
 
-      {showMonthly && (
+      {monthlyWhere && (
         <section>
           <h2 className="text-sm font-semibold text-slate-700 mb-2">
             {scopeName}本月申請明細 · {month}{" "}
