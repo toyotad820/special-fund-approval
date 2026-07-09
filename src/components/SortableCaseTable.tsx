@@ -144,21 +144,16 @@ export default function SortableCaseTable({
                 if (c.type === "status") {
                   return (
                     <td key={c.key} className="px-3 py-2 whitespace-nowrap">
-                      <div className="flex flex-col items-start gap-0.5">
+                      <span
+                        className={`inline-flex items-center gap-1.5 text-xs font-medium rounded-full px-2.5 py-0.5 ${STATUS_STYLE[r.status] ?? "bg-slate-100 text-slate-600"}`}
+                      >
                         <span
-                          className={`inline-flex items-center gap-1.5 text-xs font-medium rounded-full px-2.5 py-0.5 ${STATUS_STYLE[r.status] ?? "bg-slate-100 text-slate-600"}`}
-                        >
-                          <span
-                            className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[r.status] ?? "bg-slate-400"}`}
-                          />
-                          {STATUS_LABEL[r.status] ?? r.status}
-                        </span>
-                        {r.rejectedByRole && (
-                          <span className="text-[11px] text-rose-500">
-                            {r.rejectedByRole}駁回
-                          </span>
-                        )}
-                      </div>
+                          className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[r.status] ?? "bg-slate-400"}`}
+                        />
+                        {r.status === STATUS.REJECTED && r.rejectedByRole
+                          ? `${r.rejectedByRole}駁回`
+                          : STATUS_LABEL[r.status] ?? r.status}
+                      </span>
                     </td>
                   );
                 }
