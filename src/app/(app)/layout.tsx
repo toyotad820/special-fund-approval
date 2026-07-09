@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/session";
 import { logout } from "@/lib/actions";
-import { canSubmit, canViewReports } from "@/lib/dal";
+import { canSubmit, canViewReports, canAdmin } from "@/lib/dal";
 import { ROLE_LABEL } from "@/lib/constants";
 
 export default async function AppLayout({
@@ -40,6 +40,14 @@ export default async function AppLayout({
                   className="px-2 py-1 rounded text-slate-600 hover:bg-slate-100"
                 >
                   報表
+                </Link>
+              )}
+              {canAdmin(user) && (
+                <Link
+                  href="/admin"
+                  className="px-2 py-1 rounded text-slate-600 hover:bg-slate-100"
+                >
+                  後台
                 </Link>
               )}
             </nav>
