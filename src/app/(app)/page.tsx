@@ -221,8 +221,8 @@ async function RoleDashboard({
     // 部主管：只顯示待部主管審核的案件
     unresolvedWhere = { status: STATUS.PENDING_BUZHUGUAN };
     unresolvedTitle = "待審核案件";
-    unresolvedHint = "待部主管審核";
-    subtitle = "部主管";
+    unresolvedHint = "待部長審核";
+    subtitle = "部長";
     monthlyWhere = null;
   }
 

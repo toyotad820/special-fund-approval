@@ -11,7 +11,7 @@ export type Role = (typeof ROLE)[keyof typeof ROLE];
 export const ROLE_LABEL: Record<string, string> = {
   KEZHANG: "課長",
   SUOZHANG: "所長",
-  BUZHUGUAN: "部主管",
+  BUZHUGUAN: "部長",
   STAFF: "Staff",
 };
 
@@ -28,7 +28,7 @@ export type Status = (typeof STATUS)[keyof typeof STATUS];
 
 export const STATUS_LABEL: Record<string, string> = {
   PENDING_SUOZHANG: "待所長審核",
-  PENDING_BUZHUGUAN: "待部主管審核",
+  PENDING_BUZHUGUAN: "待部長審核",
   APPROVED: "已核准",
   REJECTED: "已駁回",
   WITHDRAWN: "已撤回",

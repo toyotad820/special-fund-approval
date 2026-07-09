@@ -55,7 +55,7 @@ export default function LoginPage() {
 
         <p className="text-xs text-slate-400 mt-5 text-center leading-relaxed">
           雛型測試帳號（密碼皆 1234）<br />
-          boss（部主管）· s01（所長）· k01a（課長）
+          boss（部長）· s01（所長）· k01a（課長）
         </p>
       </div>
     </div>
