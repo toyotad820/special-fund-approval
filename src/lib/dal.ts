@@ -81,9 +81,12 @@ export function canResubmit(user: User, c: CaseLike): boolean {
   );
 }
 
-// 送單人能否刪除（僅限自己已撤回的案件）
+// 送單人能否刪除（自己的已撤回或已駁回案件）
 export function canDelete(user: User, c: CaseLike): boolean {
-  return c.submittedById === user.id && c.status === STATUS.WITHDRAWN;
+  return (
+    c.submittedById === user.id &&
+    (c.status === STATUS.WITHDRAWN || c.status === STATUS.REJECTED)
+  );
 }
 
 // 是否逾期（進入目前關卡超過門檻天數且尚在待審）

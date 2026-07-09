@@ -119,7 +119,7 @@ export default async function CaseDetailPage({
         <div className="bg-white rounded-2xl border border-slate-200 p-4 flex items-center justify-between gap-3 flex-wrap">
           <span className="text-sm text-slate-600">
             {c.status === STATUS.REJECTED
-              ? "已被駁回，可修改後重送"
+              ? "已被駁回，可修改後重送或刪除"
               : "已撤回，可修改後重送或刪除"}
           </span>
           <div className="flex items-center gap-2">
