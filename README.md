@@ -1,0 +1,61 @@
+# 特案支援金報備系統（雛型）
+
+和泰汽車 24 據點特案支援金線上報備與簽核工具。本階段為**雛型測試版**。
+
+規格文件：`G:\我的雲端硬碟\Claude-workspace\projects\特案支援金報備系統\docs\需求規格確認書.html`
+
+## 技術
+
+- Next.js 16（App Router, TypeScript, Tailwind CSS）
+- Prisma 6 + SQLite（雛型；上雲改 PostgreSQL）
+- iron-session + bcryptjs（帳密登入）
+
+## 本機啟動
+
+```bash
+npm install
+cp .env.example .env      # 並填入 SESSION_SECRET
+npm run db:push           # 建立 SQLite 資料表
+npm run db:seed           # 灌入測試資料
+npm run dev               # 開發伺服器（http://localhost:3000）
+```
+
+## 測試帳號（密碼皆 1234）
+
+| 帳號 | 角色 | 說明 |
+|------|------|------|
+| `boss` | 部主管 | 第二關審核、全域報表 |
+| `staff1` | Staff | 全域報表、後台設定 |
+| `s01` | 所長（D01）| 送單 + 第一關審核 |
+| `k01a` | 課長（D01 一課）| 送單 |
+| `k01b` | 課長（D01 二課）| 送單 |
+| `s02` | 所長（D02）| 送單 + 第一關審核 |
+| `k02a` | 課長（D02 一課）| 送單 |
+
+## 已實作（Phase 1 核心）
+
+- 帳密登入 / 登出、角色權限
+- 填單 + 防呆（訂單編號 13 碼且唯一、金額規則、必填）
+- 送單 → 所長（第一關）→ 部主管（第二關）簽核
+- 審核意見 / 駁回原因、駁回後修改重送、未審前撤回
+- 逾期站內標示（超過 3 天）
+- 依角色可視範圍（課長=本課、所長=本所、部主管/staff=全部）
+- 報表（依據點 / 類別統計）＋當月明細 CSV 匯出
+
+## 尚未實作（後續）
+
+- 後台管理平台（人員 / 類別 / 車種 / 月份開關的 Excel-CSV 匯入維護）
+- LINE 通知、附件上傳（Phase 2）
+- 串接 AD/SSO、部署至公司內部主機
+
+## 冒煙測試
+
+```bash
+npm run dev            # 另開視窗先啟動
+npm run smoke          # 跑完整核心流程的端到端檢查
+```
+
+## 常用指令
+
+- `npm run db:reset`：清空並重建測試資料
+- `npx prisma studio`：以 GUI 檢視資料庫
