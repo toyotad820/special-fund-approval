@@ -16,6 +16,12 @@ import SortableCaseTable, {
 const caseInclude = {
   category: { select: { name: true } },
   submittedBy: { select: { name: true } },
+  logs: {
+    where: { action: "REJECT" },
+    orderBy: { createdAt: "desc" },
+    take: 1,
+    select: { step: true, reviewer: { select: { name: true } } },
+  },
 } as const;
 
 function currentMonth(): string {
@@ -40,9 +46,11 @@ type CaseWithRels = {
   status: string;
   category: { name: string };
   submittedBy: { name: string };
+  logs: { step: string; reviewer: { name: string } }[];
 };
 
 function toRow(c: CaseWithRels): CaseRowData {
+  const rej = c.status === STATUS.REJECTED ? c.logs[0] : undefined;
   return {
     id: c.id,
     orderNo: c.orderNo,
@@ -60,6 +68,7 @@ function toRow(c: CaseWithRels): CaseRowData {
     submitterName: c.submittedBy.name,
     submittedAt: c.submittedAt.toISOString(),
     status: c.status,
+    rejectedByRole: rej ? ROLE_LABEL[rej.step] ?? "" : null,
   };
 }
 

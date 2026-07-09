@@ -11,7 +11,7 @@ import {
   isOverdue,
 } from "@/lib/dal";
 import { withdrawCase, deleteCase } from "@/lib/actions";
-import { ACTION_LABEL, STATUS } from "@/lib/constants";
+import { ACTION_LABEL, ROLE_LABEL, STATUS } from "@/lib/constants";
 import { money, dt } from "@/lib/format";
 import { StatusBadge } from "@/components/CaseList";
 import ReviewPanel from "@/components/ReviewPanel";
@@ -48,6 +48,10 @@ export default async function CaseDetailPage({
   if (!c || !canViewCase(user, c)) notFound();
 
   const overdue = isOverdue(c);
+  const rejectLog =
+    c.status === STATUS.REJECTED
+      ? [...c.logs].reverse().find((l) => l.action === "REJECT")
+      : undefined;
   const amounts = [
     ["所課支援金", c.subsidyDeptCourse],
     ["金牌", c.goldMedal],
@@ -61,6 +65,20 @@ export default async function CaseDetailPage({
       <Link href="/" className="text-sm text-blue-600 hover:underline">
         ← 返回
       </Link>
+
+      {rejectLog && (
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4">
+          <div className="text-sm font-semibold text-rose-700">
+            本案已由 {ROLE_LABEL[rejectLog.step] ?? rejectLog.step}{" "}
+            {rejectLog.reviewer.name} 駁回
+          </div>
+          {rejectLog.comment && (
+            <div className="text-sm text-rose-600 mt-1">
+              駁回原因：{rejectLog.comment}
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl border border-slate-200 p-5">
         <div className="flex items-center justify-between gap-2 mb-4">
