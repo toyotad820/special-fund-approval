@@ -5,6 +5,62 @@
     sans-serif;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
   font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f1f5f9;
+  background-image:
+    radial-gradient(60rem 60rem at 110% -10%, rgba(37, 99, 235, 0.06), transparent 60%),
+    radial-gradient(50rem 50rem at -10% 0%, rgba(14, 165, 233, 0.05), transparent 55%);
+  background-attachment: fixed;
+}
+
+@layer components {
+  /* 卡片 */
+  .card {
+    @apply bg-white rounded-2xl border border-slate-200/80 shadow-sm;
+  }
+
+  /* 按鈕（用法：class="btn btn-primary"） */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5
+      text-sm font-semibold transition-colors
+      disabled:opacity-60 disabled:pointer-events-none;
+  }
+  .btn-primary {
+    @apply bg-blue-600 text-white hover:bg-blue-700 shadow-sm shadow-blue-600/20;
+  }
+  .btn-secondary {
+    @apply border border-slate-300 text-slate-700 bg-white hover:bg-slate-50;
+  }
+  .btn-danger {
+    @apply border border-rose-300 text-rose-600 bg-white hover:bg-rose-50;
+  }
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs rounded-md;
+  }
+
+  /* 表單 */
+  .input {
+    @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5
+      text-slate-800 placeholder:text-slate-400 transition
+      focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/40;
+  }
+  .label {
+    @apply block text-sm font-medium text-slate-600 mb-1.5;
+  }
+
+  /* 區塊標題 */
+  .section-title {
+    @apply flex items-center gap-2 text-sm font-semibold text-slate-700 mb-3;
+  }
+  .section-title::before {
+    content: "";
+    @apply inline-block w-1 h-4 rounded-full bg-blue-500;
+  }
 }

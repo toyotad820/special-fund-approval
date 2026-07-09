@@ -131,7 +131,7 @@ export default async function DashboardPage() {
 
       {queueWhere && (
         <section>
-          <h2 className="text-sm font-semibold text-slate-700 mb-2">
+          <h2 className="section-title">
             待我審核{" "}
             <span className="text-blue-600">({queue.length})</span>
           </h2>
@@ -141,7 +141,7 @@ export default async function DashboardPage() {
 
       {canSubmit(user) && (
         <section>
-          <h2 className="text-sm font-semibold text-slate-700 mb-2">
+          <h2 className="section-title">
             我送出的案件
           </h2>
           <CaseList cases={mine} />
@@ -149,7 +149,7 @@ export default async function DashboardPage() {
       )}
 
       <section>
-        <h2 className="text-sm font-semibold text-slate-700 mb-2">
+        <h2 className="section-title">
           {scopeLabel(user.role)}
         </h2>
         <CaseList cases={visible} />
@@ -252,7 +252,7 @@ async function RoleDashboard({
       </div>
 
       <section>
-        <h2 className="text-sm font-semibold text-slate-700 mb-2">
+        <h2 className="section-title">
           {unresolvedTitle}{" "}
           <span className="text-blue-600">({unresolved.length})</span>
           <span className="text-xs text-slate-400 font-normal ml-2">
@@ -264,7 +264,7 @@ async function RoleDashboard({
 
       {monthlyWhere && (
         <section>
-          <h2 className="text-sm font-semibold text-slate-700 mb-2">
+          <h2 className="section-title">
             {scopeName}本月申請明細 · {month}{" "}
             <span className="text-blue-600">({monthly.length})</span>
           </h2>

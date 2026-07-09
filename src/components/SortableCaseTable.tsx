@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { STATUS_LABEL, STATUS_STYLE, STATUS } from "@/lib/constants";
+import { STATUS_LABEL, STATUS_STYLE, STATUS_DOT, STATUS } from "@/lib/constants";
 import { money } from "@/lib/format";
 
 export type CaseRowData = {
@@ -107,23 +107,23 @@ export default function SortableCaseTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+    <div className="overflow-x-auto rounded-2xl border border-slate-200/80 bg-white shadow-sm">
       <table className="min-w-max text-sm">
-        <thead className="bg-slate-100 sticky top-0">
-          <tr>
+        <thead className="bg-slate-50 sticky top-0 z-10">
+          <tr className="border-b border-slate-200">
             {COLUMNS.map((c) => {
               const active = c.key === sortKey;
               return (
                 <th
                   key={c.key}
                   onClick={() => toggleSort(c.key)}
-                  className={`px-3 py-2 text-left font-semibold whitespace-nowrap cursor-pointer select-none hover:bg-slate-200 ${
-                    active ? "text-blue-700" : "text-slate-600"
+                  className={`px-3 py-2.5 text-left text-xs font-semibold whitespace-nowrap cursor-pointer select-none hover:bg-slate-100 transition-colors ${
+                    active ? "text-blue-700" : "text-slate-500"
                   } ${c.type === "number" ? "text-right" : ""}`}
                   title="點擊排序"
                 >
                   {c.label}
-                  <span className="ml-1 text-xs">
+                  <span className={`ml-1 ${active ? "text-blue-500" : "text-slate-300"}`}>
                     {active ? (sortDir === "asc" ? "▲" : "▼") : "↕"}
                   </span>
                 </th>
@@ -136,7 +136,7 @@ export default function SortableCaseTable({
             <tr
               key={r.id}
               onClick={() => router.push(`/cases/${r.id}`)}
-              className="border-t border-slate-100 hover:bg-blue-50 cursor-pointer"
+              className="border-t border-slate-100 even:bg-slate-50/40 hover:bg-blue-50/70 cursor-pointer transition-colors"
             >
               {COLUMNS.map((c) => {
                 const v = r[c.key];
@@ -144,8 +144,11 @@ export default function SortableCaseTable({
                   return (
                     <td key={c.key} className="px-3 py-2 whitespace-nowrap">
                       <span
-                        className={`text-xs font-medium rounded-full px-2 py-0.5 ${STATUS_STYLE[r.status] ?? "bg-slate-100 text-slate-600"}`}
+                        className={`inline-flex items-center gap-1.5 text-xs font-medium rounded-full px-2.5 py-0.5 ${STATUS_STYLE[r.status] ?? "bg-slate-100 text-slate-600"}`}
                       >
+                        <span
+                          className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[r.status] ?? "bg-slate-400"}`}
+                        />
                         {STATUS_LABEL[r.status] ?? r.status}
                       </span>
                     </td>

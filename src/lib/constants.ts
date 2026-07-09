@@ -43,6 +43,15 @@ export const STATUS_STYLE: Record<string, string> = {
   WITHDRAWN: "bg-gray-200 text-gray-600",
 };
 
+// 狀態小圓點顏色
+export const STATUS_DOT: Record<string, string> = {
+  PENDING_SUOZHANG: "bg-amber-500",
+  PENDING_BUZHUGUAN: "bg-blue-500",
+  APPROVED: "bg-emerald-500",
+  REJECTED: "bg-rose-500",
+  WITHDRAWN: "bg-slate-400",
+};
+
 // 逾期天數門檻
 export const OVERDUE_DAYS = 3;
 

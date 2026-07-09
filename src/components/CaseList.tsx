@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { STATUS_LABEL, STATUS_STYLE } from "@/lib/constants";
+import { STATUS_LABEL, STATUS_STYLE, STATUS_DOT } from "@/lib/constants";
 import { isOverdue } from "@/lib/dal";
 import { money, dt } from "@/lib/format";
 
@@ -21,8 +21,11 @@ export type CaseRow = {
 export function StatusBadge({ status }: { status: string }) {
   return (
     <span
-      className={`text-xs font-medium rounded-full px-2 py-0.5 ${STATUS_STYLE[status] ?? "bg-slate-100 text-slate-600"}`}
+      className={`inline-flex items-center gap-1.5 text-xs font-medium rounded-full px-2.5 py-0.5 ${STATUS_STYLE[status] ?? "bg-slate-100 text-slate-600"}`}
     >
+      <span
+        className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[status] ?? "bg-slate-400"}`}
+      />
       {STATUS_LABEL[status] ?? status}
     </span>
   );
