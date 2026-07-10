@@ -13,7 +13,7 @@ export default function ReportTabs() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex gap-1 flex-wrap border-b border-slate-200">
+    <nav className="flex gap-2 flex-wrap bg-slate-100 rounded-xl p-1.5 w-fit">
       {TABS.map((t) => {
         const active =
           t.href === "/reports" ? pathname === "/reports" : pathname.startsWith(t.href);
@@ -22,10 +22,10 @@ export default function ReportTabs() {
             key={t.href}
             href={t.href}
             aria-current={active ? "page" : undefined}
-            className={`px-3 py-2 text-sm font-medium -mb-px border-b-2 transition-colors ${
+            className={`px-3.5 py-1.5 rounded-lg text-sm font-semibold whitespace-nowrap transition-colors ${
               active
-                ? "border-blue-600 text-blue-700"
-                : "border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300"
+                ? "bg-blue-600 text-white shadow-sm"
+                : "text-slate-500 hover:text-slate-800 hover:bg-white/70"
             }`}
           >
             {t.label}
