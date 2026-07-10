@@ -109,18 +109,48 @@ export default function CaseForm({
     );
     try {
       const node = cardRef.current;
-      if (node) {
-        const { toPng } = await import("html-to-image");
-        const dataUrl = await toPng(node, {
-          pixelRatio: 2,
-          backgroundColor: "#ffffff",
-        });
-        const orderNo = String(fd.get("orderNo") || "草稿").toUpperCase();
-        const a = document.createElement("a");
-        a.href = dataUrl;
-        a.download = `特案申請_${orderNo}.png`;
-        a.click();
+      if (!node) return;
+      const { toBlob } = await import("html-to-image");
+      const blob = await toBlob(node, {
+        pixelRatio: 2,
+        backgroundColor: "#ffffff",
+      });
+      if (!blob) return;
+
+      const orderNo = String(fd.get("orderNo") || "草稿").toUpperCase();
+      const filename = `特案申請_${orderNo}.png`;
+      const file = new File([blob], filename, { type: "image/png" });
+
+      // 手機優先用系統分享（可選「儲存到相簿」或分享到其他 App）
+      const nav = navigator as Navigator & {
+        canShare?: (data: { files: File[] }) => boolean;
+        share?: (data: { files: File[]; title?: string }) => Promise<void>;
+      };
+      if (nav.canShare?.({ files: [file] }) && nav.share) {
+        try {
+          await nav.share({ files: [file], title: filename });
+          return;
+        } catch (err) {
+          // 使用者取消分享則不做任何事；其他錯誤則往下退回開新分頁
+          if (err instanceof Error && err.name === "AbortError") return;
+        }
       }
+
+      const url = URL.createObjectURL(blob);
+      // 桌面瀏覽器：直接觸發下載
+      const isDesktop = !/Mobi|Android|iPhone|iPad|iPod/i.test(
+        navigator.userAgent
+      );
+      if (isDesktop) {
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = filename;
+        a.click();
+      } else {
+        // 不支援分享的手機瀏覽器：開新分頁，讓使用者長按圖片儲存
+        window.open(url, "_blank");
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
     } finally {
       setCapturing(false);
       setSnapshot(null);
