@@ -1,6 +1,7 @@
 databases:
   - name: sfa-db
     plan: free
+    region: singapore
     databaseName: sfa
     user: sfa
 
