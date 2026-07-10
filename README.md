@@ -84,3 +84,20 @@ npm run smoke          # 跑完整核心流程的端到端檢查
 
 - `npm run db:reset`：清空並重建測試資料
 - `npx prisma studio`：以 GUI 檢視資料庫
+
+## 產生測試案件資料（方便瀏覽 UI／報表）
+
+`prisma/seed-testcases.mjs` 會建立約 20 筆涵蓋各種狀態（待審核、已核准、已駁回含原因、
+已撤回、草稿）、跨 D01/D02 兩所多課、跨本月與上月的測試案件，方便直接測試畫面與報表。
+安全可重複執行——每次會先清掉先前產生的測試案件（`orderNo` 開頭 `DTEST`）再重建。
+
+**本機**：
+```bash
+node prisma/seed-testcases.mjs
+```
+
+**雲端（Render）**：到 Render dashboard → 該 Web Service → **Shell** 分頁，執行：
+```bash
+node prisma/seed-testcases.mjs
+```
+（會直接對雲端的 PostgreSQL 寫入，不影響已匯入的真實人員資料）
