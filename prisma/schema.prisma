@@ -34,7 +34,7 @@ model Case {
   deptCode    String // 課別（依送單人帶出）
   plateName   String // 領牌名稱
   orderNo     String @unique // 訂單編號：13碼、第一碼 D、全系統唯一
-  categoryId  String // 特案類別
+  categoryId  String? // 特案類別（草稿可留空）
   categoryNo  String // 類別編號（人工填入）
   carModel    String // 車名
   description String // 特案內容說明
@@ -47,14 +47,14 @@ model Case {
   specialSubsidy    Int // 特案支援金額（可為 0）
 
   // 流程狀態
-  status        String // PENDING_SUOZHANG | PENDING_BUZHUGUAN | APPROVED | REJECTED | WITHDRAWN
+  status        String // DRAFT | PENDING_SUOZHANG | PENDING_BUZHUGUAN | APPROVED | REJECTED | WITHDRAWN
   submittedById String
   submittedBy   User     @relation("submitter", fields: [submittedById], references: [id])
   submittedAt   DateTime @default(now())
   stepEnteredAt DateTime @default(now()) // 進入目前關卡的時間（逾期判斷用）
   updatedAt     DateTime @updatedAt
 
-  category CaseCategory  @relation(fields: [categoryId], references: [id])
+  category CaseCategory? @relation(fields: [categoryId], references: [id])
   logs     ApprovalLog[]
 
   @@index([status])

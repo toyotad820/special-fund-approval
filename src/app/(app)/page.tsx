@@ -44,7 +44,7 @@ type CaseWithRels = {
   description: string;
   submittedAt: Date;
   status: string;
-  category: { name: string };
+  category: { name: string } | null;
   submittedBy: { name: string };
   logs: { step: string; reviewer: { name: string } }[];
 };
@@ -56,7 +56,7 @@ function toRow(c: CaseWithRels): CaseRowData {
     orderNo: c.orderNo,
     month: c.month,
     plateName: c.plateName,
-    categoryName: c.category.name,
+    categoryName: c.category?.name ?? "（尚未選擇）",
     categoryNo: c.categoryNo,
     carModel: c.carModel,
     subsidyDeptCourse: c.subsidyDeptCourse,
@@ -109,7 +109,8 @@ export default async function DashboardPage() {
         })
       : Promise.resolve([]),
     prisma.case.findMany({
-      where: visibilityWhere(user),
+      // 草稿為私人資料，一般可視範圍查詢一律排除他人草稿
+      where: { ...visibilityWhere(user), status: { not: STATUS.DRAFT } },
       include: caseInclude,
       orderBy: { submittedAt: "desc" },
       take: 30,
@@ -187,16 +188,25 @@ async function RoleDashboard({
   let scopeName = "";
   let monthlyWhere: Prisma.CaseWhereInput | null = null;
 
+  // 草稿為私人資料，其他人不可見；此條件排除「他人的草稿」
+  const notOthersDraft: Prisma.CaseWhereInput = {
+    OR: [{ status: { not: STATUS.DRAFT } }, { submittedById: user.id }],
+  };
+
   if (user.role === ROLE.KEZHANG) {
     const dept = { storeCode: user.storeCode, deptCode: user.deptCode ?? "" };
-    unresolvedWhere = { ...dept, status: { not: STATUS.APPROVED } };
+    unresolvedWhere = {
+      ...dept,
+      status: { not: STATUS.APPROVED },
+      ...notOthersDraft,
+    };
     unresolvedTitle = "未結案件";
-    unresolvedHint = "本課．待審核／已駁回／已撤回";
+    unresolvedHint = "本課．待審核／已駁回／已撤回／草稿";
     subtitle = `課長 · ${user.storeCode}${user.deptCode ? ` ${user.deptCode} 課` : ""}`;
     scopeName = "本課";
-    monthlyWhere = { ...dept, month };
+    monthlyWhere = { ...dept, month, ...notOthersDraft };
   } else if (user.role === ROLE.SUOZHANG) {
-    // 本所：待審核／已駁回，以及「本人」撤回的案件（不含課長撤案）
+    // 本所：待審核／已駁回，以及「本人」撤回或草稿的案件（不含課長撤案）
     unresolvedWhere = {
       storeCode: user.storeCode,
       OR: [
@@ -210,13 +220,14 @@ async function RoleDashboard({
           },
         },
         { status: STATUS.WITHDRAWN, submittedById: user.id },
+        { status: STATUS.DRAFT, submittedById: user.id },
       ],
     };
     unresolvedTitle = "未結案件";
-    unresolvedHint = "本所．待審核／已駁回／本人撤回";
+    unresolvedHint = "本所．待審核／已駁回／本人撤回或草稿";
     subtitle = `所長 · ${user.storeCode}`;
     scopeName = "本所";
-    monthlyWhere = { storeCode: user.storeCode, month };
+    monthlyWhere = { storeCode: user.storeCode, month, ...notOthersDraft };
   } else {
     // 部主管：只顯示待部主管審核的案件
     unresolvedWhere = { status: STATUS.PENDING_BUZHUGUAN };

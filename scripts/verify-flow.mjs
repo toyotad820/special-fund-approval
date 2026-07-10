@@ -141,8 +141,11 @@ async function main() {
     kez.jar,
     'name="plateName"'
   );
-  check("課長成功送單（redirect 到案件頁）", submit2.status === 303 && /\/cases\//.test(submit2.location || ""), `status=${submit2.status} loc=${submit2.location}`);
-  const caseUrl = submit2.location;
+  // 送出成功後不再 redirect，改回傳 { ok, caseId, message }（供前端跳出結果視窗）
+  const idMatch = /&quot;caseId&quot;:&quot;([a-zA-Z0-9]+)&quot;/.exec(submit2.body);
+  const okMatch = /&quot;ok&quot;:true/.test(submit2.body);
+  check("課長成功送單（回傳 ok+caseId）", submit2.status === 200 && okMatch && !!idMatch, `status=${submit2.status}`);
+  const caseUrl = `/cases/${idMatch ? idMatch[1] : ""}`;
 
   // 3) 所長 s01 登入 → 待審應看到此案 → 核准
   const suo = await loginAs("s01");
@@ -156,7 +159,7 @@ async function main() {
   const approve = await postAction(caseUrl, casePage.body, { caseId, decision: "APPROVE", comment: "所長同意" }, suo.jar, 'name="comment"');
   check("所長核准（進入第二關）", approve.status === 303, `status=${approve.status}`);
   const afterSuo = await get(caseUrl, suo.jar);
-  check("狀態變為待部主管審核", afterSuo.body.includes("待部主管審核"));
+  check("狀態變為待部長審核", afterSuo.body.includes("待部長審核"));
 
   // 4) 部主管 boss 核准 → 已核准
   const boss = await loginAs("boss");

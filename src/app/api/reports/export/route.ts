@@ -1,7 +1,7 @@
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { canViewReports } from "@/lib/dal";
-import { STATUS_LABEL } from "@/lib/constants";
+import { STATUS_LABEL, STATUS } from "@/lib/constants";
 import { dt } from "@/lib/format";
 
 function currentMonth(): string {
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
   const month = searchParams.get("month") || currentMonth();
 
   const cases = await prisma.case.findMany({
-    where: { month },
+    where: { month, status: { not: STATUS.DRAFT } },
     include: { category: true, submittedBy: true },
     orderBy: { submittedAt: "asc" },
   });
@@ -56,7 +56,7 @@ export async function GET(request: Request) {
       c.storeCode,
       c.deptCode,
       c.plateName,
-      c.category.name,
+      c.category?.name ?? "",
       c.categoryNo,
       c.carModel,
       c.subsidyDeptCourse,

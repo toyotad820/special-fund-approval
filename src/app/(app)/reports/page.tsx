@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { canViewReports } from "@/lib/dal";
 import { money } from "@/lib/format";
+import { STATUS } from "@/lib/constants";
 
 function currentMonth(): string {
   const d = new Date();
@@ -20,30 +21,33 @@ export default async function ReportsPage({
   const sp = await searchParams;
   const month = sp.month || currentMonth();
 
+  // 統計不含草稿（草稿尚未正式送出）
+  const reportWhere = { month, status: { not: STATUS.DRAFT } };
+
   const [byStore, byCategory, total] = await Promise.all([
     prisma.case.groupBy({
       by: ["storeCode"],
-      where: { month },
+      where: reportWhere,
       _count: { _all: true },
       _sum: { specialSubsidy: true },
       orderBy: { storeCode: "asc" },
     }),
     prisma.case.groupBy({
       by: ["categoryId"],
-      where: { month },
+      where: reportWhere,
       _count: { _all: true },
       _sum: { specialSubsidy: true },
     }),
     prisma.case.aggregate({
-      where: { month },
+      where: reportWhere,
       _count: { _all: true },
       _sum: { specialSubsidy: true },
     }),
   ]);
 
   const categories = await prisma.caseCategory.findMany();
-  const catName = (id: string) =>
-    categories.find((c) => c.id === id)?.name ?? id;
+  const catName = (id: string | null) =>
+    categories.find((c) => c.id === id)?.name ?? "（未分類）";
 
   const th = "text-left text-xs font-semibold text-slate-500 px-3 py-2";
   const td = "px-3 py-2 text-sm text-slate-800";

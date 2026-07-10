@@ -47,9 +47,13 @@ type CaseLike = { status: string; storeCode: string; submittedById: string };
 
 type ViewableCase = { storeCode: string; deptCode: string; submittedById: string };
 
-// 此使用者能否檢視這張單
-export function canViewCase(user: User, c: ViewableCase): boolean {
+// 此使用者能否檢視這張單（草稿為私人資料，僅本人可見）
+export function canViewCase(
+  user: User,
+  c: ViewableCase & { status: string }
+): boolean {
   if (c.submittedById === user.id) return true;
+  if (c.status === STATUS.DRAFT) return false;
   if (user.role === ROLE.BUZHUGUAN || user.role === ROLE.STAFF) return true;
   if (user.role === ROLE.SUOZHANG) return c.storeCode === user.storeCode;
   if (user.role === ROLE.KEZHANG)
@@ -73,19 +77,23 @@ export function canWithdraw(user: User, c: CaseLike): boolean {
   return c.submittedById === user.id && c.status === STATUS.PENDING_SUOZHANG;
 }
 
-// 送單人能否修改後重送（已駁回或已撤回）
+// 送單人能否修改後重送（已駁回、已撤回、或草稿）
 export function canResubmit(user: User, c: CaseLike): boolean {
   return (
     c.submittedById === user.id &&
-    (c.status === STATUS.REJECTED || c.status === STATUS.WITHDRAWN)
+    (c.status === STATUS.REJECTED ||
+      c.status === STATUS.WITHDRAWN ||
+      c.status === STATUS.DRAFT)
   );
 }
 
-// 送單人能否刪除（自己的已撤回或已駁回案件）
+// 送單人能否刪除（自己的草稿、已撤回或已駁回案件）
 export function canDelete(user: User, c: CaseLike): boolean {
   return (
     c.submittedById === user.id &&
-    (c.status === STATUS.WITHDRAWN || c.status === STATUS.REJECTED)
+    (c.status === STATUS.WITHDRAWN ||
+      c.status === STATUS.REJECTED ||
+      c.status === STATUS.DRAFT)
   );
 }
 

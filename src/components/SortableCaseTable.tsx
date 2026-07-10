@@ -26,18 +26,17 @@ export type CaseRowData = {
 };
 
 type ColType = "text" | "number" | "status";
-type Col = { key: keyof CaseRowData; label: string; type: ColType };
+type Col = { key: keyof CaseRowData; label: string; type: ColType; width?: number };
 
-// 審核狀態擺第一欄；不含送單人、送出時間
+// 審核狀態擺第一欄；不含送單人、送出時間、月份
 const COLUMNS: Col[] = [
   { key: "status", label: "審核狀態", type: "status" },
   { key: "orderNo", label: "訂單編號", type: "text" },
-  { key: "month", label: "月份", type: "text" },
   { key: "plateName", label: "領牌名稱", type: "text" },
   { key: "categoryName", label: "特案類別", type: "text" },
   { key: "categoryNo", label: "類別編號", type: "text" },
   { key: "carModel", label: "車名", type: "text" },
-  { key: "subsidyDeptCourse", label: "所課支援金", type: "number" },
+  { key: "subsidyDeptCourse", label: "所課支援金", type: "number", width: 96 },
   { key: "goldMedal", label: "金牌", type: "number" },
   { key: "silverMedal", label: "銀牌", type: "number" },
   { key: "discountTotal", label: "折讓總額", type: "number" },
@@ -48,6 +47,7 @@ const COLUMNS: Col[] = [
 const NUMBER_KEYS = COLUMNS.filter((c) => c.type === "number").map((c) => c.key);
 
 const STATUS_ORDER: Record<string, number> = {
+  [STATUS.DRAFT]: 0,
   [STATUS.PENDING_SUOZHANG]: 1,
   [STATUS.PENDING_BUZHUGUAN]: 2,
   [STATUS.REJECTED]: 3,
@@ -108,7 +108,7 @@ export default function SortableCaseTable({
   }
 
   return (
-    <div className="overflow-x-auto rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+    <div className="overflow-auto max-h-[26rem] rounded-2xl border border-slate-200/80 bg-white shadow-sm">
       <table className="min-w-max text-sm">
         <thead className="bg-slate-50 sticky top-0 z-10">
           <tr className="border-b border-slate-200">
@@ -118,6 +118,7 @@ export default function SortableCaseTable({
                 <th
                   key={c.key}
                   onClick={() => toggleSort(c.key)}
+                  style={c.width ? { width: c.width, maxWidth: c.width } : undefined}
                   className={`px-3 py-2.5 text-left text-xs font-semibold whitespace-nowrap cursor-pointer select-none hover:bg-slate-100 transition-colors ${
                     active ? "text-blue-700" : "text-slate-500"
                   } ${c.type === "number" ? "text-right" : ""}`}
@@ -159,7 +160,11 @@ export default function SortableCaseTable({
                 }
                 if (c.type === "number") {
                   return (
-                    <td key={c.key} className="px-3 py-2 text-right whitespace-nowrap tabular-nums text-slate-800">
+                    <td
+                      key={c.key}
+                      style={c.width ? { width: c.width, maxWidth: c.width } : undefined}
+                      className="px-3 py-2 text-right whitespace-nowrap tabular-nums text-slate-800"
+                    >
                       {money(v as number)}
                     </td>
                   );
@@ -193,7 +198,11 @@ export default function SortableCaseTable({
               {COLUMNS.map((c, i) => {
                 if (c.type === "number") {
                   return (
-                    <td key={c.key} className="px-3 py-2 text-right whitespace-nowrap tabular-nums text-slate-900">
+                    <td
+                      key={c.key}
+                      style={c.width ? { width: c.width, maxWidth: c.width } : undefined}
+                      className="px-3 py-2 text-right whitespace-nowrap tabular-nums text-slate-900"
+                    >
                       {money(totals[c.key])}
                     </td>
                   );

@@ -16,11 +16,13 @@ async function submitCase(j, cid, amounts = {}) {
   const np = await get("/cases/new", j);
   const orderNo = order();
   const r = await pa("/cases/new", np.body, {
+    intent: "submit",
     plateName: "測試", orderNo, categoryId: cid, categoryNo: "D01-01-01", carModel: "ALTIS",
-    description: "測試", subsidyDeptCourse: 1000, goldMedal: 0, silverMedal: 0, discountTotal: 0, specialSubsidy: 0,
+    description: "測試", deptCode: "01", subsidyDeptCourse: 1000, goldMedal: 0, silverMedal: 0, discountTotal: 0, specialSubsidy: 0,
     ...amounts,
   }, j, 'name="plateName"');
-  return { orderNo, url: r.location };
+  const m = /&quot;caseId&quot;:&quot;([a-zA-Z0-9]+)&quot;/.exec(r.body);
+  return { orderNo, url: `/cases/${m ? m[1] : ""}` };
 }
 async function withdraw(j, url) {
   const p = await get(url, j);
@@ -65,7 +67,7 @@ async function main() {
   const bh = await get("/", boss.jar ?? boss);
   const bhb = (await get("/", boss)).body;
   check("部主管標題為『待審核案件』", bhb.includes("待審核案件"));
-  check("部主管清單含待部主管審核", bhb.includes("待部主管審核"));
+  check("部主管清單含待部長審核", bhb.includes("待部長審核"));
   check("部主管清單不含待所長審核", !bhb.includes("待所長審核"));
   check("部主管清單不含已撤回", !bhb.includes("已撤回"));
   check("部主管清單含 D 案", bhb.includes(D.orderNo), D.orderNo);
@@ -89,10 +91,12 @@ async function main() {
   const editB = await get(B.url + "/edit", s01);
   const idB = B.url.split("/").pop();
   const reB = await pa(B.url + "/edit", editB.body, {
+    intent: "submit",
     caseId: idB, plateName: "改", orderNo: B.orderNo, categoryId: cid, categoryNo: "D01-01-01",
-    carModel: "ALTIS", description: "改", subsidyDeptCourse: 2000, goldMedal: 0, silverMedal: 0, discountTotal: 0, specialSubsidy: 0,
+    carModel: "ALTIS", description: "改", deptCode: "01", subsidyDeptCourse: 2000, goldMedal: 0, silverMedal: 0, discountTotal: 0, specialSubsidy: 0,
   }, s01, 'name="plateName"');
-  check("修改後重送成功(redirect)", reB.status === 303, `status=${reB.status}`);
+  // 送出後案件不再符合 edit 頁的可編輯條件，該頁會自行導回案件頁（307），為預期行為
+  check("修改後重送成功(redirect 307)", reB.status === 307, `status=${reB.status}`);
   const bAfter = await get(B.url, s01);
   check("重送後狀態＝待所長審核", bAfter.body.includes("待所長審核"));
 

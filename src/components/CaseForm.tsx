@@ -1,9 +1,10 @@
 "use client";
 
-import { useActionState, useRef, useState } from "react";
+import { useActionState, useRef, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { ActionState } from "@/lib/actions";
 import { money } from "@/lib/format";
+import Modal from "@/components/Modal";
 
 type Option = { id: string; name: string };
 
@@ -14,6 +15,7 @@ export type CaseInitial = {
   categoryNo?: string;
   carModel?: string;
   description?: string;
+  deptCode?: string;
   subsidyDeptCourse?: number;
   goldMedal?: number;
   silverMedal?: number;
@@ -29,6 +31,8 @@ const AMOUNTS: { name: keyof CaseInitial; label: string; hint?: string }[] = [
   { name: "specialSubsidy", label: "特案支援金額", hint: "可為 0" },
 ];
 
+const initialState: ActionState = {};
+
 export default function CaseForm({
   submitAction,
   categories,
@@ -36,6 +40,8 @@ export default function CaseForm({
   month,
   storeCode,
   deptCode,
+  deptEditable = false,
+  allowDraft = true,
   initial,
   caseId,
   submitLabel = "送出",
@@ -46,14 +52,26 @@ export default function CaseForm({
   month: string;
   storeCode: string;
   deptCode: string;
+  deptEditable?: boolean;
+  allowDraft?: boolean;
   initial?: CaseInitial;
   caseId?: string;
   submitLabel?: string;
 }) {
-  const [state, formAction, pending] = useActionState(submitAction, {});
+  const [state, formAction, pending] = useActionState(submitAction, initialState);
   const fe = state.fieldErrors ?? {};
-
   const router = useRouter();
+
+  // 偵測「這次是否剛完成一次送出」，避免初始 state 誤觸發彈窗
+  const [modalOpen, setModalOpen] = useState(false);
+  const seenRef = useRef(state);
+  useEffect(() => {
+    if (state !== seenRef.current) {
+      seenRef.current = state;
+      setModalOpen(true);
+    }
+  }, [state]);
+
   const formRef = useRef<HTMLFormElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
   const [snapshot, setSnapshot] = useState<Record<string, string> | null>(null);
@@ -69,7 +87,7 @@ export default function CaseForm({
     setSnapshot({
       月份: month,
       所別: storeCode,
-      課別: deptCode || "-",
+      課別: String(fd.get("deptCode") || deptCode || "-"),
       領牌名稱: String(fd.get("plateName") || "-"),
       訂單編號: String(fd.get("orderNo") || "-").toUpperCase(),
       特案類別: categories.find((c) => c.id === catId)?.name || "-",
@@ -110,8 +128,12 @@ export default function CaseForm({
   const err = (n: string) =>
     fe[n] ? <p className="text-xs text-rose-600 mt-1">{fe[n]}</p> : null;
 
-  const inputCls =
-    "w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500";
+  const inputCls = "input";
+
+  const problemMessages = [
+    ...(state.error ? [state.error] : []),
+    ...Object.values(fe),
+  ];
 
   return (
     <>
@@ -135,21 +157,37 @@ export default function CaseForm({
           <div className="font-medium">{storeCode}</div>
         </div>
         <div>
-          <div className="text-slate-400 text-xs">課別</div>
-          <div className="font-medium">{deptCode || "-"}</div>
+          <div className="text-slate-400 text-xs mb-1">課別</div>
+          {deptEditable ? (
+            <>
+              <input
+                name="deptCode"
+                type="number"
+                min={0}
+                step={1}
+                required
+                defaultValue={initial?.deptCode ?? deptCode}
+                placeholder="請輸入課別"
+                className="w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
+              />
+              {err("deptCode")}
+            </>
+          ) : (
+            <div className="font-medium">{deptCode || "-"}</div>
+          )}
         </div>
       </div>
 
       <div className="grid sm:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-slate-600 mb-1">
+          <label className="label">
             領牌名稱 <span className="text-rose-500">*</span>
           </label>
           <input name="plateName" defaultValue={initial?.plateName} className={inputCls} />
           {err("plateName")}
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-600 mb-1">
+          <label className="label">
             訂單編號 <span className="text-rose-500">*</span>
           </label>
           <input
@@ -162,7 +200,7 @@ export default function CaseForm({
           {err("orderNo")}
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-600 mb-1">
+          <label className="label">
             特案類別 <span className="text-rose-500">*</span>
           </label>
           <select
@@ -180,7 +218,7 @@ export default function CaseForm({
           {err("categoryId")}
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-600 mb-1">
+          <label className="label">
             類別編號 <span className="text-rose-500">*</span>
           </label>
           <input
@@ -192,7 +230,7 @@ export default function CaseForm({
           {err("categoryNo")}
         </div>
         <div>
-          <label className="block text-sm font-medium text-slate-600 mb-1">
+          <label className="label">
             車名 <span className="text-rose-500">*</span>
           </label>
           <select
@@ -240,7 +278,7 @@ export default function CaseForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-slate-600 mb-1">
+        <label className="label">
           特案內容說明 <span className="text-rose-500">*</span>
         </label>
         <textarea
@@ -255,28 +293,97 @@ export default function CaseForm({
       <div className="flex flex-wrap items-center gap-3 pt-1">
         <button
           type="submit"
+          name="intent"
+          value="submit"
           disabled={pending}
-          className="rounded-lg bg-blue-600 text-white px-6 py-2.5 font-medium hover:bg-blue-700 disabled:opacity-60 transition"
+          className="btn btn-primary"
         >
           {pending ? "處理中…" : submitLabel}
         </button>
+        {allowDraft && (
+          <button
+            type="submit"
+            name="intent"
+            value="draft"
+            disabled={pending}
+            className="btn border border-violet-300 text-violet-700 bg-white hover:bg-violet-50"
+          >
+            {pending ? "處理中…" : "儲存草稿"}
+          </button>
+        )}
         <button
           type="button"
           onClick={handleCapture}
           disabled={capturing}
-          className="rounded-lg border border-emerald-500 text-emerald-700 px-5 py-2.5 font-medium hover:bg-emerald-50 disabled:opacity-60 transition"
+          className="btn border border-emerald-500 text-emerald-700 bg-white hover:bg-emerald-50"
         >
           {capturing ? "產生中…" : "擷取為圖片"}
         </button>
         <button
           type="button"
           onClick={() => router.back()}
-          className="rounded-lg border border-slate-300 text-slate-600 px-5 py-2.5 font-medium hover:bg-slate-50 transition"
+          className="btn btn-secondary"
         >
-          取消
+          ← 取消
         </button>
       </div>
     </form>
+
+    {/* 送出／儲存後的處理狀況視窗 */}
+    <Modal open={modalOpen && !!state.ok} onClose={() => setModalOpen(false)}>
+      <div className="text-center">
+        <div className="mx-auto w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 grid place-items-center text-2xl mb-3">
+          ✓
+        </div>
+        <h3 className="text-base font-bold text-slate-800">處理成功</h3>
+        <p className="text-sm text-slate-500 mt-1">{state.message}</p>
+        <div className="flex gap-3 mt-5">
+          <button
+            className="btn btn-secondary flex-1"
+            onClick={() => {
+              setModalOpen(false);
+              router.push("/");
+            }}
+          >
+            回首頁
+          </button>
+          <button
+            className="btn btn-primary flex-1"
+            onClick={() => {
+              setModalOpen(false);
+              if (state.caseId) router.push(`/cases/${state.caseId}`);
+            }}
+          >
+            查看案件
+          </button>
+        </div>
+      </div>
+    </Modal>
+
+    <Modal
+      open={modalOpen && !state.ok && problemMessages.length > 0}
+      onClose={() => setModalOpen(false)}
+    >
+      <div>
+        <div className="mx-auto w-12 h-12 rounded-full bg-rose-100 text-rose-600 grid place-items-center text-2xl mb-3">
+          !
+        </div>
+        <h3 className="text-base font-bold text-slate-800 text-center">
+          無法送出，請確認以下問題
+        </h3>
+        <ul className="mt-3 space-y-1.5 text-sm text-rose-600 list-disc list-inside">
+          {problemMessages.map((m, i) => (
+            <li key={i}>{m}</li>
+          ))}
+        </ul>
+        <button
+          className="btn btn-secondary w-full mt-5"
+          onClick={() => setModalOpen(false)}
+        >
+          關閉
+        </button>
+      </div>
+    </Modal>
 
     {snapshot && (
       <div

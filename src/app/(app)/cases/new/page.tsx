@@ -33,23 +33,25 @@ export default async function NewCasePage() {
     <div className="max-w-2xl mx-auto">
       <h1 className="text-lg font-bold text-slate-800 mb-4">新增特案申請</h1>
 
-      {closed ? (
-        <p className="text-sm text-amber-700 bg-amber-50 rounded-lg px-4 py-3">
-          本月（{month}）已關閉，暫不開放送單。
+      {closed && (
+        <p className="text-sm text-amber-700 bg-amber-50 rounded-lg px-4 py-3 mb-4">
+          本月（{month}）已關閉，暫不開放正式送出；您仍可先儲存草稿，待開放後再送出。
         </p>
-      ) : (
-        <div className="bg-white rounded-2xl border border-slate-200 p-5">
-          <CaseForm
-            submitAction={createCase}
-            categories={categories}
-            cars={cars}
-            month={month}
-            storeCode={user.storeCode}
-            deptCode={user.deptCode ?? ""}
-            submitLabel="送出申請"
-          />
-        </div>
       )}
+
+      <div className="card p-5">
+        <CaseForm
+          submitAction={createCase}
+          categories={categories}
+          cars={cars}
+          month={month}
+          storeCode={user.storeCode}
+          deptCode={user.deptCode ?? ""}
+          deptEditable={!user.deptCode}
+          allowDraft
+          submitLabel="送出申請"
+        />
+      </div>
     </div>
   );
 }

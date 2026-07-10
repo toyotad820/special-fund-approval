@@ -14,7 +14,7 @@ export type CaseRow = {
   specialSubsidy: number;
   storeCode: string;
   deptCode: string;
-  category: { name: string };
+  category: { name: string } | null;
   submittedBy: { name: string };
 };
 
@@ -63,7 +63,7 @@ export default function CaseList({ cases }: { cases: CaseRow[] }) {
               </div>
               <div className="mt-1.5 flex items-center justify-between gap-2 text-sm text-slate-500">
                 <span className="truncate">
-                  {c.storeCode} · {c.category.name} · {c.carModel}
+                  {c.storeCode} · {c.category?.name ?? "（尚未選擇）"} · {c.carModel}
                 </span>
                 <span className="whitespace-nowrap font-medium text-slate-700">
                   特案 {money(c.specialSubsidy)}

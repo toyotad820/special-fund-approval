@@ -12,11 +12,14 @@ import {
   canWithdraw,
   canDelete,
 } from "./dal";
-import { STATUS, ROLE } from "./constants";
+import { STATUS, ROLE, ACTION } from "./constants";
 
 export type ActionState = {
   error?: string;
   fieldErrors?: Record<string, string>;
+  ok?: boolean;
+  caseId?: string;
+  message?: string;
 };
 
 function currentMonth(): string {
@@ -63,6 +66,7 @@ type CaseData = {
   categoryNo: string;
   carModel: string;
   description: string;
+  deptCode: string;
   subsidyDeptCourse: number;
   goldMedal: number;
   silverMedal: number;
@@ -77,7 +81,11 @@ function parseAmount(v: FormDataEntryValue | null): number | null {
   return Number(s);
 }
 
-function validateCase(formData: FormData): {
+// requireDeptCode: 所長沒有固定課別，需在表單中手動輸入（必填數字）
+function validateCase(
+  formData: FormData,
+  opts: { requireDeptCode: boolean; fixedDeptCode: string }
+): {
   data?: CaseData;
   fieldErrors: Record<string, string>;
 } {
@@ -98,6 +106,13 @@ function validateCase(formData: FormData): {
   if (!categoryNo) fieldErrors.categoryNo = "必填";
   if (!carModel) fieldErrors.carModel = "必填";
   if (!description) fieldErrors.description = "必填";
+
+  let deptCode = opts.fixedDeptCode;
+  if (opts.requireDeptCode) {
+    const raw = String(formData.get("deptCode") ?? "").trim();
+    if (!/^\d+$/.test(raw)) fieldErrors.deptCode = "請輸入課別（數字）";
+    else deptCode = raw;
+  }
 
   const amounts: Record<keyof Pick<CaseData,
     "subsidyDeptCourse" | "goldMedal" | "silverMedal" | "discountTotal" | "specialSubsidy">, number> =
@@ -135,9 +150,59 @@ function validateCase(formData: FormData): {
       categoryNo,
       carModel,
       description,
+      deptCode,
       ...amounts,
     },
     fieldErrors,
+  };
+}
+
+// 草稿：寬鬆解析，缺漏欄位一律給預設值，不擋存檔
+function parseCaseDraft(
+  formData: FormData,
+  opts: { requireDeptCode: boolean; fixedDeptCode: string }
+): {
+  plateName: string;
+  orderNo: string;
+  categoryId: string | null;
+  categoryNo: string;
+  carModel: string;
+  description: string;
+  deptCode: string;
+  subsidyDeptCourse: number;
+  goldMedal: number;
+  silverMedal: number;
+  discountTotal: number;
+  specialSubsidy: number;
+} {
+  const str = (k: string) => String(formData.get(k) ?? "").trim();
+  const num = (k: string) => {
+    const n = Number(str(k));
+    return Number.isFinite(n) && n >= 0 ? n : 0;
+  };
+  const orderNoRaw = str("orderNo").toUpperCase();
+  const orderNo = orderNoRaw || `DRAFT-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  const categoryId = str("categoryId") || null;
+
+  let deptCode = opts.fixedDeptCode;
+  if (opts.requireDeptCode) {
+    const raw = str("deptCode");
+    deptCode = /^\d+$/.test(raw) ? raw : "";
+  }
+
+  return {
+    plateName: str("plateName"),
+    orderNo,
+    categoryId,
+    categoryNo: str("categoryNo"),
+    carModel: str("carModel"),
+    description: str("description"),
+    deptCode,
+    subsidyDeptCourse: num("subsidyDeptCourse"),
+    goldMedal: num("goldMedal"),
+    silverMedal: num("silverMedal"),
+    discountTotal: num("discountTotal"),
+    specialSubsidy: num("specialSubsidy"),
   };
 }
 
@@ -150,13 +215,52 @@ export async function createCase(
   const user = await requireUser();
   if (!canSubmit(user)) return { error: "您沒有送單權限" };
 
+  const intent = String(formData.get("intent") ?? "submit");
   const month = currentMonth();
+  const requireDeptCode = !user.deptCode;
+  const fixedDeptCode = user.deptCode ?? "";
+
+  if (intent === "draft") {
+    const draft = parseCaseDraft(formData, { requireDeptCode, fixedDeptCode });
+    try {
+      const created = await prisma.case.create({
+        data: {
+          ...draft,
+          month,
+          storeCode: user.storeCode,
+          status: STATUS.DRAFT,
+          submittedById: user.id,
+          logs: {
+            create: {
+              step: "DRAFT",
+              action: ACTION.SAVE_DRAFT,
+              reviewerId: user.id,
+            },
+          },
+        },
+      });
+      return {
+        ok: true,
+        caseId: created.id,
+        message: "草稿已儲存，可於首頁繼續編輯或送出。",
+      };
+    } catch (e: unknown) {
+      if (e && typeof e === "object" && "code" in e && e.code === "P2002") {
+        return { fieldErrors: { orderNo: "此訂單編號已存在（全系統唯一）" } };
+      }
+      throw e;
+    }
+  }
+
   const window = await prisma.monthWindow.findUnique({ where: { month } });
   if (window && !window.isOpen) {
     return { error: `本月（${month}）已關閉，暫不開放送單` };
   }
 
-  const { data, fieldErrors } = validateCase(formData);
+  const { data, fieldErrors } = validateCase(formData, {
+    requireDeptCode,
+    fixedDeptCode,
+  });
   if (!data) return { fieldErrors };
 
   let newId: string;
@@ -166,7 +270,6 @@ export async function createCase(
         ...data,
         month,
         storeCode: user.storeCode,
-        deptCode: user.deptCode ?? "",
         status: STATUS.PENDING_SUOZHANG,
         submittedById: user.id,
         logs: {
@@ -182,10 +285,10 @@ export async function createCase(
     throw e;
   }
 
-  redirect(`/cases/${newId}`);
+  return { ok: true, caseId: newId, message: "申請已送出，等待所長審核。" };
 }
 
-// ---------- 修改後重送 ----------
+// ---------- 修改後重送／草稿編輯 ----------
 
 export async function updateCase(
   _prev: ActionState,
@@ -197,8 +300,38 @@ export async function updateCase(
   if (!existing) return { error: "找不到案件" };
   if (!canResubmit(user, existing)) return { error: "此案件無法重送" };
 
-  const { data, fieldErrors } = validateCase(formData);
+  const requireDeptCode = !user.deptCode;
+  const fixedDeptCode = user.deptCode ?? existing.deptCode;
+  // 只有原本就是草稿的案件，才允許繼續存成草稿；已駁回/已撤回一律視為正式重送
+  const intent =
+    existing.status === STATUS.DRAFT
+      ? String(formData.get("intent") ?? "submit")
+      : "submit";
+
+  if (intent === "draft") {
+    const draft = parseCaseDraft(formData, { requireDeptCode, fixedDeptCode });
+    try {
+      await prisma.case.update({
+        where: { id: caseId },
+        data: { ...draft },
+      });
+      return { ok: true, caseId, message: "草稿已更新。" };
+    } catch (e: unknown) {
+      if (e && typeof e === "object" && "code" in e && e.code === "P2002") {
+        return { fieldErrors: { orderNo: "此訂單編號已存在（全系統唯一）" } };
+      }
+      throw e;
+    }
+  }
+
+  const { data, fieldErrors } = validateCase(formData, {
+    requireDeptCode,
+    fixedDeptCode,
+  });
   if (!data) return { fieldErrors };
+
+  const step = existing.status === STATUS.DRAFT ? "SUBMIT" : "RESUBMIT";
+  const action = existing.status === STATUS.DRAFT ? "SUBMIT" : "RESUBMIT";
 
   try {
     await prisma.$transaction([
@@ -211,12 +344,7 @@ export async function updateCase(
         },
       }),
       prisma.approvalLog.create({
-        data: {
-          caseId,
-          step: "RESUBMIT",
-          action: "RESUBMIT",
-          reviewerId: user.id,
-        },
+        data: { caseId, step, action, reviewerId: user.id },
       }),
     ]);
   } catch (e: unknown) {
@@ -226,7 +354,7 @@ export async function updateCase(
     throw e;
   }
 
-  redirect(`/cases/${caseId}`);
+  return { ok: true, caseId, message: "申請已送出，等待所長審核。" };
 }
 
 // ---------- 審核（核准 / 駁回） ----------

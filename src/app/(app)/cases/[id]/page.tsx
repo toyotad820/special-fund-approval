@@ -62,8 +62,8 @@ export default async function CaseDetailPage({
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
-      <Link href="/" className="text-sm text-blue-600 hover:underline">
-        ← 返回
+      <Link href="/" className="btn btn-secondary btn-sm inline-flex">
+        ← 回首頁
       </Link>
 
       {rejectLog && (
@@ -100,7 +100,7 @@ export default async function CaseDetailPage({
           {c.storeCode} / {c.deptCode || "-"}
         </Row>
         <Row label="領牌名稱">{c.plateName}</Row>
-        <Row label="特案類別">{c.category.name}</Row>
+        <Row label="特案類別">{c.category?.name ?? "（尚未選擇）"}</Row>
         <Row label="類別編號">{c.categoryNo}</Row>
         <Row label="車名">{c.carModel}</Row>
         {amounts.map(([label, val]) => (
@@ -132,13 +132,15 @@ export default async function CaseDetailPage({
         </form>
       )}
 
-      {/* 駁回 / 撤回後的處理 */}
+      {/* 草稿 / 駁回 / 撤回後的處理 */}
       {canResubmit(user, c) && (
         <div className="bg-white rounded-2xl border border-slate-200 p-4 flex items-center justify-between gap-3 flex-wrap">
           <span className="text-sm text-slate-600">
-            {c.status === STATUS.REJECTED
-              ? "已被駁回，可修改後重送或刪除"
-              : "已撤回，可修改後重送或刪除"}
+            {c.status === STATUS.DRAFT
+              ? "此為草稿，尚未送出，可繼續編輯或刪除"
+              : c.status === STATUS.REJECTED
+                ? "已被駁回，可修改後重送或刪除"
+                : "已撤回，可修改後重送或刪除"}
           </span>
           <div className="flex items-center gap-2">
             {canDelete(user, c) && (
@@ -153,7 +155,7 @@ export default async function CaseDetailPage({
               href={`/cases/${c.id}/edit`}
               className="rounded-lg bg-blue-600 text-white px-4 py-2 text-sm font-medium hover:bg-blue-700"
             >
-              修改後重送
+              {c.status === STATUS.DRAFT ? "繼續編輯" : "修改後重送"}
             </Link>
           </div>
         </div>
