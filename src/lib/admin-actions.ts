@@ -7,6 +7,7 @@ import { prisma } from "./prisma";
 import { requireUser } from "./session";
 import { canAdmin } from "./dal";
 import { ROLE, ROLE_LABEL } from "./constants";
+import { normalizeDeptCode } from "./format";
 
 export type ActionState = {
   ok?: boolean;
@@ -43,7 +44,7 @@ export async function createUser(
   const name = String(formData.get("name") ?? "").trim();
   const role = normalizeRole(String(formData.get("role") ?? ""));
   const storeCode = String(formData.get("storeCode") ?? "").trim();
-  const deptCode = String(formData.get("deptCode") ?? "").trim();
+  const deptCode = normalizeDeptCode(String(formData.get("deptCode") ?? "").trim());
   const password = String(formData.get("password") ?? "").trim() || "1234";
 
   const fieldErrors: Record<string, string> = {};
@@ -83,7 +84,7 @@ export async function updateUser(
   const name = String(formData.get("name") ?? "").trim();
   const role = normalizeRole(String(formData.get("role") ?? ""));
   const storeCode = String(formData.get("storeCode") ?? "").trim();
-  const deptCode = String(formData.get("deptCode") ?? "").trim();
+  const deptCode = normalizeDeptCode(String(formData.get("deptCode") ?? "").trim());
   const active = formData.get("active") === "on";
   const newPassword = String(formData.get("password") ?? "").trim();
 
@@ -156,7 +157,7 @@ export async function importUsers(
     const name = (r.name ?? r["姓名"] ?? "").trim();
     const role = normalizeRole(r.role ?? r["角色"] ?? "");
     const storeCode = (r.storeCode ?? r["所別"] ?? "").trim();
-    const deptCode = (r.deptCode ?? r["課別"] ?? "").trim();
+    const deptCode = normalizeDeptCode((r.deptCode ?? r["課別"] ?? "").trim());
     const password = (r.password ?? r["密碼"] ?? "").trim();
 
     if (!username || !name || !role || !storeCode) {

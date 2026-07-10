@@ -52,11 +52,11 @@ async function main() {
     { username: "staff1", name: "Staff 陳小美", role: "STAFF", storeCode: "HQ", deptCode: null },
 
     { username: "s01", name: "D01 所長 林所長", role: "SUOZHANG", storeCode: "D01", deptCode: null },
-    { username: "k01a", name: "D01 一課 課長 張課長", role: "KEZHANG", storeCode: "D01", deptCode: "01" },
-    { username: "k01b", name: "D01 二課 課長 李課長", role: "KEZHANG", storeCode: "D01", deptCode: "02" },
+    { username: "k01a", name: "D01 一課 課長 張課長", role: "KEZHANG", storeCode: "D01", deptCode: "1" },
+    { username: "k01b", name: "D01 二課 課長 李課長", role: "KEZHANG", storeCode: "D01", deptCode: "2" },
 
     { username: "s02", name: "D02 所長 吳所長", role: "SUOZHANG", storeCode: "D02", deptCode: null },
-    { username: "k02a", name: "D02 一課 課長 黃課長", role: "KEZHANG", storeCode: "D02", deptCode: "01" },
+    { username: "k02a", name: "D02 一課 課長 黃課長", role: "KEZHANG", storeCode: "D02", deptCode: "1" },
   ];
 
   for (const u of users) {

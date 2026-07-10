@@ -13,6 +13,7 @@ import {
   canDelete,
 } from "./dal";
 import { STATUS, ROLE, ACTION } from "./constants";
+import { normalizeDeptCode } from "./format";
 
 export type ActionState = {
   error?: string;
@@ -111,7 +112,7 @@ function validateCase(
   if (opts.requireDeptCode) {
     const raw = String(formData.get("deptCode") ?? "").trim();
     if (!/^\d+$/.test(raw)) fieldErrors.deptCode = "請輸入課別（數字）";
-    else deptCode = raw;
+    else deptCode = normalizeDeptCode(raw);
   }
 
   const amounts: Record<keyof Pick<CaseData,
@@ -187,7 +188,7 @@ function parseCaseDraft(
   let deptCode = opts.fixedDeptCode;
   if (opts.requireDeptCode) {
     const raw = str("deptCode");
-    deptCode = /^\d+$/.test(raw) ? raw : "";
+    deptCode = /^\d+$/.test(raw) ? normalizeDeptCode(raw) : "";
   }
 
   return {
@@ -218,7 +219,7 @@ export async function createCase(
   const intent = String(formData.get("intent") ?? "submit");
   const month = currentMonth();
   const requireDeptCode = !user.deptCode;
-  const fixedDeptCode = user.deptCode ?? "";
+  const fixedDeptCode = normalizeDeptCode(user.deptCode);
 
   if (intent === "draft") {
     const draft = parseCaseDraft(formData, { requireDeptCode, fixedDeptCode });
@@ -301,7 +302,7 @@ export async function updateCase(
   if (!canResubmit(user, existing)) return { error: "此案件無法重送" };
 
   const requireDeptCode = !user.deptCode;
-  const fixedDeptCode = user.deptCode ?? existing.deptCode;
+  const fixedDeptCode = normalizeDeptCode(user.deptCode ?? existing.deptCode);
   // 只有原本就是草稿的案件，才允許繼續存成草稿；已駁回/已撤回一律視為正式重送
   const intent =
     existing.status === STATUS.DRAFT
