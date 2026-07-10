@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logout } from "@/lib/actions";
+import { APP_VERSION, CHANGELOG } from "@/lib/version";
 
 export type NavItem = { href: string; label: string };
 
@@ -30,6 +31,12 @@ export default function NavBar({
             </span>
             <span className="font-bold text-slate-800 hidden md:inline whitespace-nowrap">
               特案支援金報備
+            </span>
+            <span
+              title={`v${APP_VERSION} · ${CHANGELOG[0]?.note ?? ""}`}
+              className="text-[10px] font-mono text-slate-400 bg-slate-100 rounded-full px-1.5 py-0.5 whitespace-nowrap cursor-default"
+            >
+              v{APP_VERSION}
             </span>
           </Link>
           <nav className="flex items-center gap-0.5 text-sm">

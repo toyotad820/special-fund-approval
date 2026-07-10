@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { login, type ActionState } from "@/lib/actions";
+import { APP_VERSION } from "@/lib/version";
 
 const initial: ActionState = {};
 
@@ -19,6 +20,9 @@ export default function LoginPage() {
             特案支援金報備系統
           </h1>
           <p className="text-sm text-slate-500 mt-1">請登入以繼續</p>
+          <span className="text-[10px] font-mono text-slate-400 bg-slate-100 rounded-full px-2 py-0.5 mt-2">
+            v{APP_VERSION}
+          </span>
         </div>
 
         <div className="card p-7">
