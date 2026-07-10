@@ -4,8 +4,19 @@ import { createUser } from "@/lib/admin-actions";
 import { ROLE_LABEL } from "@/lib/constants";
 import UserForm from "@/components/admin/UserForm";
 import CsvImportForm from "@/components/admin/CsvImportForm";
+import DeleteUserButton from "@/components/admin/DeleteUserButton";
 
-export default async function AdminUsersPage() {
+const ERR_MSG: Record<string, string> = {
+  self: "不可刪除目前登入的帳號。",
+  inuse: "此人員已有案件或審核紀錄，無法刪除，請改為「停用」（進入編輯取消勾選啟用）。",
+};
+
+export default async function AdminUsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ err?: string }>;
+}) {
+  const { err } = await searchParams;
   const users = await prisma.user.findMany({
     orderBy: [{ storeCode: "asc" }, { role: "asc" }, { username: "asc" }],
   });
@@ -15,6 +26,12 @@ export default async function AdminUsersPage() {
 
   return (
     <div className="space-y-6">
+      {err && ERR_MSG[err] && (
+        <p className="text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-4 py-3">
+          {ERR_MSG[err]}
+        </p>
+      )}
+
       <section className="bg-white rounded-2xl border border-slate-200 p-5">
         <h2 className="text-sm font-semibold text-slate-700 mb-3">CSV 匯入人員</h2>
         <CsvImportForm />
@@ -59,12 +76,15 @@ export default async function AdminUsersPage() {
                     )}
                   </td>
                   <td className={td}>
-                    <Link
-                      href={`/admin/users/${u.id}`}
-                      className="text-blue-600 hover:underline"
-                    >
-                      編輯
-                    </Link>
+                    <div className="flex items-center gap-3">
+                      <Link
+                        href={`/admin/users/${u.id}`}
+                        className="text-blue-600 hover:underline"
+                      >
+                        編輯
+                      </Link>
+                      <DeleteUserButton id={u.id} name={u.name} />
+                    </div>
                   </td>
                 </tr>
               ))}

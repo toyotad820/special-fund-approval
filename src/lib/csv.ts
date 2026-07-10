@@ -1,3 +1,20 @@
+// 自動判斷編碼解碼：UTF-8（含 BOM）優先，失敗則退回 Big5（繁中 Excel 常見）
+export function decodeCsvBytes(buf: Uint8Array): string {
+  // UTF-8 BOM
+  if (buf[0] === 0xef && buf[1] === 0xbb && buf[2] === 0xbf) {
+    return new TextDecoder("utf-8").decode(buf);
+  }
+  try {
+    return new TextDecoder("utf-8", { fatal: true }).decode(buf);
+  } catch {
+    try {
+      return new TextDecoder("big5").decode(buf);
+    } catch {
+      return new TextDecoder("utf-8").decode(buf);
+    }
+  }
+}
+
 // 極簡 CSV 解析：支援雙引號包覆、逗號、換行、跳脫（""）
 export function parseCsv(text: string): string[][] {
   // 去除 BOM
