@@ -14,6 +14,7 @@ import SortableCaseTable, {
   type CaseRowData,
 } from "@/components/SortableCaseTable";
 import SimpleDonutChart from "@/components/SimpleDonutChart";
+import SimpleBarChart from "@/components/SimpleBarChart";
 
 const caseInclude = {
   category: { select: { name: true } },
@@ -118,7 +119,7 @@ async function DashboardStats({ month }: { month: string }) {
 
   const storeRows = byStore
     .map((r) => toStatRow(r.storeCode, r._sum.specialSubsidy, r._count._all))
-    .sort((a, b) => b.sum - a.sum);
+    .sort((a, b) => b.avg - a.avg);
 
   const StatTable = ({ rows, unitLabel }: { rows: StatRow[]; unitLabel: string }) => {
     const totalCount = rows.reduce((s, r) => s + r.count, 0);
@@ -182,8 +183,8 @@ async function DashboardStats({ month }: { month: string }) {
       </section>
 
       <section className="card p-4">
-        <h2 className="section-title">各所統計 · {month}</h2>
-        <SimpleDonutChart data={storeRows.map((r) => ({ label: r.label, value: r.sum }))} />
+        <h2 className="section-title">各所統計（依平均金額）· {month}</h2>
+        <SimpleBarChart data={storeRows.map((r) => ({ label: r.label, value: r.avg }))} />
         <StatTable rows={storeRows} unitLabel="所別" />
       </section>
     </div>
