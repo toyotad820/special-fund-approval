@@ -65,7 +65,6 @@ type CaseData = {
   plateName: string;
   orderNo: string;
   categoryId: string;
-  categoryNo: string;
   carModel: string;
   description: string;
   deptCode: string;
@@ -75,6 +74,23 @@ type CaseData = {
   discountTotal: number;
   specialSubsidy: number;
 };
+
+// 類別編號自動產生：類別名稱前兩字 + 該課（storeCode+deptCode）該類別
+// 目前案件數（不含草稿）+1。所長代送的案件也計入該課的統計。
+async function generateCategoryNo(
+  categoryId: string,
+  storeCode: string,
+  deptCode: string
+): Promise<string> {
+  const [category, count] = await Promise.all([
+    prisma.caseCategory.findUnique({ where: { id: categoryId } }),
+    prisma.case.count({
+      where: { storeCode, deptCode, categoryId, status: { not: STATUS.DRAFT } },
+    }),
+  ]);
+  const abbr = (category?.name ?? "").slice(0, 2) || "特案";
+  return `${abbr}${count + 1}`;
+}
 
 function parseAmount(v: FormDataEntryValue | null): number | null {
   const s = String(v ?? "").trim();
@@ -101,7 +117,6 @@ function validateCase(
   const plateName = String(formData.get("plateName") ?? "").trim();
   const orderNo = String(formData.get("orderNo") ?? "").trim().toUpperCase();
   const categoryId = String(formData.get("categoryId") ?? "").trim();
-  const categoryNo = String(formData.get("categoryNo") ?? "").trim();
   const carModel = String(formData.get("carModel") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
 
@@ -110,7 +125,6 @@ function validateCase(
   else if (!/^D.{12}$/.test(orderNo))
     fieldErrors.orderNo = "須為 13 碼、第一碼為 D";
   if (!categoryId) fieldErrors.categoryId = "必填";
-  if (!categoryNo) fieldErrors.categoryNo = "必填";
   if (!carModel) fieldErrors.carModel = "必填";
   if (!description) fieldErrors.description = "必填";
 
@@ -163,7 +177,6 @@ function validateCase(
       plateName,
       orderNo,
       categoryId,
-      categoryNo,
       carModel,
       description,
       deptCode,
@@ -210,7 +223,7 @@ function parseCaseDraft(
     plateName: str("plateName"),
     orderNo,
     categoryId,
-    categoryNo: str("categoryNo"),
+    categoryNo: "", // 草稿不編號，正式送出時才自動產生
     carModel: str("carModel"),
     description: str("description"),
     deptCode,
@@ -284,11 +297,14 @@ export async function createCase(
   });
   if (!data) return { fieldErrors };
 
+  const categoryNo = await generateCategoryNo(data.categoryId, user.storeCode, data.deptCode);
+
   let newId: string;
   try {
     const created = await prisma.case.create({
       data: {
         ...data,
+        categoryNo,
         month,
         storeCode: user.storeCode,
         status: STATUS.PENDING_SUOZHANG,
@@ -356,6 +372,12 @@ export async function updateCase(
   });
   if (!data) return { fieldErrors };
 
+  const categoryNo = await generateCategoryNo(
+    data.categoryId,
+    existing.storeCode,
+    data.deptCode
+  );
+
   const step = existing.status === STATUS.DRAFT ? "SUBMIT" : "RESUBMIT";
   const action = existing.status === STATUS.DRAFT ? "SUBMIT" : "RESUBMIT";
 
@@ -365,6 +387,7 @@ export async function updateCase(
         where: { id: caseId },
         data: {
           ...data,
+          categoryNo,
           status: STATUS.PENDING_SUOZHANG,
           stepEnteredAt: new Date(),
         },

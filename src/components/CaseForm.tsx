@@ -12,7 +12,6 @@ export type CaseInitial = {
   plateName?: string;
   orderNo?: string;
   categoryId?: string;
-  categoryNo?: string;
   carModel?: string;
   description?: string;
   deptCode?: string;
@@ -93,7 +92,6 @@ export default function CaseForm({
       領牌名稱: String(fd.get("plateName") || "-"),
       訂單編號: String(fd.get("orderNo") || "-").toUpperCase(),
       特案類別: categories.find((c) => c.id === catId)?.name || "-",
-      類別編號: String(fd.get("categoryNo") || "-"),
       車名: String(fd.get("carModel") || "-"),
       所課支援金: num(fd, "subsidyDeptCourse"),
       金牌: num(fd, "goldMedal"),
@@ -262,19 +260,8 @@ export default function CaseForm({
               </option>
             ))}
           </select>
+          <p className="text-xs text-slate-400 mt-1">類別編號將於送出後自動產生</p>
           {err("categoryId")}
-        </div>
-        <div>
-          <label className="label">
-            類別編號 <span className="text-rose-500">*</span>
-          </label>
-          <input
-            name="categoryNo"
-            defaultValue={initial?.categoryNo}
-            placeholder="D單位代號-課別-編號2碼"
-            className={inputCls}
-          />
-          {err("categoryNo")}
         </div>
         <div>
           <label className="label">
@@ -470,7 +457,6 @@ export default function CaseForm({
             "領牌名稱",
             "訂單編號",
             "特案類別",
-            "類別編號",
             "車名",
             "所課支援金",
             "金牌",

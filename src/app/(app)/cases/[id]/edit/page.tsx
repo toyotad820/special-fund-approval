@@ -62,7 +62,6 @@ export default async function EditCasePage({
             plateName: c!.plateName,
             orderNo: c!.orderNo.startsWith("DRAFT-") ? "" : c!.orderNo,
             categoryId: c!.categoryId ?? "",
-            categoryNo: c!.categoryNo,
             carModel: c!.carModel,
             description: c!.description,
             deptCode: c!.deptCode,
