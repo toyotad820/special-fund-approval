@@ -14,10 +14,11 @@ services:
     buildCommand: >
       npm install &&
       npx prisma generate --schema=prisma/schema.production.prisma &&
+      npm run build
+    startCommand: >
       npx prisma db push --schema=prisma/schema.production.prisma --accept-data-loss &&
       node prisma/seed.mjs &&
-      npm run build
-    startCommand: npx next start -p $PORT
+      npx next start -p $PORT
     envVars:
       - key: DATABASE_URL
         fromDatabase:
