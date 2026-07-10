@@ -14,7 +14,7 @@ import SortableCaseTable, {
   type CaseRowData,
 } from "@/components/SortableCaseTable";
 import SimpleDonutChart from "@/components/SimpleDonutChart";
-import SimpleScatterChart from "@/components/SimpleScatterChart";
+import SimpleComboChart from "@/components/SimpleComboChart";
 
 const caseInclude = {
   category: { select: { name: true } },
@@ -120,7 +120,6 @@ async function DashboardStats({ month }: { month: string }) {
   const storeRows = byStore
     .map((r) => toStatRow(r.storeCode, r._sum.specialSubsidy, r._count._all))
     .sort((a, b) => b.avg - a.avg);
-  const maxStoreCount = Math.max(1, ...storeRows.map((r) => r.count));
 
   const StatTable = ({ rows, unitLabel }: { rows: StatRow[]; unitLabel: string }) => {
     const totalCount = rows.reduce((s, r) => s + r.count, 0);
@@ -185,18 +184,10 @@ async function DashboardStats({ month }: { month: string }) {
 
       <section className="card p-4">
         <h2 className="section-title">各所統計（總額 × 平均）· {month}</h2>
-        <p className="text-xs text-slate-400 -mt-2 mb-2">
-          橫軸＝平均金額，縱軸＝金額總和，點的大小＝件數
-        </p>
-        <SimpleScatterChart
-          xLabel="平均金額"
-          yLabel="金額總和"
-          data={storeRows.map((r) => ({
-            label: r.label,
-            x: r.avg,
-            y: r.sum,
-            r: 5 + Math.sqrt(r.count / maxStoreCount) * 12,
-          }))}
+        <SimpleComboChart
+          barLabel="金額總和"
+          lineLabel="平均金額"
+          data={storeRows.map((r) => ({ label: r.label, bar: r.sum, line: r.avg }))}
         />
         <StatTable rows={storeRows} unitLabel="所別" />
       </section>
