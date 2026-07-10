@@ -22,6 +22,8 @@ export type ActionState = {
   ok?: boolean;
   caseId?: string;
   message?: string;
+  // 送出失敗時，把使用者原本填的內容一併帶回，前端才能保留資料不清空
+  values?: Record<string, string>;
 };
 
 function currentMonth(): string {
@@ -90,6 +92,30 @@ async function generateCategoryNo(
   ]);
   const abbr = (category?.name ?? "").slice(0, 2) || "特案";
   return `${abbr}${count + 1}`;
+}
+
+// 送出失敗時，把使用者填的原始欄位值（字串）擷取出來回傳給前端，
+// 讓表單重新顯示時不會清空、可直接在原欄位上修正
+const CASE_FORM_FIELDS = [
+  "plateName",
+  "orderNo",
+  "categoryId",
+  "carModel",
+  "description",
+  "deptCode",
+  "subsidyDeptCourse",
+  "goldMedal",
+  "silverMedal",
+  "discountTotal",
+  "specialSubsidy",
+] as const;
+
+function extractRawValues(formData: FormData): Record<string, string> {
+  const values: Record<string, string> = {};
+  for (const f of CASE_FORM_FIELDS) {
+    values[f] = String(formData.get(f) ?? "");
+  }
+  return values;
 }
 
 function parseAmount(v: FormDataEntryValue | null): number | null {
@@ -275,7 +301,10 @@ export async function createCase(
       };
     } catch (e: unknown) {
       if (e && typeof e === "object" && "code" in e && e.code === "P2002") {
-        return { fieldErrors: { orderNo: "此訂單編號已存在（全系統唯一）" } };
+        return {
+          fieldErrors: { orderNo: "此訂單編號已存在（全系統唯一）" },
+          values: extractRawValues(formData),
+        };
       }
       throw e;
     }
@@ -283,7 +312,10 @@ export async function createCase(
 
   const window = await prisma.monthWindow.findUnique({ where: { month } });
   if (window && !window.isOpen) {
-    return { error: `本月（${month}）已關閉，暫不開放送單` };
+    return {
+      error: `本月（${month}）已關閉，暫不開放送單`,
+      values: extractRawValues(formData),
+    };
   }
 
   const validDeptCodes = requireDeptCode
@@ -295,7 +327,7 @@ export async function createCase(
     fixedDeptCode,
     validDeptCodes,
   });
-  if (!data) return { fieldErrors };
+  if (!data) return { fieldErrors, values: extractRawValues(formData) };
 
   const categoryNo = await generateCategoryNo(data.categoryId, user.storeCode, data.deptCode);
 
@@ -317,7 +349,10 @@ export async function createCase(
     newId = created.id;
   } catch (e: unknown) {
     if (e && typeof e === "object" && "code" in e && e.code === "P2002") {
-      return { fieldErrors: { orderNo: "此訂單編號已存在（全系統唯一）" } };
+      return {
+        fieldErrors: { orderNo: "此訂單編號已存在（全系統唯一）" },
+        values: extractRawValues(formData),
+      };
     }
     throw e;
   }
@@ -355,7 +390,10 @@ export async function updateCase(
       return { ok: true, caseId, message: "草稿已更新。" };
     } catch (e: unknown) {
       if (e && typeof e === "object" && "code" in e && e.code === "P2002") {
-        return { fieldErrors: { orderNo: "此訂單編號已存在（全系統唯一）" } };
+        return {
+          fieldErrors: { orderNo: "此訂單編號已存在（全系統唯一）" },
+          values: extractRawValues(formData),
+        };
       }
       throw e;
     }
@@ -370,7 +408,7 @@ export async function updateCase(
     fixedDeptCode,
     validDeptCodes,
   });
-  if (!data) return { fieldErrors };
+  if (!data) return { fieldErrors, values: extractRawValues(formData) };
 
   const categoryNo = await generateCategoryNo(
     data.categoryId,
@@ -398,7 +436,10 @@ export async function updateCase(
     ]);
   } catch (e: unknown) {
     if (e && typeof e === "object" && "code" in e && e.code === "P2002") {
-      return { fieldErrors: { orderNo: "此訂單編號已存在（全系統唯一）" } };
+      return {
+        fieldErrors: { orderNo: "此訂單編號已存在（全系統唯一）" },
+        values: extractRawValues(formData),
+      };
     }
     throw e;
   }

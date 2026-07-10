@@ -65,13 +65,20 @@ export default function CaseForm({
 
   // 偵測「這次是否剛完成一次送出」，避免初始 state 誤觸發彈窗
   const [modalOpen, setModalOpen] = useState(false);
+  // 送出失敗時遞增，強制表單重新掛載以套用 state.values（保留使用者剛填的內容）
+  const [formKey, setFormKey] = useState(0);
   const seenRef = useRef(state);
   useEffect(() => {
     if (state !== seenRef.current) {
       seenRef.current = state;
       setModalOpen(true);
+      if (!state.ok) setFormKey((k) => k + 1);
     }
   }, [state]);
+
+  // 送出失敗時，欄位值優先用剛才送出的內容（state.values），否則退回原始資料（initial）
+  const v = (key: string, fallback?: string | number): string | undefined =>
+    state.values?.[key] ?? (fallback !== undefined ? String(fallback) : undefined);
 
   const formRef = useRef<HTMLFormElement>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -163,6 +170,9 @@ export default function CaseForm({
     fe[n] ? <p className="text-xs text-rose-600 mt-1">{fe[n]}</p> : null;
 
   const inputCls = "input";
+  // 有錯誤的欄位加紅框醒目提示
+  const fieldCls = (n: string) =>
+    fe[n] ? `${inputCls} border-rose-400 focus:border-rose-500 focus:ring-rose-500/30` : inputCls;
 
   const problemMessages = [
     ...(state.error ? [state.error] : []),
@@ -171,7 +181,7 @@ export default function CaseForm({
 
   return (
     <>
-    <form ref={formRef} action={formAction} className="space-y-5">
+    <form key={formKey} ref={formRef} action={formAction} className="space-y-5">
       {caseId && <input type="hidden" name="caseId" value={caseId} />}
 
       {state.error && (
@@ -200,8 +210,10 @@ export default function CaseForm({
               <select
                 name="deptCode"
                 required
-                defaultValue={initial?.deptCode ?? ""}
-                className="w-full rounded-md border border-slate-300 px-2 py-1 text-sm bg-white"
+                defaultValue={v("deptCode", initial?.deptCode) ?? ""}
+                className={`w-full rounded-md border px-2 py-1 text-sm bg-white ${
+                  fe.deptCode ? "border-rose-400" : "border-slate-300"
+                }`}
               >
                 <option value="">請選擇</option>
                 {deptOptions.map((d) => (
@@ -228,7 +240,11 @@ export default function CaseForm({
           <label className="label">
             領牌名稱 <span className="text-rose-500">*</span>
           </label>
-          <input name="plateName" defaultValue={initial?.plateName} className={inputCls} />
+          <input
+            name="plateName"
+            defaultValue={v("plateName", initial?.plateName)}
+            className={fieldCls("plateName")}
+          />
           {err("plateName")}
         </div>
         <div>
@@ -237,10 +253,10 @@ export default function CaseForm({
           </label>
           <input
             name="orderNo"
-            defaultValue={initial?.orderNo}
+            defaultValue={v("orderNo", initial?.orderNo)}
             placeholder="D + 12 碼，共 13 碼"
             maxLength={13}
-            className={`${inputCls} font-mono uppercase`}
+            className={`${fieldCls("orderNo")} font-mono uppercase`}
           />
           {err("orderNo")}
         </div>
@@ -250,8 +266,8 @@ export default function CaseForm({
           </label>
           <select
             name="categoryId"
-            defaultValue={initial?.categoryId ?? ""}
-            className={inputCls}
+            defaultValue={v("categoryId", initial?.categoryId) ?? ""}
+            className={fieldCls("categoryId")}
           >
             <option value="">請選擇</option>
             {categories.map((c) => (
@@ -269,8 +285,8 @@ export default function CaseForm({
           </label>
           <select
             name="carModel"
-            defaultValue={initial?.carModel ?? ""}
-            className={inputCls}
+            defaultValue={v("carModel", initial?.carModel) ?? ""}
+            className={fieldCls("carModel")}
           >
             <option value="">請選擇</option>
             {cars.map((c) => (
@@ -302,8 +318,8 @@ export default function CaseForm({
                 type="number"
                 min={0}
                 step={1}
-                defaultValue={initial?.[a.name] as number | undefined}
-                className={inputCls}
+                defaultValue={v(a.name, initial?.[a.name] as number | undefined)}
+                className={fieldCls(a.name)}
               />
               {err(a.name)}
             </div>
@@ -318,8 +334,8 @@ export default function CaseForm({
         <textarea
           name="description"
           rows={4}
-          defaultValue={initial?.description}
-          className={inputCls}
+          defaultValue={v("description", initial?.description)}
+          className={fieldCls("description")}
         />
         {err("description")}
       </div>
