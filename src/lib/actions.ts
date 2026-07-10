@@ -11,6 +11,7 @@ import {
   canSubmit,
   canWithdraw,
   canDelete,
+  getDeptCodesForStore,
 } from "./dal";
 import { STATUS, ROLE, ACTION } from "./constants";
 import { normalizeDeptCode } from "./format";
@@ -82,10 +83,15 @@ function parseAmount(v: FormDataEntryValue | null): number | null {
   return Number(s);
 }
 
-// requireDeptCode: 所長沒有固定課別，需在表單中手動輸入（必填數字）
+// requireDeptCode: 所長沒有固定課別，需在表單中選擇（必填，下拉選單）
+// validDeptCodes: 該所目前有效課別代碼，用於防止表單被竄改送出不存在的課別
 function validateCase(
   formData: FormData,
-  opts: { requireDeptCode: boolean; fixedDeptCode: string }
+  opts: {
+    requireDeptCode: boolean;
+    fixedDeptCode: string;
+    validDeptCodes?: string[];
+  }
 ): {
   data?: CaseData;
   fieldErrors: Record<string, string>;
@@ -110,9 +116,18 @@ function validateCase(
 
   let deptCode = opts.fixedDeptCode;
   if (opts.requireDeptCode) {
-    const raw = String(formData.get("deptCode") ?? "").trim();
-    if (!/^\d+$/.test(raw)) fieldErrors.deptCode = "請輸入課別（數字）";
-    else deptCode = normalizeDeptCode(raw);
+    const raw = normalizeDeptCode(String(formData.get("deptCode") ?? "").trim());
+    if (!/^\d+$/.test(raw)) {
+      fieldErrors.deptCode = "請選擇課別";
+    } else if (
+      opts.validDeptCodes &&
+      opts.validDeptCodes.length > 0 &&
+      !opts.validDeptCodes.includes(raw)
+    ) {
+      fieldErrors.deptCode = "課別選項無效，請重新選擇";
+    } else {
+      deptCode = raw;
+    }
   }
 
   const amounts: Record<keyof Pick<CaseData,
@@ -258,9 +273,14 @@ export async function createCase(
     return { error: `本月（${month}）已關閉，暫不開放送單` };
   }
 
+  const validDeptCodes = requireDeptCode
+    ? await getDeptCodesForStore(user.storeCode)
+    : undefined;
+
   const { data, fieldErrors } = validateCase(formData, {
     requireDeptCode,
     fixedDeptCode,
+    validDeptCodes,
   });
   if (!data) return { fieldErrors };
 
@@ -325,9 +345,14 @@ export async function updateCase(
     }
   }
 
+  const validDeptCodes = requireDeptCode
+    ? await getDeptCodesForStore(existing.storeCode)
+    : undefined;
+
   const { data, fieldErrors } = validateCase(formData, {
     requireDeptCode,
     fixedDeptCode,
+    validDeptCodes,
   });
   if (!data) return { fieldErrors };
 

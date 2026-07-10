@@ -41,6 +41,7 @@ export default function CaseForm({
   storeCode,
   deptCode,
   deptEditable = false,
+  deptOptions = [],
   allowDraft = true,
   initial,
   caseId,
@@ -53,6 +54,7 @@ export default function CaseForm({
   storeCode: string;
   deptCode: string;
   deptEditable?: boolean;
+  deptOptions?: string[];
   allowDraft?: boolean;
   initial?: CaseInitial;
   caseId?: string;
@@ -157,19 +159,30 @@ export default function CaseForm({
           <div className="font-medium">{storeCode}</div>
         </div>
         <div>
-          <div className="text-slate-400 text-xs mb-1">課別</div>
+          <div className="text-slate-400 text-xs mb-1">
+            課別
+            {deptEditable && <span className="text-rose-500"> *</span>}
+          </div>
           {deptEditable ? (
             <>
-              <input
+              <select
                 name="deptCode"
-                type="number"
-                min={0}
-                step={1}
                 required
-                defaultValue={initial?.deptCode ?? deptCode}
-                placeholder="請輸入課別"
-                className="w-full rounded-md border border-slate-300 px-2 py-1 text-sm"
-              />
+                defaultValue={initial?.deptCode ?? ""}
+                className="w-full rounded-md border border-slate-300 px-2 py-1 text-sm bg-white"
+              >
+                <option value="">請選擇</option>
+                {deptOptions.map((d) => (
+                  <option key={d} value={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+              {deptOptions.length === 0 && (
+                <p className="text-xs text-amber-600 mt-1">
+                  本所尚無課長帳號，請先請後臺建立課長人員
+                </p>
+              )}
               {err("deptCode")}
             </>
           ) : (

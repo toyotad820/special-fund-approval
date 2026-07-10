@@ -1,6 +1,31 @@
 import "server-only";
 import type { Prisma, User } from "@prisma/client";
+import { prisma } from "./prisma";
 import { ROLE, STATUS, OVERDUE_DAYS } from "./constants";
+import { normalizeDeptCode } from "./format";
+
+// 該所目前有效的課別代碼（依課長帳號推得），供所長申請時的課別下拉選單使用
+export async function getDeptCodesForStore(storeCode: string): Promise<string[]> {
+  const rows = await prisma.user.findMany({
+    where: {
+      role: ROLE.KEZHANG,
+      storeCode,
+      active: true,
+      deptCode: { not: null },
+    },
+    select: { deptCode: true },
+    distinct: ["deptCode"],
+  });
+  const codes = rows
+    .map((r) => normalizeDeptCode(r.deptCode))
+    .filter((d) => d !== "");
+  return [...new Set(codes)].sort((a, b) => {
+    const na = Number(a);
+    const nb = Number(b);
+    if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
+    return a.localeCompare(b);
+  });
+}
 
 // 依角色回傳「可視案件」的查詢條件
 export function visibilityWhere(user: User): Prisma.CaseWhereInput {

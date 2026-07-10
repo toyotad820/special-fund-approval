@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { canSubmit } from "@/lib/dal";
+import { canSubmit, getDeptCodesForStore } from "@/lib/dal";
 import { createCase } from "@/lib/actions";
 import CaseForm from "@/components/CaseForm";
 
@@ -15,7 +15,8 @@ export default async function NewCasePage() {
   if (!canSubmit(user)) redirect("/");
 
   const month = currentMonth();
-  const [categories, cars, window] = await Promise.all([
+  const deptEditable = !user.deptCode;
+  const [categories, cars, window, deptOptions] = await Promise.all([
     prisma.caseCategory.findMany({
       where: { active: true },
       orderBy: { sortOrder: "asc" },
@@ -25,6 +26,7 @@ export default async function NewCasePage() {
       orderBy: { sortOrder: "asc" },
     }),
     prisma.monthWindow.findUnique({ where: { month } }),
+    deptEditable ? getDeptCodesForStore(user.storeCode) : Promise.resolve([]),
   ]);
 
   const closed = window ? !window.isOpen : false;
@@ -47,7 +49,8 @@ export default async function NewCasePage() {
           month={month}
           storeCode={user.storeCode}
           deptCode={user.deptCode ?? ""}
-          deptEditable={!user.deptCode}
+          deptEditable={deptEditable}
+          deptOptions={deptOptions}
           allowDraft
           submitLabel="送出申請"
         />

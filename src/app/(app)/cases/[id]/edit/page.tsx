@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { canResubmit } from "@/lib/dal";
+import { canResubmit, getDeptCodesForStore } from "@/lib/dal";
 import { updateCase } from "@/lib/actions";
 import { STATUS } from "@/lib/constants";
+import { normalizeDeptCode } from "@/lib/format";
 import CaseForm from "@/components/CaseForm";
 
 export default async function EditCasePage({
@@ -17,7 +18,8 @@ export default async function EditCasePage({
   const c = await prisma.case.findUnique({ where: { id } });
   if (!c || !canResubmit(user, c)) redirect(`/cases/${id}`);
 
-  const [categories, cars] = await Promise.all([
+  const deptEditable = !user.deptCode;
+  const [categories, cars, deptCodesRaw] = await Promise.all([
     prisma.caseCategory.findMany({
       where: { active: true },
       orderBy: { sortOrder: "asc" },
@@ -26,7 +28,16 @@ export default async function EditCasePage({
       where: { active: true },
       orderBy: { sortOrder: "asc" },
     }),
+    deptEditable ? getDeptCodesForStore(c!.storeCode) : Promise.resolve([]),
   ]);
+
+  // 若此案原本選的課別已不在目前有效清單（例如該課長已停用），仍將其併入選項，
+  // 避免下拉選單找不到目前值而顯示空白。
+  const currentDept = normalizeDeptCode(c!.deptCode);
+  const deptOptions =
+    currentDept && !deptCodesRaw.includes(currentDept)
+      ? [...deptCodesRaw, currentDept].sort((a, b) => Number(a) - Number(b))
+      : deptCodesRaw;
 
   const isDraft = c!.status === STATUS.DRAFT;
 
@@ -43,7 +54,8 @@ export default async function EditCasePage({
           month={c!.month}
           storeCode={c!.storeCode}
           deptCode={c!.deptCode}
-          deptEditable={!user.deptCode}
+          deptEditable={deptEditable}
+          deptOptions={deptOptions}
           allowDraft={isDraft}
           caseId={c!.id}
           initial={{
