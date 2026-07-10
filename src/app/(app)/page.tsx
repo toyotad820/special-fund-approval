@@ -8,10 +8,12 @@ import {
   canSubmit,
 } from "@/lib/dal";
 import { ROLE, ROLE_LABEL, STATUS } from "@/lib/constants";
+import { money } from "@/lib/format";
 import CaseList from "@/components/CaseList";
 import SortableCaseTable, {
   type CaseRowData,
 } from "@/components/SortableCaseTable";
+import SimpleBarChart from "@/components/SimpleBarChart";
 
 const caseInclude = {
   category: { select: { name: true } },
@@ -78,14 +80,104 @@ function scopeLabel(role: string): string {
   return "全部案件";
 }
 
+type StatRow = { label: string; count: number; sum: number; avg: number };
+
+// 統計區：各特案類別統計 + 各所統計（不含草稿），供部長/Staff 首頁使用
+async function DashboardStats({ month }: { month: string }) {
+  const statusFilter = { not: STATUS.DRAFT } as const;
+
+  const [byCategory, byStore, categories] = await Promise.all([
+    prisma.case.groupBy({
+      by: ["categoryId"],
+      where: { month, status: statusFilter },
+      _sum: { specialSubsidy: true },
+      _count: { _all: true },
+    }),
+    prisma.case.groupBy({
+      by: ["storeCode"],
+      where: { month, status: statusFilter },
+      _sum: { specialSubsidy: true },
+      _count: { _all: true },
+    }),
+    prisma.caseCategory.findMany({ orderBy: { sortOrder: "asc" } }),
+  ]);
+
+  const catName = (id: string | null) =>
+    categories.find((c) => c.id === id)?.name ?? "（未分類）";
+
+  const toStatRow = (label: string, sum: number | null, count: number): StatRow => ({
+    label,
+    count,
+    sum: sum ?? 0,
+    avg: count > 0 ? Math.round((sum ?? 0) / count) : 0,
+  });
+
+  const categoryRows = byCategory
+    .map((r) => toStatRow(catName(r.categoryId), r._sum.specialSubsidy, r._count._all))
+    .sort((a, b) => b.sum - a.sum);
+
+  const storeRows = byStore
+    .map((r) => toStatRow(r.storeCode, r._sum.specialSubsidy, r._count._all))
+    .sort((a, b) => b.sum - a.sum);
+
+  const StatTable = ({ rows, unitLabel }: { rows: StatRow[]; unitLabel: string }) => (
+    <table className="w-full mt-4 text-sm">
+      <thead>
+        <tr className="text-xs text-slate-400 text-left">
+          <th className="py-1 font-medium">{unitLabel}</th>
+          <th className="py-1 font-medium text-right">件數</th>
+          <th className="py-1 font-medium text-right">金額總和</th>
+          <th className="py-1 font-medium text-right">平均</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r) => (
+          <tr key={r.label} className="border-t border-slate-100">
+            <td className="py-1.5 text-slate-700">{r.label}</td>
+            <td className="py-1.5 text-right tabular-nums text-slate-600">{r.count}</td>
+            <td className="py-1.5 text-right tabular-nums text-slate-800 font-medium">
+              {money(r.sum)}
+            </td>
+            <td className="py-1.5 text-right tabular-nums text-slate-600">{money(r.avg)}</td>
+          </tr>
+        ))}
+        {rows.length === 0 && (
+          <tr>
+            <td colSpan={4} className="text-center text-slate-400 py-4">
+              本月尚無資料
+            </td>
+          </tr>
+        )}
+      </tbody>
+    </table>
+  );
+
+  return (
+    <div className="grid md:grid-cols-2 gap-4">
+      <section className="card p-4">
+        <h2 className="section-title">各特案類別統計 · {month}</h2>
+        <SimpleBarChart data={categoryRows.map((r) => ({ label: r.label, value: r.sum }))} />
+        <StatTable rows={categoryRows} unitLabel="類別" />
+      </section>
+
+      <section className="card p-4">
+        <h2 className="section-title">各所統計 · {month}</h2>
+        <SimpleBarChart data={storeRows.map((r) => ({ label: r.label, value: r.sum }))} />
+        <StatTable rows={storeRows} unitLabel="所別" />
+      </section>
+    </div>
+  );
+}
+
 export default async function DashboardPage() {
   const user = await requireUser();
 
-  // 課長／所長／部主管：兩區塊模式（未結案件 + 單位本月明細）
+  // 課長／所長／部長／Staff：角色專屬首頁（案件區塊 + 部長/Staff 多一塊統計區）
   if (
     user.role === ROLE.KEZHANG ||
     user.role === ROLE.SUOZHANG ||
-    user.role === ROLE.BUZHUGUAN
+    user.role === ROLE.BUZHUGUAN ||
+    user.role === ROLE.STAFF
   ) {
     return <RoleDashboard user={user} />;
   }
@@ -181,6 +273,19 @@ async function RoleDashboard({
 }) {
   const month = currentMonth();
 
+  // Staff：首頁只有統計區，沒有案件明細
+  if (user.role === ROLE.STAFF) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-lg font-bold text-slate-800">您好，{user.name}</h1>
+          <p className="text-sm text-slate-500">Staff</p>
+        </div>
+        <DashboardStats month={month} />
+      </div>
+    );
+  }
+
   let unresolvedWhere: Prisma.CaseWhereInput;
   let unresolvedTitle: string;
   let unresolvedHint: string;
@@ -270,6 +375,8 @@ async function RoleDashboard({
           </Link>
         )}
       </div>
+
+      {user.role === ROLE.BUZHUGUAN && <DashboardStats month={month} />}
 
       <section>
         <h2 className="section-title">
