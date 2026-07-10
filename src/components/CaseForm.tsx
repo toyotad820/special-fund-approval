@@ -121,27 +121,31 @@ export default function CaseForm({
       const filename = `特案申請_${orderNo}.png`;
       const file = new File([blob], filename, { type: "image/png" });
 
-      // 手機優先用系統分享（可選「儲存到相簿」或分享到其他 App）
-      const nav = navigator as Navigator & {
-        canShare?: (data: { files: File[] }) => boolean;
-        share?: (data: { files: File[]; title?: string }) => Promise<void>;
-      };
-      if (nav.canShare?.({ files: [file] }) && nav.share) {
-        try {
-          await nav.share({ files: [file], title: filename });
-          return;
-        } catch (err) {
-          // 使用者取消分享則不做任何事；其他錯誤則往下退回開新分頁
-          if (err instanceof Error && err.name === "AbortError") return;
+      // 裝置判斷要放最前面：桌面瀏覽器（尤其 Windows Edge）雖然也支援
+      // navigator.share/canShare，但作業系統層級的分享清單常常找不到
+      // 能接收檔案的目標，會跳出「無法為您顯示所有可分享的方式」錯誤。
+      // 所以只在手機上才嘗試系統分享，桌面一律直接下載。
+      const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+      if (isMobile) {
+        const nav = navigator as Navigator & {
+          canShare?: (data: { files: File[] }) => boolean;
+          share?: (data: { files: File[]; title?: string }) => Promise<void>;
+        };
+        if (nav.canShare?.({ files: [file] }) && nav.share) {
+          try {
+            await nav.share({ files: [file], title: filename });
+            return;
+          } catch (err) {
+            // 使用者取消分享則不做任何事；其他錯誤則往下退回開新分頁
+            if (err instanceof Error && err.name === "AbortError") return;
+          }
         }
       }
 
       const url = URL.createObjectURL(blob);
-      // 桌面瀏覽器：直接觸發下載
-      const isDesktop = !/Mobi|Android|iPhone|iPad|iPod/i.test(
-        navigator.userAgent
-      );
-      if (isDesktop) {
+      if (!isMobile) {
+        // 桌面瀏覽器：直接觸發下載
         const a = document.createElement("a");
         a.href = url;
         a.download = filename;
