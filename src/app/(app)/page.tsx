@@ -13,7 +13,7 @@ import CaseList from "@/components/CaseList";
 import SortableCaseTable, {
   type CaseRowData,
 } from "@/components/SortableCaseTable";
-import SimpleBarChart from "@/components/SimpleBarChart";
+import SimpleDonutChart from "@/components/SimpleDonutChart";
 
 const caseInclude = {
   category: { select: { name: true } },
@@ -120,49 +120,70 @@ async function DashboardStats({ month }: { month: string }) {
     .map((r) => toStatRow(r.storeCode, r._sum.specialSubsidy, r._count._all))
     .sort((a, b) => b.sum - a.sum);
 
-  const StatTable = ({ rows, unitLabel }: { rows: StatRow[]; unitLabel: string }) => (
-    <table className="w-full mt-4 text-sm">
-      <thead>
-        <tr className="text-xs text-slate-400 text-left">
-          <th className="py-1 font-medium">{unitLabel}</th>
-          <th className="py-1 font-medium text-right">件數</th>
-          <th className="py-1 font-medium text-right">金額總和</th>
-          <th className="py-1 font-medium text-right">平均</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((r) => (
-          <tr key={r.label} className="border-t border-slate-100">
-            <td className="py-1.5 text-slate-700">{r.label}</td>
-            <td className="py-1.5 text-right tabular-nums text-slate-600">{r.count}</td>
-            <td className="py-1.5 text-right tabular-nums text-slate-800 font-medium">
-              {money(r.sum)}
-            </td>
-            <td className="py-1.5 text-right tabular-nums text-slate-600">{money(r.avg)}</td>
+  const StatTable = ({ rows, unitLabel }: { rows: StatRow[]; unitLabel: string }) => {
+    const totalCount = rows.reduce((s, r) => s + r.count, 0);
+    const totalSum = rows.reduce((s, r) => s + r.sum, 0);
+    const totalAvg = totalCount > 0 ? Math.round(totalSum / totalCount) : 0;
+
+    return (
+      <table className="w-full mt-4 text-sm">
+        <thead>
+          <tr className="text-xs text-slate-400 text-left">
+            <th className="py-1 font-medium">{unitLabel}</th>
+            <th className="py-1 font-medium text-right">件數</th>
+            <th className="py-1 font-medium text-right">金額總和</th>
+            <th className="py-1 font-medium text-right">佔比</th>
+            <th className="py-1 font-medium text-right">平均</th>
           </tr>
-        ))}
-        {rows.length === 0 && (
-          <tr>
-            <td colSpan={4} className="text-center text-slate-400 py-4">
-              本月尚無資料
-            </td>
-          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.label} className="border-t border-slate-100">
+              <td className="py-1.5 text-slate-700">{r.label}</td>
+              <td className="py-1.5 text-right tabular-nums text-slate-600">{r.count}</td>
+              <td className="py-1.5 text-right tabular-nums text-slate-800 font-medium">
+                {money(r.sum)}
+              </td>
+              <td className="py-1.5 text-right tabular-nums text-slate-600">
+                {totalSum > 0 ? `${Math.round((r.sum / totalSum) * 100)}%` : "-"}
+              </td>
+              <td className="py-1.5 text-right tabular-nums text-slate-600">{money(r.avg)}</td>
+            </tr>
+          ))}
+          {rows.length === 0 && (
+            <tr>
+              <td colSpan={5} className="text-center text-slate-400 py-4">
+                本月尚無資料
+              </td>
+            </tr>
+          )}
+        </tbody>
+        {rows.length > 0 && (
+          <tfoot>
+            <tr className="border-t-2 border-slate-300 font-bold text-slate-800">
+              <td className="py-1.5">合計</td>
+              <td className="py-1.5 text-right tabular-nums">{totalCount}</td>
+              <td className="py-1.5 text-right tabular-nums">{money(totalSum)}</td>
+              <td className="py-1.5 text-right tabular-nums">100%</td>
+              <td className="py-1.5 text-right tabular-nums">{money(totalAvg)}</td>
+            </tr>
+          </tfoot>
         )}
-      </tbody>
-    </table>
-  );
+      </table>
+    );
+  };
 
   return (
     <div className="grid md:grid-cols-2 gap-4">
       <section className="card p-4">
         <h2 className="section-title">各特案類別統計 · {month}</h2>
-        <SimpleBarChart data={categoryRows.map((r) => ({ label: r.label, value: r.sum }))} />
+        <SimpleDonutChart data={categoryRows.map((r) => ({ label: r.label, value: r.sum }))} />
         <StatTable rows={categoryRows} unitLabel="類別" />
       </section>
 
       <section className="card p-4">
         <h2 className="section-title">各所統計 · {month}</h2>
-        <SimpleBarChart data={storeRows.map((r) => ({ label: r.label, value: r.sum }))} />
+        <SimpleDonutChart data={storeRows.map((r) => ({ label: r.label, value: r.sum }))} />
         <StatTable rows={storeRows} unitLabel="所別" />
       </section>
     </div>
