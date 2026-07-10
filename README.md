@@ -52,6 +52,27 @@ npm run dev               # 開發伺服器（http://localhost:3000）
 - LINE 通知、附件上傳（Phase 2）
 - 串接 AD/SSO、部署至公司內部主機
 
+## 雲端部署（Render，供網頁版測試）
+
+程式碼：https://github.com/toyotad820/special-fund-approval
+
+1. 登入 [Render](https://render.com/)（若無帳號，可直接用 GitHub 帳號註冊）
+2. 「New +」→「Blueprint」→ 選擇並授權連接此 GitHub repo
+3. Render 會自動讀取根目錄的 `render.yaml`，一次建立：
+   - Web Service（免費方案，Next.js 應用程式）
+   - PostgreSQL 資料庫（免費方案），並自動把連線字串注入 `DATABASE_URL`
+   - 自動產生 `SESSION_SECRET`
+4. 等待建置完成（首次約 3–5 分鐘），Render 會給一個 `https://xxx.onrender.com` 網址，即可用手機／電腦測試
+
+**部署專用的 schema**：`prisma/schema.production.prisma`（PostgreSQL）。本機開發仍用 `prisma/schema.prisma`（SQLite），**修改資料模型時兩份要同步更新**。
+
+**免費方案限制（重要）**：
+- 免費 Web Service 閒置一段時間會休眠，喚醒時第一次連線較慢（十幾秒）
+- 免費 PostgreSQL **僅保留 30 天**，到期前需升級付費方案或改接其他資料庫，否則資料會被清除
+- 免費方案沒有永久硬碟，所以雲端一律用 PostgreSQL（不可用本機的 SQLite 檔案）
+
+**安全性提醒**：部署後的網址是公開可連線的（雖然網址本身不會被搜尋引擎收錄），而測試帳號密碼統一是 `1234`。這個階段僅供功能測試，**正式匯入真實員工資料前，請先更換測試帳號密碼、並評估是否需要加上存取限制**（例如公司網路白名單），避免真實員工帳號暴露在公開網址上。
+
 ## 冒煙測試
 
 ```bash

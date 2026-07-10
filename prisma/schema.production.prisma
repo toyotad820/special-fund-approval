@@ -1,0 +1,105 @@
+// 雲端部署專用 schema（PostgreSQL）。
+// 模型定義須與 prisma/schema.prisma（本機 SQLite 開發用）保持一致——
+// 修改資料模型時，請同步更新這兩個檔案。
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 人員主檔：帳號 ↔ 據點 ↔ 課別 ↔ 角色
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  name         String
+  role         String // KEZHANG(課長) | SUOZHANG(所長) | BUZHUGUAN(部主管) | STAFF
+  storeCode    String // 所別 Dxx
+  deptCode     String? // 課別（部主管/staff 可為空）
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  submittedCases Case[]        @relation("submitter")
+  approvals      ApprovalLog[]
+}
+
+// 案件（申請單）
+model Case {
+  id          String @id @default(cuid())
+  month       String // 月份 YYYY-MM（自動帶入）
+  storeCode   String // 所別（依送單人帶出）
+  deptCode    String // 課別（依送單人帶出）
+  plateName   String // 領牌名稱
+  orderNo     String @unique // 訂單編號：13碼、第一碼 D、全系統唯一
+  categoryId  String? // 特案類別（草稿可留空）
+  categoryNo  String // 類別編號（人工填入）
+  carModel    String // 車名
+  description String // 特案內容說明
+
+  // 金額（整數）
+  subsidyDeptCourse Int // 所課支援金
+  goldMedal         Int // 金牌
+  silverMedal       Int // 銀牌
+  discountTotal     Int // 折讓總額
+  specialSubsidy    Int // 特案支援金額（可為 0）
+
+  // 流程狀態
+  status        String // DRAFT | PENDING_SUOZHANG | PENDING_BUZHUGUAN | APPROVED | REJECTED | WITHDRAWN
+  submittedById String
+  submittedBy   User     @relation("submitter", fields: [submittedById], references: [id])
+  submittedAt   DateTime @default(now())
+  stepEnteredAt DateTime @default(now()) // 進入目前關卡的時間（逾期判斷用）
+  updatedAt     DateTime @updatedAt
+
+  category CaseCategory? @relation(fields: [categoryId], references: [id])
+  logs     ApprovalLog[]
+
+  @@index([status])
+  @@index([storeCode])
+  @@index([month])
+}
+
+// 審核／異動紀錄（稽核軌跡）
+model ApprovalLog {
+  id         String   @id @default(cuid())
+  caseId     String
+  case       Case     @relation(fields: [caseId], references: [id])
+  step       String // SUBMIT | RESUBMIT | WITHDRAW | SUOZHANG | BUZHUGUAN
+  action     String // SUBMIT | RESUBMIT | WITHDRAW | APPROVE | REJECT
+  reviewerId String
+  reviewer   User     @relation(fields: [reviewerId], references: [id])
+  comment    String? // 審核意見 / 駁回原因
+  createdAt  DateTime @default(now())
+
+  @@index([caseId])
+}
+
+// 特案類別主檔
+model CaseCategory {
+  id        String  @id @default(cuid())
+  name      String  @unique
+  active    Boolean @default(true)
+  sortOrder Int     @default(0)
+  cases     Case[]
+}
+
+// 車種主檔
+model CarModel {
+  id        String  @id @default(cuid())
+  name      String  @unique
+  active    Boolean @default(true)
+  sortOrder Int     @default(0)
+}
+
+// 月份開放/關閉設定
+model MonthWindow {
+  id      String    @id @default(cuid())
+  month   String    @unique // YYYY-MM
+  isOpen  Boolean   @default(true)
+  openAt  DateTime?
+  closeAt DateTime?
+}
