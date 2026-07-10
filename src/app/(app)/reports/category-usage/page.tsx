@@ -136,6 +136,12 @@ export default async function CategoryUsagePage({
               查詢
             </button>
           </form>
+          <a
+            href={`/api/reports/category-usage/export?level=${level}&month=${month}`}
+            className="rounded-lg bg-emerald-600 text-white px-3 py-1.5 text-sm font-medium hover:bg-emerald-700 whitespace-nowrap"
+          >
+            下載本表 CSV
+          </a>
         </div>
       </div>
 

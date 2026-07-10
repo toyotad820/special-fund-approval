@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { canViewReports } from "@/lib/dal";
@@ -22,12 +23,28 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const month = searchParams.get("month") || currentMonth();
+  const month = searchParams.get("month");
+  const from = searchParams.get("from");
+  const to = searchParams.get("to");
+  const storeCodes = searchParams.getAll("storeCodes").filter(Boolean);
+
+  // 月份：優先用 from/to 區間（YYYY-MM 字串可直接字典序比較）；
+  // 否則沿用舊版單一 month 參數（向下相容），皆無則預設當月
+  const monthFilter: Prisma.CaseWhereInput =
+    from || to
+      ? { month: { gte: from || undefined, lte: to || undefined } }
+      : { month: month || currentMonth() };
+
+  const where: Prisma.CaseWhereInput = {
+    ...monthFilter,
+    status: { not: STATUS.DRAFT },
+    ...(storeCodes.length > 0 ? { storeCode: { in: storeCodes } } : {}),
+  };
 
   const cases = await prisma.case.findMany({
-    where: { month, status: { not: STATUS.DRAFT } },
+    where,
     include: { category: true, submittedBy: true },
-    orderBy: { submittedAt: "asc" },
+    orderBy: [{ month: "asc" }, { submittedAt: "asc" }],
   });
 
   const header = [
@@ -75,10 +92,17 @@ export async function GET(request: Request) {
   // BOM 讓 Excel 正確辨識 UTF-8 中文
   const csv = "﻿" + [header.join(","), ...rows].join("\n");
 
+  // Content-Disposition 標頭僅能為 ASCII，檔名一律用英數字組成
+  const rangeLabel =
+    from || to
+      ? `${from || "start"}_to_${to || "end"}`
+      : month || currentMonth();
+  const storeLabel = storeCodes.length > 0 ? `_${storeCodes.join("-")}` : "";
+
   return new Response(csv, {
     headers: {
       "Content-Type": "text/csv; charset=utf-8",
-      "Content-Disposition": `attachment; filename="cases-${month}.csv"`,
+      "Content-Disposition": `attachment; filename="cases-${rangeLabel}${storeLabel}.csv"`,
     },
   });
 }

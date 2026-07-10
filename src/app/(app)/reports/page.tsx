@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
@@ -56,26 +57,25 @@ export default async function ReportsPage({
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="text-lg font-bold text-slate-800">報表 · {month}</h1>
-        <div className="flex items-center gap-2">
-          <form className="flex items-center gap-2">
-            <input
-              type="month"
-              name="month"
-              defaultValue={month}
-              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm"
-            />
-            <button className="rounded-lg bg-slate-700 text-white px-3 py-1.5 text-sm">
-              查詢
-            </button>
-          </form>
-          <a
-            href={`/api/reports/export?month=${month}`}
-            className="rounded-lg bg-emerald-600 text-white px-3 py-1.5 text-sm font-medium hover:bg-emerald-700"
-          >
-            下載當月明細 CSV
-          </a>
-        </div>
+        <form className="flex items-center gap-2">
+          <input
+            type="month"
+            name="month"
+            defaultValue={month}
+            className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm"
+          />
+          <button className="rounded-lg bg-slate-700 text-white px-3 py-1.5 text-sm">
+            查詢
+          </button>
+        </form>
       </div>
+      <p className="text-xs text-slate-400">
+        需要下載明細？前往「
+        <Link href="/reports/export" className="text-blue-600 hover:underline">
+          案件明細下載
+        </Link>
+        」頁，可選月份區間與所別。
+      </p>
 
       <div className="grid sm:grid-cols-3 gap-3">
         <div className="bg-white rounded-xl border border-slate-200 p-4">
