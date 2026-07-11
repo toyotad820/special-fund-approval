@@ -136,6 +136,24 @@ export default async function ReportsPage({
               </tr>
             )}
           </tbody>
+          {byStore.length > 0 && (
+            <tfoot>
+              <tr className="border-t-2 border-slate-300 font-bold text-slate-800 bg-slate-50/70">
+                <td className={td}>總計</td>
+                <td className={td}>{total._count._all}</td>
+                <td className={td}>{money(total._sum.specialSubsidy ?? 0)}</td>
+                <td className={td}>
+                  {money(
+                    total._count._all
+                      ? Math.round(
+                          (total._sum.specialSubsidy ?? 0) / total._count._all
+                        )
+                      : 0
+                  )}
+                </td>
+              </tr>
+            </tfoot>
+          )}
         </table>
       </section>
 
@@ -149,6 +167,7 @@ export default async function ReportsPage({
               <th className={th}>類別</th>
               <th className={th}>件數</th>
               <th className={th}>特案金額總和</th>
+              <th className={th}>平均</th>
             </tr>
           </thead>
           <tbody>
@@ -157,16 +176,39 @@ export default async function ReportsPage({
                 <td className={td}>{catName(r.categoryId)}</td>
                 <td className={td}>{r._count._all}</td>
                 <td className={td}>{money(r._sum.specialSubsidy ?? 0)}</td>
+                <td className={td}>
+                  {money(
+                    Math.round((r._sum.specialSubsidy ?? 0) / r._count._all)
+                  )}
+                </td>
               </tr>
             ))}
             {byCategory.length === 0 && (
               <tr>
-                <td className="px-3 py-4 text-sm text-slate-400" colSpan={3}>
+                <td className="px-3 py-4 text-sm text-slate-400" colSpan={4}>
                   本月無資料
                 </td>
               </tr>
             )}
           </tbody>
+          {byCategory.length > 0 && (
+            <tfoot>
+              <tr className="border-t-2 border-slate-300 font-bold text-slate-800 bg-slate-50/70">
+                <td className={td}>總計</td>
+                <td className={td}>{total._count._all}</td>
+                <td className={td}>{money(total._sum.specialSubsidy ?? 0)}</td>
+                <td className={td}>
+                  {money(
+                    total._count._all
+                      ? Math.round(
+                          (total._sum.specialSubsidy ?? 0) / total._count._all
+                        )
+                      : 0
+                  )}
+                </td>
+              </tr>
+            </tfoot>
+          )}
         </table>
       </section>
     </div>
