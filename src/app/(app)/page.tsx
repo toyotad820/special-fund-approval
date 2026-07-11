@@ -174,21 +174,31 @@ async function DashboardStats({ month }: { month: string }) {
     );
   };
 
+  // 所別可能多達 24 個以上，長條折線圖需要足夠寬度才不會擠成一團
+  const comboWidth = Math.max(360, storeRows.length * 55 + 110);
+
   return (
-    <div className="grid md:grid-cols-2 gap-4">
+    <div className="space-y-4">
+      {/* 上：各特案類別統計，左圖右表 */}
       <section className="card p-4">
         <h2 className="section-title">各特案類別統計 · {month}</h2>
-        <SimpleDonutChart data={categoryRows.map((r) => ({ label: r.label, value: r.sum }))} />
-        <StatTable rows={categoryRows} unitLabel="類別" />
+        <div className="grid lg:grid-cols-2 gap-6 items-start">
+          <SimpleDonutChart data={categoryRows.map((r) => ({ label: r.label, value: r.sum }))} />
+          <StatTable rows={categoryRows} unitLabel="類別" />
+        </div>
       </section>
 
+      {/* 下：各所統計，上圖下表（所別多達24個，圖表需可橫向捲動） */}
       <section className="card p-4">
         <h2 className="section-title">各所統計（總額 × 平均）· {month}</h2>
-        <SimpleComboChart
-          barLabel="金額總和"
-          lineLabel="平均金額"
-          data={storeRows.map((r) => ({ label: r.label, bar: r.sum, line: r.avg }))}
-        />
+        <div className="overflow-x-auto">
+          <SimpleComboChart
+            barLabel="金額總和"
+            lineLabel="平均金額"
+            width={comboWidth}
+            data={storeRows.map((r) => ({ label: r.label, bar: r.sum, line: r.avg }))}
+          />
+        </div>
         <StatTable rows={storeRows} unitLabel="所別" />
       </section>
     </div>

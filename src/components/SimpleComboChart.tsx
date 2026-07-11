@@ -62,7 +62,6 @@ export default function SimpleComboChart({
         width={width}
         height={height}
         viewBox={`0 0 ${width} ${height}`}
-        className="max-w-full"
         role="img"
         aria-label={`各所${barLabel}與${lineLabel}長條折線複合圖`}
       >
