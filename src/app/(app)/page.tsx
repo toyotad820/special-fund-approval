@@ -174,6 +174,76 @@ async function DashboardStats({ month }: { month: string }) {
     );
   };
 
+  // 所別統計轉置表：所別當欄、指標（件數/金額總和/佔比/平均）當列，
+  // 因為所別可能多達 24 個以上，欄轉列比較容易一次看完全部所別
+  const TransposedStatTable = ({ rows, unitLabel }: { rows: StatRow[]; unitLabel: string }) => {
+    const totalCount = rows.reduce((s, r) => s + r.count, 0);
+    const totalSum = rows.reduce((s, r) => s + r.sum, 0);
+    const totalAvg = totalCount > 0 ? Math.round(totalSum / totalCount) : 0;
+    const pct = (sum: number) => (totalSum > 0 ? `${Math.round((sum / totalSum) * 100)}%` : "-");
+
+    const th = "py-1.5 pr-4 text-left text-xs font-medium text-slate-400 sticky left-0 bg-white whitespace-nowrap";
+    const td = "py-1.5 px-3 text-right tabular-nums whitespace-nowrap border-l border-slate-100";
+
+    if (rows.length === 0) {
+      return <p className="text-sm text-slate-400 text-center py-4 mt-4">本月尚無資料</p>;
+    }
+
+    return (
+      <div className="overflow-x-auto mt-4">
+        <table className="text-sm">
+          <tbody>
+            <tr className="border-b border-slate-200">
+              <th className={th}>{unitLabel}</th>
+              {rows.map((r) => (
+                <td key={r.label} className={`${td} font-semibold text-slate-700`}>
+                  {r.label}
+                </td>
+              ))}
+              <td className={`${td} font-semibold text-slate-700 bg-slate-50/70`}>合計</td>
+            </tr>
+            <tr className="border-b border-slate-100">
+              <th className={th}>件數</th>
+              {rows.map((r) => (
+                <td key={r.label} className={`${td} text-slate-600`}>
+                  {r.count}
+                </td>
+              ))}
+              <td className={`${td} font-bold text-slate-800 bg-slate-50/70`}>{totalCount}</td>
+            </tr>
+            <tr className="border-b border-slate-100">
+              <th className={th}>金額總和</th>
+              {rows.map((r) => (
+                <td key={r.label} className={`${td} text-slate-800 font-medium`}>
+                  {money(r.sum)}
+                </td>
+              ))}
+              <td className={`${td} font-bold text-slate-800 bg-slate-50/70`}>{money(totalSum)}</td>
+            </tr>
+            <tr className="border-b border-slate-100">
+              <th className={th}>佔比</th>
+              {rows.map((r) => (
+                <td key={r.label} className={`${td} text-slate-600`}>
+                  {pct(r.sum)}
+                </td>
+              ))}
+              <td className={`${td} font-bold text-slate-800 bg-slate-50/70`}>100%</td>
+            </tr>
+            <tr>
+              <th className={th}>平均</th>
+              {rows.map((r) => (
+                <td key={r.label} className={`${td} text-slate-600`}>
+                  {money(r.avg)}
+                </td>
+              ))}
+              <td className={`${td} font-bold text-slate-800 bg-slate-50/70`}>{money(totalAvg)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    );
+  };
+
   // 所別可能多達 24 個以上，長條折線圖需要足夠寬度才不會擠成一團
   const comboWidth = Math.max(360, storeRows.length * 55 + 110);
 
@@ -199,7 +269,7 @@ async function DashboardStats({ month }: { month: string }) {
             data={storeRows.map((r) => ({ label: r.label, bar: r.sum, line: r.avg }))}
           />
         </div>
-        <StatTable rows={storeRows} unitLabel="所別" />
+        <TransposedStatTable rows={storeRows} unitLabel="所別" />
       </section>
     </div>
   );
