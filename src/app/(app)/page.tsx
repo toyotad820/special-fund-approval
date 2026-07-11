@@ -119,7 +119,7 @@ async function DashboardStats({ month }: { month: string }) {
 
   const storeRows = byStore
     .map((r) => toStatRow(r.storeCode, r._sum.specialSubsidy, r._count._all))
-    .sort((a, b) => b.avg - a.avg);
+    .sort((a, b) => a.label.localeCompare(b.label, "zh-Hant"));
 
   const StatTable = ({ rows, unitLabel }: { rows: StatRow[]; unitLabel: string }) => {
     const totalCount = rows.reduce((s, r) => s + r.count, 0);

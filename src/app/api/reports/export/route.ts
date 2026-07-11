@@ -64,6 +64,7 @@ export async function GET(request: Request) {
     "狀態",
     "送單人",
     "送出時間",
+    "備註",
   ];
 
   const rows = cases.map((c) =>
@@ -84,6 +85,7 @@ export async function GET(request: Request) {
       STATUS_LABEL[c.status] ?? c.status,
       c.submittedBy.name,
       dt(c.submittedAt),
+      c.description ?? "",
     ]
       .map(csvCell)
       .join(",")

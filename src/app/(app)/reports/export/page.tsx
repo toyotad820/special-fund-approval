@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import StoreCheckboxGroup from "@/components/StoreCheckboxGroup";
 
 function currentMonth(): string {
   const d = new Date();
@@ -52,29 +53,7 @@ export default async function ReportExportPage() {
           </div>
         </div>
 
-        <div>
-          <div className="label mb-2">所別（預設全選＝全部所；取消勾選即為部分所）</div>
-          <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
-            {stores.map((s) => (
-              <label
-                key={s}
-                className="flex items-center gap-1.5 text-sm text-slate-700 rounded-lg border border-slate-200 px-2.5 py-1.5 hover:bg-slate-50 cursor-pointer"
-              >
-                <input
-                  type="checkbox"
-                  name="storeCodes"
-                  value={s}
-                  defaultChecked
-                  className="rounded"
-                />
-                {s}
-              </label>
-            ))}
-          </div>
-          {stores.length === 0 && (
-            <p className="text-sm text-slate-400">尚無所別資料</p>
-          )}
-        </div>
+        <StoreCheckboxGroup stores={stores} />
 
         <button type="submit" className="btn btn-primary">
           下載 CSV
