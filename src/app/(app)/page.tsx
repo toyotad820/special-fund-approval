@@ -189,6 +189,25 @@ async function DashboardStats({ month }: { month: string }) {
       return <p className="text-sm text-slate-400 text-center py-4 mt-4">本月尚無資料</p>;
     }
 
+    // 平均值前3高標紅、後3低標綠（樣本太少導致重疊時，重疊部分不標色）
+    const N = 3;
+    const qualifying = rows.filter((r) => r.count > 0);
+    const sortedByAvgDesc = [...qualifying].sort((a, b) => b.avg - a.avg);
+    const redKeys = new Set(sortedByAvgDesc.slice(0, N).map((r) => r.label));
+    const greenKeys = new Set(sortedByAvgDesc.slice(-N).map((r) => r.label));
+    for (const k of [...redKeys]) {
+      if (greenKeys.has(k)) {
+        redKeys.delete(k);
+        greenKeys.delete(k);
+      }
+    }
+    const avgCellCls = (label: string) =>
+      redKeys.has(label)
+        ? `${td} bg-rose-100 text-rose-800 font-bold`
+        : greenKeys.has(label)
+          ? `${td} bg-emerald-100 text-emerald-800 font-bold`
+          : `${td} text-slate-600`;
+
     return (
       <div className="overflow-x-auto mt-4">
         <table className="text-sm">
@@ -232,7 +251,7 @@ async function DashboardStats({ month }: { month: string }) {
             <tr>
               <th className={th}>平均</th>
               {rows.map((r) => (
-                <td key={r.label} className={`${td} text-slate-600`}>
+                <td key={r.label} className={avgCellCls(r.label)}>
                   {money(r.avg)}
                 </td>
               ))}
