@@ -1,18 +1,8 @@
 // 比例圖（甜甜圈圖）：呈現各類別佔整體的比例。依 dataviz 規範，多序列（≥2）用
 // 固定順序的分類色，並附圖例與直接標示百分比（不可只靠顏色辨識）。
-export type DonutDatum = { label: string; value: number };
+import { CATEGORICAL } from "@/lib/chartColors";
 
-// 分類色（固定順序，不循環新增色相）
-const CATEGORICAL = [
-  "#2a78d6", // blue
-  "#1baf7a", // aqua
-  "#eda100", // yellow
-  "#008300", // green
-  "#4a3aa7", // violet
-  "#e34948", // red
-  "#e87ba4", // magenta
-  "#eb6834", // orange
-];
+export type DonutDatum = { label: string; value: number };
 
 export default function SimpleDonutChart({
   data,

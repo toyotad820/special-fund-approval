@@ -87,7 +87,7 @@ type StatRow = { label: string; count: number; sum: number; avg: number };
 async function DashboardStats({ month }: { month: string }) {
   const statusFilter = { not: STATUS.DRAFT } as const;
 
-  const [byCategory, byStore, categories] = await Promise.all([
+  const [byCategory, byStore, byStoreCategory, categories] = await Promise.all([
     prisma.case.groupBy({
       by: ["categoryId"],
       where: { month, status: statusFilter },
@@ -99,6 +99,11 @@ async function DashboardStats({ month }: { month: string }) {
       where: { month, status: statusFilter },
       _sum: { specialSubsidy: true },
       _count: { _all: true },
+    }),
+    prisma.case.groupBy({
+      by: ["storeCode", "categoryId"],
+      where: { month, status: statusFilter },
+      _sum: { specialSubsidy: true },
     }),
     prisma.caseCategory.findMany({ orderBy: { sortOrder: "asc" } }),
   ]);
@@ -120,6 +125,23 @@ async function DashboardStats({ month }: { month: string }) {
   const storeRows = byStore
     .map((r) => toStatRow(r.storeCode, r._sum.specialSubsidy, r._count._all))
     .sort((a, b) => a.label.localeCompare(b.label, "zh-Hant"));
+
+  // 堆疊長條的類別順序與顏色，需與甜甜圈圖（categoryRows，依金額總和排序）一致
+  const categoryOrder = byCategory
+    .map((r) => ({ id: r.categoryId, name: catName(r.categoryId), sum: r._sum.specialSubsidy ?? 0 }))
+    .sort((a, b) => b.sum - a.sum);
+
+  const storeCategorySums = new Map<string, Map<string | null, number>>();
+  for (const r of byStoreCategory) {
+    if (!storeCategorySums.has(r.storeCode)) storeCategorySums.set(r.storeCode, new Map());
+    storeCategorySums.get(r.storeCode)!.set(r.categoryId, r._sum.specialSubsidy ?? 0);
+  }
+
+  const storeStackedRows = storeRows.map((r) => ({
+    label: r.label,
+    segments: categoryOrder.map((c) => storeCategorySums.get(r.label)?.get(c.id) ?? 0),
+    line: r.avg,
+  }));
 
   const StatTable = ({ rows, unitLabel }: { rows: StatRow[]; unitLabel: string }) => {
     const totalCount = rows.reduce((s, r) => s + r.count, 0);
@@ -282,10 +304,10 @@ async function DashboardStats({ month }: { month: string }) {
         <h2 className="section-title">各所統計（總額 × 平均）· {month}</h2>
         <div className="overflow-x-auto">
           <SimpleComboChart
-            barLabel="金額總和"
+            seriesNames={categoryOrder.map((c) => c.name)}
             lineLabel="平均金額"
             width={comboWidth}
-            data={storeRows.map((r) => ({ label: r.label, bar: r.sum, line: r.avg }))}
+            data={storeStackedRows}
           />
         </div>
         <TransposedStatTable rows={storeRows} unitLabel="所別" />

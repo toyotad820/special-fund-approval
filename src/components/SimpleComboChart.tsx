@@ -1,21 +1,22 @@
-// 長條＋折線複合圖：長條（左軸）呈現金額總和，折線（右軸）呈現平均金額。
-// 兩軸量級不同，各自標色與座標軸區分，並附圖例（2 序列時圖例必備）。
-export type ComboDatum = { label: string; bar: number; line: number };
+// 堆疊長條＋折線複合圖：長條（左軸）依特案類別堆疊呈現金額總和（顏色與甜甜圈圖一致），
+// 折線（右軸）呈現平均金額。兩軸量級不同，各自標色與座標軸區分，並附圖例。
+import { CATEGORICAL } from "@/lib/chartColors";
 
-const BAR_COLOR = "#2a78d6"; // blue
+export type StackedComboDatum = { label: string; segments: number[]; line: number };
+
 const LINE_COLOR = "#eb6834"; // orange，與長條明顯區隔
 
 export default function SimpleComboChart({
   data,
-  barLabel = "金額總和",
+  seriesNames,
   lineLabel = "平均金額",
   width = 360,
   height = 260,
   barFormatter = (n: number) => n.toLocaleString("en-US"),
   lineFormatter = (n: number) => n.toLocaleString("en-US"),
 }: {
-  data: ComboDatum[];
-  barLabel?: string;
+  data: StackedComboDatum[];
+  seriesNames: string[];
   lineLabel?: string;
   width?: number;
   height?: number;
@@ -30,7 +31,8 @@ export default function SimpleComboChart({
   const plotW = width - padding.left - padding.right;
   const plotH = height - padding.top - padding.bottom;
 
-  const maxBar = Math.max(1, ...data.map((d) => d.bar)) * 1.15;
+  const totals = data.map((d) => d.segments.reduce((s, v) => s + v, 0));
+  const maxBar = Math.max(1, ...totals) * 1.15;
   const maxLine = Math.max(1, ...data.map((d) => d.line)) * 1.15;
 
   const bandW = plotW / data.length;
@@ -48,11 +50,16 @@ export default function SimpleComboChart({
 
   return (
     <div>
-      <div className="flex items-center gap-4 text-xs text-slate-600 mb-2">
-        <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-sm" style={{ background: BAR_COLOR }} />
-          {barLabel}
-        </span>
+      <div className="flex items-center gap-4 flex-wrap text-xs text-slate-600 mb-2">
+        {seriesNames.map((name, i) => (
+          <span key={name} className="flex items-center gap-1.5">
+            <span
+              className="w-2.5 h-2.5 rounded-sm"
+              style={{ background: CATEGORICAL[i % CATEGORICAL.length] }}
+            />
+            {name}
+          </span>
+        ))}
         <span className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full" style={{ background: LINE_COLOR }} />
           {lineLabel}
@@ -63,7 +70,7 @@ export default function SimpleComboChart({
         height={height}
         viewBox={`0 0 ${width} ${height}`}
         role="img"
-        aria-label={`各所${barLabel}與${lineLabel}長條折線複合圖`}
+        aria-label={`各所金額總和（依特案類別堆疊）與${lineLabel}長條折線複合圖`}
       >
         {Array.from({ length: ticks + 1 }).map((_, i) => {
           const gy = padding.top + (plotH / ticks) * i;
@@ -112,18 +119,26 @@ export default function SimpleComboChart({
 
         {data.map((d, i) => {
           const x = xCenter(i) - barW / 2;
-          const y = yBar(d.bar);
-          const h = padding.top + plotH - y;
+          let acc = 0;
           return (
-            <rect
-              key={`${d.label}-bar`}
-              x={x}
-              y={y}
-              width={barW}
-              height={Math.max(0, h)}
-              rx={3}
-              fill={BAR_COLOR}
-            />
+            <g key={`${d.label}-bar`}>
+              {d.segments.map((v, si) => {
+                if (v <= 0) return null;
+                const yTop = yBar(acc + v);
+                const yBottom = yBar(acc);
+                acc += v;
+                return (
+                  <rect
+                    key={`${d.label}-seg-${si}`}
+                    x={x}
+                    y={yTop}
+                    width={barW}
+                    height={Math.max(0, yBottom - yTop)}
+                    fill={CATEGORICAL[si % CATEGORICAL.length]}
+                  />
+                );
+              })}
+            </g>
           );
         })}
 
@@ -165,7 +180,7 @@ export default function SimpleComboChart({
         ))}
 
         <text x={padding.left - 44} y={padding.top - 10} fontSize={9} fill="#898781">
-          {barLabel}
+          金額總和
         </text>
         <text x={width - padding.right + 2} y={padding.top - 10} fontSize={9} fill={LINE_COLOR}>
           {lineLabel}
