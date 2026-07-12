@@ -28,8 +28,35 @@ async function main() {
     });
   }
 
-  // 車種
-  const cars = ["ALTIS", "CROSS", "RAV4", "SIENTA", "TOWN ACE", "CAMRY", "YARIS"];
+  // 車種（現行 TOYOTA 標準車型清單，須與 src/lib/admin-actions.ts 的 STANDARD_CAR_MODELS 保持一致）
+  const cars = [
+    "ALTIS",
+    "ALTIS HV",
+    "C CROSS",
+    "C CROSS HV",
+    "TOWN ACE",
+    "TOWN ACE VAN",
+    "VIOS",
+    "Y CROSS",
+    "ALPHARD HV",
+    "ALPHARD PHV",
+    "CAMRY",
+    "CAMRY HV",
+    "COROLLA SP",
+    "CROWN HV",
+    "GR 86",
+    "GR YARIS",
+    "HILUX",
+    "LAND CRUISER",
+    "PRIUS PHV",
+    "RAV4",
+    "RAV4 HV",
+    "RAV4 PHV",
+    "SIENNA HV",
+    "SUPRA",
+    "URBAN CRUISER",
+    "bZ4X",
+  ];
   for (let i = 0; i < cars.length; i++) {
     await prisma.carModel.upsert({
       where: { name: cars[i] },

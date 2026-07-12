@@ -8,6 +8,7 @@ import { requireUser } from "./session";
 import { canAdmin } from "./dal";
 import { ROLE, ROLE_LABEL } from "./constants";
 import { normalizeDeptCode } from "./format";
+import { STANDARD_CAR_MODELS } from "./carModels";
 
 export type ActionState = {
   ok?: boolean;
@@ -246,6 +247,24 @@ export async function toggleCar(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const c = await prisma.carModel.findUnique({ where: { id } });
   if (c) await prisma.carModel.update({ where: { id }, data: { active: !c.active } });
+  revalidatePath("/admin/cars");
+}
+
+// 同步車種清單為標準清單：標準清單內的車種一律啟用並依序排列，
+// 不在標準清單內的既有車種一律停用（不刪除，保留歷史案件可能引用到的名稱）
+export async function syncStandardCarModels() {
+  await requireAdmin();
+  for (let i = 0; i < STANDARD_CAR_MODELS.length; i++) {
+    await prisma.carModel.upsert({
+      where: { name: STANDARD_CAR_MODELS[i] },
+      update: { active: true, sortOrder: i },
+      create: { name: STANDARD_CAR_MODELS[i], active: true, sortOrder: i },
+    });
+  }
+  await prisma.carModel.updateMany({
+    where: { name: { notIn: [...STANDARD_CAR_MODELS] } },
+    data: { active: false },
+  });
   revalidatePath("/admin/cars");
 }
 
