@@ -107,6 +107,7 @@ async function DashboardStats({ month }: { month: string }) {
       by: ["storeCode", "categoryId"],
       where: { month, status: statusFilter },
       _sum: { specialSubsidy: true },
+      _count: { _all: true },
     }),
     prisma.caseCategory.findMany({ orderBy: { sortOrder: "asc" } }),
   ]);
@@ -149,9 +150,12 @@ async function DashboardStats({ month }: { month: string }) {
     .sort((a, b) => b.sum - a.sum);
 
   const storeCategorySums = new Map<string, Map<string | null, number>>();
+  const storeCategoryCounts = new Map<string, Map<string | null, number>>();
   for (const r of byStoreCategory) {
     if (!storeCategorySums.has(r.storeCode)) storeCategorySums.set(r.storeCode, new Map());
+    if (!storeCategoryCounts.has(r.storeCode)) storeCategoryCounts.set(r.storeCode, new Map());
     storeCategorySums.get(r.storeCode)!.set(r.categoryId, r._sum.specialSubsidy ?? 0);
+    storeCategoryCounts.get(r.storeCode)!.set(r.categoryId, r._count._all);
   }
 
   const storeStackedRows = storeRows.map((r) => ({
@@ -220,12 +224,15 @@ async function DashboardStats({ month }: { month: string }) {
     unitLabel,
     colWidth,
     firstColWidth,
+    categoryBreakdown,
   }: {
     rows: StatRow[];
     unitLabel: string;
     // 有給寬度時欄位改為固定寬，跟上方圖表的每欄／左側留白對齊
     colWidth?: number;
     firstColWidth?: number;
+    // 件數依類別拆分顯示；不給的話件數只顯示單一總列
+    categoryBreakdown?: { name: string; color: string; countByLabel: Map<string, number> }[];
   }) => {
     const totalCount = rows.reduce((s, r) => s + r.count, 0);
     const totalSum = rows.reduce((s, r) => s + r.sum, 0);
@@ -292,15 +299,56 @@ async function DashboardStats({ month }: { month: string }) {
               ))}
               <td className={`${td} font-semibold text-slate-700 bg-slate-50/70`}>合計</td>
             </tr>
-            <tr className="border-b border-slate-100">
-              <th className={th}>件數</th>
-              {rows.map((r) => (
-                <td key={r.label} className={`${td} text-slate-600`}>
-                  {r.count}
-                </td>
-              ))}
-              <td className={`${td} font-bold text-slate-800 bg-slate-50/70`}>{totalCount}</td>
-            </tr>
+            {categoryBreakdown && categoryBreakdown.length > 0 ? (
+              <>
+                {categoryBreakdown.map((c) => {
+                  const catTotal = rows.reduce(
+                    (s, r) => s + (c.countByLabel.get(r.label) ?? 0),
+                    0
+                  );
+                  return (
+                    <tr key={c.name} className="border-b border-slate-100">
+                      <th className={th}>
+                        <span className="inline-flex items-center gap-1">
+                          <span
+                            className="w-1.5 h-1.5 rounded-sm shrink-0"
+                            style={{ background: c.color }}
+                          />
+                          {c.name}
+                        </span>
+                      </th>
+                      {rows.map((r) => (
+                        <td key={r.label} className={`${td} text-slate-600`}>
+                          {c.countByLabel.get(r.label) ?? 0}
+                        </td>
+                      ))}
+                      <td className={`${td} font-semibold text-slate-700 bg-slate-50/70`}>
+                        {catTotal}
+                      </td>
+                    </tr>
+                  );
+                })}
+                <tr className="border-b border-slate-100">
+                  <th className={th}>件數合計</th>
+                  {rows.map((r) => (
+                    <td key={r.label} className={`${td} font-bold text-slate-800`}>
+                      {r.count}
+                    </td>
+                  ))}
+                  <td className={`${td} font-bold text-slate-800 bg-slate-50/70`}>{totalCount}</td>
+                </tr>
+              </>
+            ) : (
+              <tr className="border-b border-slate-100">
+                <th className={th}>件數</th>
+                {rows.map((r) => (
+                  <td key={r.label} className={`${td} text-slate-600`}>
+                    {r.count}
+                  </td>
+                ))}
+                <td className={`${td} font-bold text-slate-800 bg-slate-50/70`}>{totalCount}</td>
+              </tr>
+            )}
             <tr className="border-b border-slate-100">
               <th className={th}>金額總和</th>
               {rows.map((r) => (
@@ -375,6 +423,16 @@ async function DashboardStats({ month }: { month: string }) {
             unitLabel="所別"
             colWidth={comboBandW}
             firstColWidth={comboPaddingLeft}
+            categoryBreakdown={categoryOrder.map((c) => ({
+              name: c.name,
+              color: categoryColor(c.id),
+              countByLabel: new Map(
+                storeRows.map((r) => [
+                  r.label,
+                  storeCategoryCounts.get(r.label)?.get(c.id) ?? 0,
+                ])
+              ),
+            }))}
           />
         </div>
       </section>
