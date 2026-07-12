@@ -606,7 +606,7 @@ async function DashboardStats({ month }: { month: string }) {
 
       {/* 各所申請台數/金額 對目標比重的達成情況 */}
       <section className="card p-4">
-        <h2 className="section-title">各所目標達成情況 · {month}</h2>
+        <h2 className="section-title">各所申請比較 · {month}</h2>
         <div className="overflow-x-auto">
           <TargetVsActualTable
             rows={targetRows}

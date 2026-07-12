@@ -114,7 +114,7 @@ export default async function TargetVsActualPage({
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-lg font-bold text-slate-800">
-            目標達成統計表 · {month}
+            各所申請比較 · {month}
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
             申請比率

@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 const TABS = [
   { href: "/reports", label: "總覽" },
   { href: "/reports/category-usage", label: "所課別特案使用統計表" },
-  { href: "/reports/target-vs-actual", label: "目標達成統計表" },
+  { href: "/reports/target-vs-actual", label: "各所申請比較" },
   { href: "/reports/export", label: "案件明細下載" },
 ];
 
