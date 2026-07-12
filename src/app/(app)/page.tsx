@@ -293,11 +293,20 @@ async function DashboardStats({ month }: { month: string }) {
             <tr className="border-b border-slate-200">
               <th className={th}>{unitLabel}</th>
               {rows.map((r) => (
-                <td key={r.label} className={`${td} font-semibold text-slate-700`}>
+                <td
+                  key={r.label}
+                  className={`${td} font-semibold text-slate-700`}
+                  style={{ textAlign: "center" }}
+                >
                   {r.label}
                 </td>
               ))}
-              <td className={`${td} font-semibold text-slate-700 bg-slate-50/70`}>合計</td>
+              <td
+                className={`${td} font-semibold text-slate-700 bg-slate-50/70`}
+                style={{ textAlign: "center" }}
+              >
+                合計
+              </td>
             </tr>
             {categoryBreakdown && categoryBreakdown.length > 0 ? (
               <>

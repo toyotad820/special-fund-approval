@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { createCar, toggleCar, syncStandardCarModels } from "@/lib/admin-actions";
 import SimpleAddForm from "@/components/admin/SimpleAddForm";
+import DeleteCarButton from "@/components/admin/DeleteCarButton";
 
 export default async function AdminCarsPage() {
   const items = await prisma.carModel.findMany({ orderBy: { sortOrder: "asc" } });
@@ -10,7 +11,7 @@ export default async function AdminCarsPage() {
       <section className="bg-white rounded-2xl border border-slate-200 p-5">
         <h2 className="text-sm font-semibold text-slate-700 mb-3">同步標準車型清單</h2>
         <p className="text-xs text-slate-500 mb-3">
-          一鍵把車種清單同步成目前 TOYOTA 標準車型（清單內的啟用並排序，清單外的既有車種停用，不會刪除）。
+          一鍵把車種清單同步成目前 TOYOTA 標準車型（清單內的啟用並排序，清單外的既有車種直接刪除）。
         </p>
         <form action={syncStandardCarModels}>
           <button className="text-xs rounded-lg border border-blue-300 bg-blue-50 px-3 py-1.5 text-blue-700 hover:bg-blue-100">
@@ -38,12 +39,15 @@ export default async function AdminCarsPage() {
               >
                 {c.name}
               </span>
-              <form action={toggleCar}>
-                <input type="hidden" name="id" value={c.id} />
-                <button className="text-xs rounded-lg border border-slate-300 px-3 py-1 text-slate-600 hover:bg-slate-50">
-                  {c.active ? "停用" : "啟用"}
-                </button>
-              </form>
+              <div className="flex items-center gap-3">
+                <form action={toggleCar}>
+                  <input type="hidden" name="id" value={c.id} />
+                  <button className="text-xs rounded-lg border border-slate-300 px-3 py-1 text-slate-600 hover:bg-slate-50">
+                    {c.active ? "停用" : "啟用"}
+                  </button>
+                </form>
+                <DeleteCarButton id={c.id} name={c.name} />
+              </div>
             </li>
           ))}
           {items.length === 0 && (

@@ -250,8 +250,17 @@ export async function toggleCar(formData: FormData) {
   revalidatePath("/admin/cars");
 }
 
+// 車種沒有關聯案件的外鍵限制（Case.carModel 只是文字欄位），可以直接刪除
+export async function deleteCar(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  await prisma.carModel.delete({ where: { id } }).catch(() => {});
+  revalidatePath("/admin/cars");
+}
+
 // 同步車種清單為標準清單：標準清單內的車種一律啟用並依序排列，
-// 不在標準清單內的既有車種一律停用（不刪除，保留歷史案件可能引用到的名稱）
+// 不在標準清單內的既有車種直接刪除（車種沒有關聯案件的外鍵限制）
 export async function syncStandardCarModels() {
   await requireAdmin();
   for (let i = 0; i < STANDARD_CAR_MODELS.length; i++) {
@@ -261,9 +270,8 @@ export async function syncStandardCarModels() {
       create: { name: STANDARD_CAR_MODELS[i], active: true, sortOrder: i },
     });
   }
-  await prisma.carModel.updateMany({
+  await prisma.carModel.deleteMany({
     where: { name: { notIn: [...STANDARD_CAR_MODELS] } },
-    data: { active: false },
   });
   revalidatePath("/admin/cars");
 }
