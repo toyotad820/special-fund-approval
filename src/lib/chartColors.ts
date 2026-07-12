@@ -15,3 +15,15 @@ export const CATEGORICAL = [
   "#1baf7a", // aqua
   "#e34948", // red
 ];
+
+// 特案類別的顏色直接綁定「類別名稱」，不依資料庫的 sortOrder 或依金額排序後的名次。
+// 本機測試資料庫和正式資料庫是各自獨立 seed 的，caseCategory 的 sortOrder 不保證一致，
+// 若用 sortOrder 或排序名次決定顏色，同一個類別在本機和正式站會顯示不同顏色。
+// 這份對照表以正式站目前顯示的顏色為準。新增類別若不在表中，會用 CATEGORICAL 的後備色。
+export const CATEGORY_COLOR_BY_NAME: Record<string, string> = {
+  一般車: CATEGORICAL[0],
+  租賃車: CATEGORICAL[1],
+  員工車: CATEGORICAL[2],
+  營業車: CATEGORICAL[3],
+  企業大口: CATEGORICAL[4],
+};

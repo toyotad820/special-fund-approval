@@ -2,7 +2,7 @@
 // 固定順序的分類色，並附圖例與直接標示百分比（不可只靠顏色辨識）。
 import { CATEGORICAL } from "@/lib/chartColors";
 
-export type DonutDatum = { label: string; value: number };
+export type DonutDatum = { label: string; value: number; color?: string };
 
 export default function SimpleDonutChart({
   data,
@@ -57,7 +57,7 @@ export default function SimpleDonutChart({
               cy={size / 2}
               r={radius}
               fill="none"
-              stroke={CATEGORICAL[i % CATEGORICAL.length]}
+              stroke={d.color ?? CATEGORICAL[i % CATEGORICAL.length]}
               strokeWidth={thickness}
               strokeDasharray={strokeDasharray}
               strokeDashoffset={strokeDashoffset}
@@ -70,7 +70,7 @@ export default function SimpleDonutChart({
           <li key={d.label} className="flex items-center gap-2">
             <span
               className="w-2.5 h-2.5 rounded-full shrink-0"
-              style={{ background: CATEGORICAL[i % CATEGORICAL.length] }}
+              style={{ background: d.color ?? CATEGORICAL[i % CATEGORICAL.length] }}
             />
             <span className="text-slate-600 truncate">{d.label}</span>
             <span className="ml-auto font-semibold text-slate-800 tabular-nums">

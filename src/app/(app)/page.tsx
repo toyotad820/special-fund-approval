@@ -8,6 +8,7 @@ import {
   canSubmit,
 } from "@/lib/dal";
 import { ROLE, ROLE_LABEL, STATUS } from "@/lib/constants";
+import { CATEGORICAL, CATEGORY_COLOR_BY_NAME } from "@/lib/chartColors";
 import { money } from "@/lib/format";
 import CaseList from "@/components/CaseList";
 import SortableCaseTable, {
@@ -113,6 +114,17 @@ async function DashboardStats({ month }: { month: string }) {
   const catName = (id: string | null) =>
     categories.find((c) => c.id === id)?.name ?? "（未分類）";
 
+  // 顏色綁定類別名稱本身（見 CATEGORY_COLOR_BY_NAME 註解），不依金額排序後的名次，
+  // 也不依資料庫 sortOrder，避免同一類別在本機測試資料和正式資料下顯示不同顏色
+  const categoryColor = (id: string | null) => {
+    const name = catName(id);
+    const idx = categories.findIndex((c) => c.id === id);
+    return (
+      CATEGORY_COLOR_BY_NAME[name] ??
+      CATEGORICAL[(idx < 0 ? categories.length : idx) % CATEGORICAL.length]
+    );
+  };
+
   const toStatRow = (label: string, sum: number | null, count: number): StatRow => ({
     label,
     count,
@@ -121,7 +133,10 @@ async function DashboardStats({ month }: { month: string }) {
   });
 
   const categoryRows = byCategory
-    .map((r) => toStatRow(catName(r.categoryId), r._sum.specialSubsidy, r._count._all))
+    .map((r) => ({
+      ...toStatRow(catName(r.categoryId), r._sum.specialSubsidy, r._count._all),
+      id: r.categoryId,
+    }))
     .sort((a, b) => b.sum - a.sum);
 
   const storeRows = byStore
@@ -333,7 +348,13 @@ async function DashboardStats({ month }: { month: string }) {
       <section className="card p-4">
         <h2 className="section-title">各特案類別統計 · {month}</h2>
         <div className="grid lg:grid-cols-2 gap-6 items-start">
-          <SimpleDonutChart data={categoryRows.map((r) => ({ label: r.label, value: r.sum }))} />
+          <SimpleDonutChart
+            data={categoryRows.map((r) => ({
+              label: r.label,
+              value: r.sum,
+              color: categoryColor(r.id),
+            }))}
+          />
           <StatTable rows={categoryRows} unitLabel="類別" />
         </div>
       </section>
@@ -344,6 +365,7 @@ async function DashboardStats({ month }: { month: string }) {
         <div className="overflow-x-auto">
           <SimpleComboChart
             seriesNames={categoryOrder.map((c) => c.name)}
+            seriesColors={categoryOrder.map((c) => categoryColor(c.id))}
             lineLabel="平均金額"
             width={comboWidth}
             data={storeStackedRows}
