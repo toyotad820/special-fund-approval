@@ -4,7 +4,7 @@ import { CATEGORICAL } from "@/lib/chartColors";
 
 export type StackedComboDatum = { label: string; segments: number[]; line: number };
 
-const LINE_COLOR = "#eb6834"; // orange，與長條明顯區隔
+const LINE_COLOR = "#1e293b"; // 深灰藍中性色，跟任何分類長條色都不撞
 
 export default function SimpleComboChart({
   data,
