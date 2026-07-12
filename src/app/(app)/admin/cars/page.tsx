@@ -4,7 +4,8 @@ import SimpleAddForm from "@/components/admin/SimpleAddForm";
 import DeleteCarButton from "@/components/admin/DeleteCarButton";
 
 export default async function AdminCarsPage() {
-  const items = await prisma.carModel.findMany({ orderBy: { sortOrder: "asc" } });
+  // 後台清單依英文名稱排序方便查找；申請表單的下拉選單仍依 sortOrder（業務指定順序）
+  const items = await prisma.carModel.findMany({ orderBy: { name: "asc" } });
 
   return (
     <div className="space-y-6">
