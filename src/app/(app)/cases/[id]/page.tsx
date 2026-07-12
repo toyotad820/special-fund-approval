@@ -54,8 +54,8 @@ export default async function CaseDetailPage({
       : undefined;
   const amounts = [
     ["所課支援金", c.subsidyDeptCourse],
-    ["金牌", c.goldMedal],
-    ["銀牌", c.silverMedal],
+    ["金牌金額", c.goldMedal],
+    ["銀牌金額", c.silverMedal],
     ["折讓總額", c.discountTotal],
     ["特案支援金額", c.specialSubsidy],
   ] as const;

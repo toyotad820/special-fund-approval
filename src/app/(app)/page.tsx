@@ -83,9 +83,11 @@ function scopeLabel(role: string): string {
 
 type StatRow = { label: string; count: number; sum: number; avg: number };
 
-// 統計區：各特案類別統計 + 各所統計（不含草稿），供部長/Staff 首頁使用
+// 統計區：各特案類別統計 + 各所統計（不含草稿／已駁回／已撤回），供部長/Staff 首頁使用
 async function DashboardStats({ month }: { month: string }) {
-  const statusFilter = { not: STATUS.DRAFT } as const;
+  const statusFilter = {
+    notIn: [STATUS.DRAFT, STATUS.REJECTED, STATUS.WITHDRAWN] as string[],
+  };
 
   const [byCategory, byStore, byStoreCategory, categories] = await Promise.all([
     prisma.case.groupBy({
@@ -198,14 +200,28 @@ async function DashboardStats({ month }: { month: string }) {
 
   // 所別統計轉置表：所別當欄、指標（件數/金額總和/佔比/平均）當列，
   // 因為所別可能多達 24 個以上，欄轉列比較容易一次看完全部所別
-  const TransposedStatTable = ({ rows, unitLabel }: { rows: StatRow[]; unitLabel: string }) => {
+  const TransposedStatTable = ({
+    rows,
+    unitLabel,
+    colWidth,
+    firstColWidth,
+  }: {
+    rows: StatRow[];
+    unitLabel: string;
+    // 有給寬度時欄位改為固定寬，跟上方圖表的每欄／左側留白對齊
+    colWidth?: number;
+    firstColWidth?: number;
+  }) => {
     const totalCount = rows.reduce((s, r) => s + r.count, 0);
     const totalSum = rows.reduce((s, r) => s + r.sum, 0);
     const totalAvg = totalCount > 0 ? Math.round(totalSum / totalCount) : 0;
     const pct = (sum: number) => (totalSum > 0 ? `${Math.round((sum / totalSum) * 100)}%` : "-");
 
-    const th = "py-1.5 pr-4 text-left text-xs font-medium text-slate-400 sticky left-0 bg-white whitespace-nowrap";
-    const td = "py-1.5 px-3 text-right tabular-nums whitespace-nowrap border-l border-slate-100";
+    const fixed = colWidth !== undefined;
+    const fontSize = fixed ? 10 : 12;
+
+    const th = `py-1.5 pr-2 text-left font-medium text-slate-400 sticky left-0 bg-white whitespace-nowrap${fixed ? "" : " text-xs"}`;
+    const td = `py-1.5 px-1 text-right tabular-nums whitespace-nowrap border-l border-slate-100 overflow-hidden${fixed ? "" : " text-sm"}`;
 
     if (rows.length === 0) {
       return <p className="text-sm text-slate-400 text-center py-4 mt-4">本月尚無資料</p>;
@@ -230,9 +246,27 @@ async function DashboardStats({ month }: { month: string }) {
           ? `${td} bg-emerald-100 text-emerald-800 font-bold`
           : `${td} text-slate-600`;
 
+    const tableWidth = fixed ? (firstColWidth ?? colWidth!) + colWidth! * (rows.length + 1) : undefined;
+
     return (
-      <div className="overflow-x-auto mt-4">
-        <table className="text-sm">
+      <div className="mt-4">
+        <table
+          className={fixed ? undefined : "text-sm"}
+          style={
+            fixed
+              ? { tableLayout: "fixed", width: tableWidth, fontSize }
+              : undefined
+          }
+        >
+          {fixed && (
+            <colgroup>
+              <col style={{ width: firstColWidth ?? colWidth }} />
+              {rows.map((r) => (
+                <col key={r.label} style={{ width: colWidth }} />
+              ))}
+              <col style={{ width: colWidth }} />
+            </colgroup>
+          )}
           <tbody>
             <tr className="border-b border-slate-200">
               <th className={th}>{unitLabel}</th>
@@ -287,6 +321,11 @@ async function DashboardStats({ month }: { month: string }) {
 
   // 所別可能多達 24 個以上，長條折線圖需要足夠寬度才不會擠成一團
   const comboWidth = Math.max(360, storeRows.length * 55 + 110);
+  // 下方表格欄寬需與圖表算法一致（SimpleComboChart 的 padding/bandW），標籤才能對齊
+  const comboPaddingLeft = 54;
+  const comboPaddingRight = 48;
+  const comboBandW =
+    (comboWidth - comboPaddingLeft - comboPaddingRight) / Math.max(1, storeRows.length);
 
   return (
     <div className="space-y-4">
@@ -309,8 +348,13 @@ async function DashboardStats({ month }: { month: string }) {
             width={comboWidth}
             data={storeStackedRows}
           />
+          <TransposedStatTable
+            rows={storeRows}
+            unitLabel="所別"
+            colWidth={comboBandW}
+            firstColWidth={comboPaddingLeft}
+          />
         </div>
-        <TransposedStatTable rows={storeRows} unitLabel="所別" />
       </section>
     </div>
   );

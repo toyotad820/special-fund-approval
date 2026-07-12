@@ -94,6 +94,21 @@ async function generateCategoryNo(
   return `${abbr}${count + 1}`;
 }
 
+// 取得目前有效的特案類別 id / 車名清單，用於驗證下拉選單送出的值未被竄改
+async function getValidCategoriesAndCars(): Promise<{
+  validCategoryIds: string[];
+  validCarModels: string[];
+}> {
+  const [categories, cars] = await Promise.all([
+    prisma.caseCategory.findMany({ where: { active: true }, select: { id: true } }),
+    prisma.carModel.findMany({ where: { active: true }, select: { name: true } }),
+  ]);
+  return {
+    validCategoryIds: categories.map((c) => c.id),
+    validCarModels: cars.map((c) => c.name),
+  };
+}
+
 // 送出失敗時，把使用者填的原始欄位值（字串）擷取出來回傳給前端，
 // 讓表單重新顯示時不會清空、可直接在原欄位上修正
 const CASE_FORM_FIELDS = [
@@ -118,21 +133,25 @@ function extractRawValues(formData: FormData): Record<string, string> {
   return values;
 }
 
-function parseAmount(v: FormDataEntryValue | null): number | null {
+function parseAmount(v: FormDataEntryValue | null): number {
   const s = String(v ?? "").trim();
-  if (s === "") return null;
+  if (s === "") return 0; // 未輸入預設為 0
   if (!/^\d+$/.test(s)) return NaN; // 僅允許非負整數
   return Number(s);
 }
 
 // requireDeptCode: 所長沒有固定課別，需在表單中選擇（必填，下拉選單）
 // validDeptCodes: 該所目前有效課別代碼，用於防止表單被竄改送出不存在的課別
+// validCategoryIds / validCarModels: 下拉選單當下的有效選項，防止表單被竄改送出選單以外的值
 function validateCase(
   formData: FormData,
   opts: {
+    storeCode: string;
     requireDeptCode: boolean;
     fixedDeptCode: string;
     validDeptCodes?: string[];
+    validCategoryIds: string[];
+    validCarModels: string[];
   }
 ): {
   data?: CaseData;
@@ -145,13 +164,24 @@ function validateCase(
   const categoryId = String(formData.get("categoryId") ?? "").trim();
   const carModel = String(formData.get("carModel") ?? "").trim();
   const description = String(formData.get("description") ?? "").trim();
+  const storeCode = opts.storeCode.toUpperCase();
 
   if (!plateName) fieldErrors.plateName = "必填";
+
   if (!orderNo) fieldErrors.orderNo = "必填";
-  else if (!/^D.{12}$/.test(orderNo))
-    fieldErrors.orderNo = "須為 13 碼、第一碼為 D";
+  else if (!/^[A-Z0-9]{13}$/.test(orderNo))
+    fieldErrors.orderNo = "須為 13 碼英數字";
+  else if (orderNo.slice(0, 3) !== storeCode)
+    fieldErrors.orderNo = `前 3 碼須為所別 ${storeCode}`;
+
   if (!categoryId) fieldErrors.categoryId = "必填";
+  else if (!opts.validCategoryIds.includes(categoryId))
+    fieldErrors.categoryId = "類別選項無效，請重新選擇";
+
   if (!carModel) fieldErrors.carModel = "必填";
+  else if (!opts.validCarModels.includes(carModel))
+    fieldErrors.carModel = "車名選項無效，請重新選擇";
+
   if (!description) fieldErrors.description = "必填";
 
   let deptCode = opts.fixedDeptCode;
@@ -182,18 +212,17 @@ function validateCase(
   ] as const;
   for (const f of amountFields) {
     const n = parseAmount(formData.get(f));
-    if (n === null) fieldErrors[f] = "必填";
-    else if (Number.isNaN(n)) fieldErrors[f] = "請填非負整數";
+    if (Number.isNaN(n)) fieldErrors[f] = "請填非負整數";
     else amounts[f] = n;
   }
 
-  // 金額防呆：特案支援金額 > 0 時，(所課支援金 + 金牌 + 銀牌) 必須 > 0
+  // 金額防呆：特案支援金額 > 0 時，(所課支援金 + 金牌金額 + 銀牌金額) 必須 > 0
   if (
     amounts.specialSubsidy > 0 &&
     amounts.subsidyDeptCourse + amounts.goldMedal + amounts.silverMedal <= 0
   ) {
     fieldErrors.specialSubsidy =
-      "特案支援金額 > 0 時，所課支援金＋金牌＋銀牌 必須大於 0";
+      "特案支援金額 > 0 時，所課支援金＋金牌金額＋銀牌金額 必須大於 0";
   }
 
   if (Object.keys(fieldErrors).length > 0) return { fieldErrors };
@@ -318,14 +347,18 @@ export async function createCase(
     };
   }
 
-  const validDeptCodes = requireDeptCode
-    ? await getDeptCodesForStore(user.storeCode)
-    : undefined;
+  const [validDeptCodes, { validCategoryIds, validCarModels }] = await Promise.all([
+    requireDeptCode ? getDeptCodesForStore(user.storeCode) : Promise.resolve(undefined),
+    getValidCategoriesAndCars(),
+  ]);
 
   const { data, fieldErrors } = validateCase(formData, {
+    storeCode: user.storeCode,
     requireDeptCode,
     fixedDeptCode,
     validDeptCodes,
+    validCategoryIds,
+    validCarModels,
   });
   if (!data) return { fieldErrors, values: extractRawValues(formData) };
 
@@ -399,14 +432,18 @@ export async function updateCase(
     }
   }
 
-  const validDeptCodes = requireDeptCode
-    ? await getDeptCodesForStore(existing.storeCode)
-    : undefined;
+  const [validDeptCodes, { validCategoryIds, validCarModels }] = await Promise.all([
+    requireDeptCode ? getDeptCodesForStore(existing.storeCode) : Promise.resolve(undefined),
+    getValidCategoriesAndCars(),
+  ]);
 
   const { data, fieldErrors } = validateCase(formData, {
+    storeCode: existing.storeCode,
     requireDeptCode,
     fixedDeptCode,
     validDeptCodes,
+    validCategoryIds,
+    validCarModels,
   });
   if (!data) return { fieldErrors, values: extractRawValues(formData) };
 

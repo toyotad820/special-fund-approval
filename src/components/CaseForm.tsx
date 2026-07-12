@@ -24,8 +24,8 @@ export type CaseInitial = {
 
 const AMOUNTS: { name: keyof CaseInitial; label: string; hint?: string }[] = [
   { name: "subsidyDeptCourse", label: "所課支援金" },
-  { name: "goldMedal", label: "金牌" },
-  { name: "silverMedal", label: "銀牌" },
+  { name: "goldMedal", label: "金牌金額" },
+  { name: "silverMedal", label: "銀牌金額" },
   { name: "discountTotal", label: "折讓總額" },
   { name: "specialSubsidy", label: "特案支援金額", hint: "可為 0" },
 ];
@@ -101,8 +101,8 @@ export default function CaseForm({
       特案類別: categories.find((c) => c.id === catId)?.name || "-",
       車名: String(fd.get("carModel") || "-"),
       所課支援金: num(fd, "subsidyDeptCourse"),
-      金牌: num(fd, "goldMedal"),
-      銀牌: num(fd, "silverMedal"),
+      金牌金額: num(fd, "goldMedal"),
+      銀牌金額: num(fd, "silverMedal"),
       折讓總額: num(fd, "discountTotal"),
       特案支援金額: num(fd, "specialSubsidy"),
       特案內容說明: String(fd.get("description") || "-"),
@@ -254,7 +254,7 @@ export default function CaseForm({
           <input
             name="orderNo"
             defaultValue={v("orderNo", initial?.orderNo)}
-            placeholder="D + 12 碼，共 13 碼"
+            placeholder={`${storeCode} + 10 碼，共 13 碼`}
             maxLength={13}
             className={`${fieldCls("orderNo")} font-mono uppercase`}
           />
@@ -443,7 +443,7 @@ export default function CaseForm({
         <div
           ref={cardRef}
           style={{
-            width: 620,
+            width: 375,
             boxSizing: "border-box",
             background: "#ffffff",
             padding: 28,
@@ -475,8 +475,8 @@ export default function CaseForm({
             "特案類別",
             "車名",
             "所課支援金",
-            "金牌",
-            "銀牌",
+            "金牌金額",
+            "銀牌金額",
             "折讓總額",
             "特案支援金額",
           ].map((k) => (

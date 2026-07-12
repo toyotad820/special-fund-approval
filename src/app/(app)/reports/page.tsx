@@ -22,8 +22,11 @@ export default async function ReportsPage({
   const sp = await searchParams;
   const month = sp.month || currentMonth();
 
-  // 統計不含草稿（草稿尚未正式送出）
-  const reportWhere = { month, status: { not: STATUS.DRAFT } };
+  // 統計不含草稿／已駁回／已撤回（皆非實際生效案件）
+  const reportWhere = {
+    month,
+    status: { notIn: [STATUS.DRAFT, STATUS.REJECTED, STATUS.WITHDRAWN] },
+  };
 
   const [byStore, byCategory, total] = await Promise.all([
     prisma.case.groupBy({
