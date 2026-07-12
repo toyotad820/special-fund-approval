@@ -63,9 +63,9 @@ export function canViewReports(user: User): boolean {
   return user.role === ROLE.BUZHUGUAN || user.role === ROLE.STAFF;
 }
 
-// 後台管理：部主管 / staff
+// 後台管理：僅 staff
 export function canAdmin(user: User): boolean {
-  return user.role === ROLE.BUZHUGUAN || user.role === ROLE.STAFF;
+  return user.role === ROLE.STAFF;
 }
 
 type CaseLike = { status: string; storeCode: string; submittedById: string };

@@ -297,3 +297,66 @@ export async function toggleMonth(formData: FormData) {
   if (m) await prisma.monthWindow.update({ where: { id }, data: { isOpen: !m.isOpen } });
   revalidatePath("/admin/months");
 }
+
+// ---------- 目標台數 ----------
+
+export async function importUnitTargets(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  await requireAdmin();
+
+  const month = String(formData.get("month") ?? "").trim();
+  if (!/^\d{4}-\d{2}$/.test(month)) return { error: "請選擇月份" };
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { error: "請選擇 CSV 檔" };
+  }
+
+  const { parseCsvRecords, decodeCsvBytes } = await import("./csv");
+  const text = decodeCsvBytes(new Uint8Array(await file.arrayBuffer()));
+  const records = parseCsvRecords(text);
+  if (records.length === 0) return { error: "檔案沒有資料列" };
+
+  const errors: string[] = [];
+  // key 重複時（同一批檔案裡打錯打兩次）以後面那列為準
+  const byKey = new Map<
+    string,
+    { storeCode: string; deptCode: string; weight: number; targetCount: number }
+  >();
+
+  for (let i = 0; i < records.length; i++) {
+    const r = records[i];
+    const line = i + 2; // 含表頭
+    const storeCode = (r.storeCode ?? r["所別"] ?? "").trim();
+    // deptCode="0" 代表所層級的獨立數值（業務編制沒有 0 課，不靠加總課算出來）
+    const deptCode = normalizeDeptCode((r.deptCode ?? r["課別"] ?? "").trim());
+    const weight = Number(r.weight ?? r["比重"] ?? "");
+    const targetCount = Number(r.targetCount ?? r["目標台數"] ?? "");
+
+    if (!storeCode || !deptCode || !Number.isFinite(weight) || !Number.isFinite(targetCount)) {
+      errors.push(`第 ${line} 列：缺必要欄位或數值格式錯誤`);
+      continue;
+    }
+    byKey.set(`${storeCode} ${deptCode}`, { storeCode, deptCode, weight, targetCount });
+  }
+
+  const rows = [...byKey.values()];
+  if (rows.length === 0) {
+    return { error: `沒有可用的資料列；${errors.slice(0, 5).join("；")}` };
+  }
+
+  // 整批覆蓋：上傳成功即以這份檔案為準，清掉該月舊資料再整批寫入
+  await prisma.$transaction([
+    prisma.unitTarget.deleteMany({ where: { month } }),
+    prisma.unitTarget.createMany({
+      data: rows.map((r) => ({ month, ...r })),
+    }),
+  ]);
+
+  revalidatePath("/admin/targets");
+  const msg = `已覆蓋寫入 ${rows.length} 筆` +
+    (errors.length ? `；${errors.length} 筆略過：${errors.slice(0, 5).join("；")}` : "");
+  return { ok: errors.length === 0, message: msg, error: errors.length ? msg : undefined };
+}

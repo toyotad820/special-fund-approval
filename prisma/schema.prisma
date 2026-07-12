@@ -102,3 +102,19 @@ model MonthWindow {
   openAt  DateTime?
   closeAt DateTime?
 }
+
+// 所課目標台數主檔：每月由後台整批上傳（覆蓋當月舊資料），逐所逐課設定比重與目標台數。
+// deptCode="0" 代表「所層級」的獨立數值（業務編制沒有 0 課），不是靠加總底下各課算出來——
+// 所目標與課目標各自獨立維護，互不連動。
+model UnitTarget {
+  id          String   @id @default(cuid())
+  month       String // YYYY-MM
+  storeCode   String // 所別
+  deptCode    String // 課別；"0"="所層級"（無此課別編號）
+  weight      Float // 比重（%）
+  targetCount Int // 目標台數
+  updatedAt   DateTime @updatedAt
+
+  @@unique([month, storeCode, deptCode])
+  @@index([month])
+}

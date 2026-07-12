@@ -4,9 +4,14 @@
 //   修訂號：錯誤修正
 // 每次調整功能或修 bug，請同步更新 APP_VERSION，並在 CHANGELOG 開頭加一筆。
 
-export const APP_VERSION = "1.2.0";
+export const APP_VERSION = "1.3.0";
 
 export const CHANGELOG: { version: string; date: string; note: string }[] = [
+  {
+    version: "1.3.0",
+    date: "2026-07-12",
+    note: "後台新增目標台數上傳（所課逐月）；部長待審案件獨立成「待審案件」頁籤，後台改為僅 Staff 可用",
+  },
   {
     version: "1.2.0",
     date: "2026-07-12",

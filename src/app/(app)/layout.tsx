@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/session";
 import { canSubmit, canViewReports, canAdmin } from "@/lib/dal";
-import { ROLE_LABEL } from "@/lib/constants";
+import { ROLE, ROLE_LABEL } from "@/lib/constants";
 import NavBar, { type NavItem } from "@/components/NavBar";
 
 export default async function AppLayout({
@@ -12,6 +12,7 @@ export default async function AppLayout({
 
   const items: NavItem[] = [{ href: "/", label: "首頁" }];
   if (canSubmit(user)) items.push({ href: "/cases/new", label: "新增申請" });
+  if (user.role === ROLE.BUZHUGUAN) items.push({ href: "/queue", label: "待審案件" });
   if (canViewReports(user)) items.push({ href: "/reports", label: "報表" });
   if (canAdmin(user)) items.push({ href: "/admin", label: "後台" });
 

@@ -17,7 +17,7 @@ import SortableCaseTable, {
 import SimpleDonutChart from "@/components/SimpleDonutChart";
 import SimpleComboChart from "@/components/SimpleComboChart";
 
-const caseInclude = {
+export const caseInclude = {
   category: { select: { name: true } },
   submittedBy: { select: { name: true } },
   logs: {
@@ -33,7 +33,7 @@ function currentMonth(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
-type CaseWithRels = {
+export type CaseWithRels = {
   id: string;
   orderNo: string;
   month: string;
@@ -53,7 +53,7 @@ type CaseWithRels = {
   logs: { step: string; reviewer: { name: string } }[];
 };
 
-function toRow(c: CaseWithRels): CaseRowData {
+export function toRow(c: CaseWithRels): CaseRowData {
   const rej = c.status === STATUS.REJECTED ? c.logs[0] : undefined;
   return {
     id: c.id,
@@ -84,13 +84,155 @@ function scopeLabel(role: string): string {
 
 type StatRow = { label: string; count: number; sum: number; avg: number };
 
+type TargetRow = {
+  label: string; // 所別
+  count: number; // 申請台數
+  amountSharePct: number; // 申請金額佔全體的百分比
+  targetCount: number | null; // 目標台數（所層級，未上傳則為 null）
+  weight: number | null; // 比重（所層級，未上傳則為 null）
+};
+
+// 各所「申請台數佔目標比例」與「申請金額佔比 vs 比重」對照表，供部長/Staff 首頁使用。
+// 台數達成率前3高標紅、後3低標綠；金額佔比高於比重的所別標紅。
+function TargetVsActualTable({
+  rows,
+  colWidth,
+  firstColWidth,
+}: {
+  rows: TargetRow[];
+  colWidth: number;
+  firstColWidth: number;
+}) {
+  if (rows.length === 0) {
+    return <p className="text-sm text-slate-400 text-center py-4">本月尚無資料</p>;
+  }
+
+  const withRate = rows.map((r) => ({
+    ...r,
+    rate: r.targetCount && r.targetCount > 0 ? (r.count / r.targetCount) * 100 : null,
+  }));
+
+  const N = 3;
+  const qualifying = withRate.filter((r) => r.rate !== null);
+  const sortedByRateDesc = [...qualifying].sort((a, b) => (b.rate ?? 0) - (a.rate ?? 0));
+  const redKeys = new Set(sortedByRateDesc.slice(0, N).map((r) => r.label));
+  const greenKeys = new Set(sortedByRateDesc.slice(-N).map((r) => r.label));
+  // 資料太少導致紅綠重疊時，重疊部分不標色
+  for (const k of [...redKeys]) {
+    if (greenKeys.has(k)) {
+      redKeys.delete(k);
+      greenKeys.delete(k);
+    }
+  }
+
+  const totalCount = rows.reduce((s, r) => s + r.count, 0);
+  const totalTarget = rows.reduce((s, r) => s + (r.targetCount ?? 0), 0);
+  const totalRate = totalTarget > 0 ? (totalCount / totalTarget) * 100 : null;
+
+  const fontSize = 10;
+  const th = "py-1.5 pr-2 text-left font-medium text-slate-400 sticky left-0 bg-white whitespace-nowrap";
+  const td = "py-1.5 px-1 text-right tabular-nums whitespace-nowrap border-l border-slate-100 overflow-hidden";
+  const tableWidth = firstColWidth + colWidth * (rows.length + 1);
+
+  const rateCellCls = (label: string) =>
+    redKeys.has(label)
+      ? `${td} bg-rose-100 text-rose-800 font-bold`
+      : greenKeys.has(label)
+        ? `${td} bg-emerald-100 text-emerald-800 font-bold`
+        : `${td} text-slate-600`;
+
+  const shareCellCls = (r: (typeof withRate)[number]) =>
+    r.weight !== null && r.amountSharePct > r.weight
+      ? `${td} bg-rose-100 text-rose-800 font-bold`
+      : `${td} text-slate-600`;
+
+  return (
+    <div className="mt-1">
+      <p className="text-xs text-slate-400 mb-2">
+        申請比率
+        <span className="inline-block mx-1 px-1.5 rounded bg-rose-100 text-rose-700">
+          最高 {N} 名
+        </span>
+        <span className="inline-block mx-1 px-1.5 rounded bg-emerald-100 text-emerald-700">
+          最低 {N} 名
+        </span>
+        ；金額佔比
+        <span className="inline-block mx-1 px-1.5 rounded bg-rose-100 text-rose-700">
+          高於比重
+        </span>
+        的所別標紅（尚未上傳目標的所別以「-」表示）
+      </p>
+      <table style={{ tableLayout: "fixed", width: tableWidth, fontSize }}>
+        <colgroup>
+          <col style={{ width: firstColWidth }} />
+          {rows.map((r) => (
+            <col key={r.label} style={{ width: colWidth }} />
+          ))}
+          <col style={{ width: colWidth }} />
+        </colgroup>
+        <tbody>
+          <tr className="border-b border-slate-200">
+            <th className={th}>所別</th>
+            {withRate.map((r) => (
+              <td key={r.label} className={`${td} font-semibold text-slate-700`} style={{ textAlign: "center" }}>
+                {r.label}
+              </td>
+            ))}
+            <td className={`${td} font-semibold text-slate-700 bg-slate-50/70`} style={{ textAlign: "center" }}>
+              合計
+            </td>
+          </tr>
+          <tr className="border-b border-slate-100">
+            <th className={th}>目標台數</th>
+            {withRate.map((r) => (
+              <td key={r.label} className={`${td} text-slate-600`}>
+                {r.targetCount ?? "-"}
+              </td>
+            ))}
+            <td className={`${td} font-bold text-slate-800 bg-slate-50/70`}>{totalTarget || "-"}</td>
+          </tr>
+          <tr className="border-b border-slate-100">
+            <th className={th}>申請台數</th>
+            {withRate.map((r) => (
+              <td key={r.label} className={`${td} text-slate-600`}>
+                {r.count}
+              </td>
+            ))}
+            <td className={`${td} font-bold text-slate-800 bg-slate-50/70`}>{totalCount}</td>
+          </tr>
+          <tr className="border-b border-slate-100">
+            <th className={th}>申請比率</th>
+            {withRate.map((r) => (
+              <td key={r.label} className={rateCellCls(r.label)}>
+                {r.rate !== null ? `${Math.round(r.rate)}%` : "-"}
+              </td>
+            ))}
+            <td className={`${td} font-bold text-slate-800 bg-slate-50/70`}>
+              {totalRate !== null ? `${Math.round(totalRate)}%` : "-"}
+            </td>
+          </tr>
+          <tr>
+            <th className={th}>金額佔比</th>
+            {withRate.map((r) => (
+              <td key={r.label} className={shareCellCls(r)}>
+                {Math.round(r.amountSharePct)}%
+              </td>
+            ))}
+            <td className={`${td} font-bold text-slate-800 bg-slate-50/70`}>100%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 // 統計區：各特案類別統計 + 各所統計（不含草稿／已駁回／已撤回），供部長/Staff 首頁使用
 async function DashboardStats({ month }: { month: string }) {
   const statusFilter = {
     notIn: [STATUS.DRAFT, STATUS.REJECTED, STATUS.WITHDRAWN] as string[],
   };
 
-  const [byCategory, byStore, byStoreCategory, categories] = await Promise.all([
+  const [byCategory, byStore, byStoreCategory, categories, storeTargets] = await Promise.all([
     prisma.case.groupBy({
       by: ["categoryId"],
       where: { month, status: statusFilter },
@@ -110,7 +252,11 @@ async function DashboardStats({ month }: { month: string }) {
       _count: { _all: true },
     }),
     prisma.caseCategory.findMany({ orderBy: { sortOrder: "asc" } }),
+    // 所層級目標（deptCode="0"）：跟課層級各自獨立維護，見 UnitTarget
+    prisma.unitTarget.findMany({ where: { month, deptCode: "0" } }),
   ]);
+
+  const targetByStore = new Map(storeTargets.map((t) => [t.storeCode, t]));
 
   const catName = (id: string | null) =>
     categories.find((c) => c.id === id)?.name ?? "（未分類）";
@@ -399,6 +545,18 @@ async function DashboardStats({ month }: { month: string }) {
   const comboBandW =
     (comboWidth - comboPaddingLeft - comboPaddingRight) / Math.max(1, storeRows.length);
 
+  const totalAmount = storeRows.reduce((s, r) => s + r.sum, 0);
+  const targetRows: TargetRow[] = storeRows.map((r) => {
+    const t = targetByStore.get(r.label);
+    return {
+      label: r.label,
+      count: r.count,
+      amountSharePct: totalAmount > 0 ? (r.sum / totalAmount) * 100 : 0,
+      targetCount: t?.targetCount ?? null,
+      weight: t?.weight ?? null,
+    };
+  });
+
   return (
     <div className="space-y-4">
       {/* 上：各特案類別統計，左圖右表 */}
@@ -442,6 +600,18 @@ async function DashboardStats({ month }: { month: string }) {
                 ])
               ),
             }))}
+          />
+        </div>
+      </section>
+
+      {/* 各所申請台數/金額 對目標比重的達成情況 */}
+      <section className="card p-4">
+        <h2 className="section-title">各所目標達成情況 · {month}</h2>
+        <div className="overflow-x-auto">
+          <TargetVsActualTable
+            rows={targetRows}
+            colWidth={comboBandW}
+            firstColWidth={comboPaddingLeft}
           />
         </div>
       </section>
@@ -622,12 +792,17 @@ async function RoleDashboard({
     monthlyWhere = null;
   }
 
+  // 部主管的待審核案件已獨立成「/queue」頁籤，首頁不再重複顯示
+  const showUnresolvedHere = user.role !== ROLE.BUZHUGUAN;
+
   const [unresolved, monthly] = await Promise.all([
-    prisma.case.findMany({
-      where: unresolvedWhere,
-      include: caseInclude,
-      orderBy: { submittedAt: "desc" },
-    }),
+    showUnresolvedHere
+      ? prisma.case.findMany({
+          where: unresolvedWhere,
+          include: caseInclude,
+          orderBy: { submittedAt: "desc" },
+        })
+      : Promise.resolve([]),
     monthlyWhere
       ? prisma.case.findMany({
           where: monthlyWhere,
@@ -658,16 +833,18 @@ async function RoleDashboard({
 
       {user.role === ROLE.BUZHUGUAN && <DashboardStats month={month} />}
 
-      <section>
-        <h2 className="section-title">
-          {unresolvedTitle}{" "}
-          <span className="text-blue-600">({unresolved.length})</span>
-          <span className="text-xs text-slate-400 font-normal ml-2">
-            {unresolvedHint}
-          </span>
-        </h2>
-        <SortableCaseTable rows={unresolved.map(toRow)} emptyText="沒有案件" />
-      </section>
+      {showUnresolvedHere && (
+        <section>
+          <h2 className="section-title">
+            {unresolvedTitle}{" "}
+            <span className="text-blue-600">({unresolved.length})</span>
+            <span className="text-xs text-slate-400 font-normal ml-2">
+              {unresolvedHint}
+            </span>
+          </h2>
+          <SortableCaseTable rows={unresolved.map(toRow)} emptyText="沒有案件" />
+        </section>
+      )}
 
       {monthlyWhere && (
         <section>

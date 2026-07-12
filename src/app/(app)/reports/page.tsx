@@ -28,7 +28,7 @@ export default async function ReportsPage({
     status: { notIn: [STATUS.DRAFT, STATUS.REJECTED, STATUS.WITHDRAWN] },
   };
 
-  const [byStore, byCategory, total] = await Promise.all([
+  const [byStore, byCategory, total, storeTargets] = await Promise.all([
     prisma.case.groupBy({
       by: ["storeCode"],
       where: reportWhere,
@@ -47,6 +47,8 @@ export default async function ReportsPage({
       _count: { _all: true },
       _sum: { specialSubsidy: true },
     }),
+    // 所層級目標（deptCode="0"）：跟課層級各自獨立維護，見 UnitTarget
+    prisma.unitTarget.findMany({ where: { month, deptCode: "0" } }),
   ]);
 
   const categories = await prisma.caseCategory.findMany();
@@ -55,6 +57,69 @@ export default async function ReportsPage({
 
   const th = "text-left text-xs font-semibold text-slate-500 px-3 py-2";
   const td = "px-3 py-2 text-sm text-slate-800";
+
+  // 各所目標對照：申請比率（申請台數/目標台數）前3高標紅、後3低標綠；
+  // 金額比率（該所金額佔全體比例）高於比重的所別標紅
+  const targetByStore = new Map(storeTargets.map((t) => [t.storeCode, t]));
+  const totalAmount = total._sum.specialSubsidy ?? 0;
+  const storeStats = byStore.map((r) => {
+    const t = targetByStore.get(r.storeCode);
+    const count = r._count._all;
+    const sum = r._sum.specialSubsidy ?? 0;
+    return {
+      storeCode: r.storeCode,
+      count,
+      sum,
+      targetCount: t?.targetCount ?? null,
+      weight: t?.weight ?? null,
+      rate: t?.targetCount ? (count / t.targetCount) * 100 : null,
+      sharePct: totalAmount > 0 ? (sum / totalAmount) * 100 : 0,
+      avg: count > 0 ? sum / count : 0,
+    };
+  });
+
+  const N = 3;
+  const qualifying = storeStats.filter((r) => r.rate !== null);
+  const sortedByRateDesc = [...qualifying].sort((a, b) => (b.rate ?? 0) - (a.rate ?? 0));
+  const rateRedKeys = new Set(sortedByRateDesc.slice(0, N).map((r) => r.storeCode));
+  const rateGreenKeys = new Set(sortedByRateDesc.slice(-N).map((r) => r.storeCode));
+  for (const k of [...rateRedKeys]) {
+    if (rateGreenKeys.has(k)) {
+      rateRedKeys.delete(k);
+      rateGreenKeys.delete(k);
+    }
+  }
+  const rateCellCls = (storeCode: string) =>
+    rateRedKeys.has(storeCode)
+      ? "px-3 py-2 text-sm text-right tabular-nums bg-rose-100 text-rose-800 font-bold"
+      : rateGreenKeys.has(storeCode)
+        ? "px-3 py-2 text-sm text-right tabular-nums bg-emerald-100 text-emerald-800 font-bold"
+        : `${td} text-right tabular-nums`;
+  const shareCellCls = (r: (typeof storeStats)[number]) =>
+    r.weight !== null && r.sharePct > r.weight
+      ? "px-3 py-2 text-sm text-right tabular-nums bg-rose-100 text-rose-800 font-bold"
+      : `${td} text-right tabular-nums`;
+
+  // 平均金額前3高標紅、後3低標綠（跟首頁各所統計、所課別特案使用統計表的標色邏輯一致）
+  const avgQualifying = storeStats.filter((r) => r.count > 0);
+  const sortedByAvgDesc = [...avgQualifying].sort((a, b) => b.avg - a.avg);
+  const avgRedKeys = new Set(sortedByAvgDesc.slice(0, N).map((r) => r.storeCode));
+  const avgGreenKeys = new Set(sortedByAvgDesc.slice(-N).map((r) => r.storeCode));
+  for (const k of [...avgRedKeys]) {
+    if (avgGreenKeys.has(k)) {
+      avgRedKeys.delete(k);
+      avgGreenKeys.delete(k);
+    }
+  }
+  const avgCellCls = (storeCode: string) =>
+    avgRedKeys.has(storeCode)
+      ? "px-3 py-2 text-sm text-right tabular-nums bg-rose-100 text-rose-800 font-bold"
+      : avgGreenKeys.has(storeCode)
+        ? "px-3 py-2 text-sm text-right tabular-nums bg-emerald-100 text-emerald-800 font-bold"
+        : `${td} text-right tabular-nums`;
+
+  const totalTarget = storeStats.reduce((s, r) => s + (r.targetCount ?? 0), 0);
+  const totalRate = totalTarget > 0 ? (total._count._all / totalTarget) * 100 : null;
 
   return (
     <div className="space-y-6">
@@ -109,31 +174,56 @@ export default async function ReportsPage({
         <h2 className="text-sm font-semibold text-slate-700 px-4 pt-4">
           依據點統計
         </h2>
+        <p className="text-xs text-slate-400 px-4 pt-1">
+          申請比率
+          <span className="inline-block mx-1 px-1.5 rounded bg-rose-100 text-rose-700">
+            最高 {N} 名
+          </span>
+          <span className="inline-block mx-1 px-1.5 rounded bg-emerald-100 text-emerald-700">
+            最低 {N} 名
+          </span>
+          ；金額比率
+          <span className="inline-block mx-1 px-1.5 rounded bg-rose-100 text-rose-700">
+            高於比重
+          </span>
+          的所別標紅；平均金額
+          <span className="inline-block mx-1 px-1.5 rounded bg-rose-100 text-rose-700">
+            最高 {N} 名
+          </span>
+          <span className="inline-block mx-1 px-1.5 rounded bg-emerald-100 text-emerald-700">
+            最低 {N} 名
+          </span>
+          （尚未上傳目標的所別以「-」表示）
+        </p>
         <table className="w-full mt-2">
           <thead className="bg-slate-50">
             <tr>
               <th className={th}>據點</th>
+              <th className={th}>目標</th>
               <th className={th}>件數</th>
+              <th className={th}>申請比率</th>
               <th className={th}>特案金額總和</th>
+              <th className={th}>金額比率</th>
               <th className={th}>平均</th>
             </tr>
           </thead>
           <tbody>
-            {byStore.map((r) => (
+            {storeStats.map((r) => (
               <tr key={r.storeCode} className="border-t border-slate-100">
                 <td className={td}>{r.storeCode}</td>
-                <td className={td}>{r._count._all}</td>
-                <td className={td}>{money(r._sum.specialSubsidy ?? 0)}</td>
-                <td className={td}>
-                  {money(
-                    Math.round((r._sum.specialSubsidy ?? 0) / r._count._all)
-                  )}
+                <td className={`${td} text-right tabular-nums`}>{r.targetCount ?? "-"}</td>
+                <td className={`${td} text-right tabular-nums`}>{r.count}</td>
+                <td className={rateCellCls(r.storeCode)}>
+                  {r.rate !== null ? `${Math.round(r.rate)}%` : "-"}
                 </td>
+                <td className={`${td} text-right tabular-nums`}>{money(r.sum)}</td>
+                <td className={shareCellCls(r)}>{Math.round(r.sharePct)}%</td>
+                <td className={avgCellCls(r.storeCode)}>{money(Math.round(r.avg))}</td>
               </tr>
             ))}
             {byStore.length === 0 && (
               <tr>
-                <td className="px-3 py-4 text-sm text-slate-400" colSpan={4}>
+                <td className="px-3 py-4 text-sm text-slate-400" colSpan={7}>
                   本月無資料
                 </td>
               </tr>
@@ -143,9 +233,16 @@ export default async function ReportsPage({
             <tfoot>
               <tr className="border-t-2 border-slate-300 font-bold text-slate-800 bg-slate-50/70">
                 <td className={td}>總計</td>
-                <td className={td}>{total._count._all}</td>
-                <td className={td}>{money(total._sum.specialSubsidy ?? 0)}</td>
-                <td className={td}>
+                <td className={`${td} text-right tabular-nums`}>{totalTarget || "-"}</td>
+                <td className={`${td} text-right tabular-nums`}>{total._count._all}</td>
+                <td className={`${td} text-right tabular-nums`}>
+                  {totalRate !== null ? `${Math.round(totalRate)}%` : "-"}
+                </td>
+                <td className={`${td} text-right tabular-nums`}>
+                  {money(total._sum.specialSubsidy ?? 0)}
+                </td>
+                <td className={`${td} text-right tabular-nums`}>100%</td>
+                <td className={`${td} text-right tabular-nums`}>
                   {money(
                     total._count._all
                       ? Math.round(

@@ -8,6 +8,7 @@ const tabs = [
   { href: "/admin/categories", label: "特案類別" },
   { href: "/admin/cars", label: "車種" },
   { href: "/admin/months", label: "月份開關" },
+  { href: "/admin/targets", label: "目標台數" },
 ];
 
 export default async function AdminLayout({
