@@ -140,6 +140,8 @@ export default function SimpleComboChart({
                     width={barW}
                     height={Math.max(0, yBottom - yTop)}
                     fill={colorFor(si)}
+                    stroke="#fff"
+                    strokeWidth={1.5}
                   />
                 );
               })}
