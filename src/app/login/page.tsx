@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { login, type ActionState } from "@/lib/actions";
 import { APP_VERSION } from "@/lib/version";
+import BrandMark from "@/components/BrandMark";
 
 const initial: ActionState = {};
 
@@ -13,9 +14,7 @@ export default function LoginPage() {
     <div className="flex-1 flex items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-6">
-          <span className="grid place-items-center w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-600 to-blue-500 text-white font-bold text-2xl shadow-lg shadow-blue-600/30">
-            特
-          </span>
+          <BrandMark size="lg" showTitle={false} />
           <h1 className="text-xl font-bold text-slate-800 mt-3">
             特案支援金報備系統
           </h1>
@@ -25,7 +24,7 @@ export default function LoginPage() {
           </span>
         </div>
 
-        <div className="card p-7">
+        <div className="card p-7 border-t-2 border-t-[#EB0A1E]/70">
           <form action={formAction} className="space-y-4">
             <div>
               <label className="label">帳號</label>

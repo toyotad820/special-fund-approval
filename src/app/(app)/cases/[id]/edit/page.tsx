@@ -26,7 +26,7 @@ export default async function EditCasePage({
     }),
     prisma.carModel.findMany({
       where: { active: true },
-      orderBy: { sortOrder: "asc" },
+      orderBy: { name: "asc" },
     }),
     deptEditable ? getDeptCodesForStore(c!.storeCode) : Promise.resolve([]),
   ]);

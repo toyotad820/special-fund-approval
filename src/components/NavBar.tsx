@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logout } from "@/lib/actions";
 import { APP_VERSION, CHANGELOG } from "@/lib/version";
+import BrandMark from "@/components/BrandMark";
 
 export type NavItem = { href: string; label: string };
 
@@ -26,11 +27,11 @@ export default function NavBar({
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 sm:gap-5 min-w-0">
           <Link href="/" className="flex items-center gap-2 shrink-0">
-            <span className="grid place-items-center w-8 h-8 rounded-lg bg-gradient-to-br from-blue-600 to-blue-500 text-white font-bold text-sm shadow-sm shadow-blue-600/30">
-              特
+            <span className="hidden md:inline">
+              <BrandMark size="sm" />
             </span>
-            <span className="font-bold text-slate-800 hidden md:inline whitespace-nowrap">
-              特案支援金報備
+            <span className="md:hidden font-black tracking-wider text-[#EB0A1E] text-base leading-none">
+              TOYOTA
             </span>
             <span
               title={`v${APP_VERSION} · ${CHANGELOG[0]?.note ?? ""}`}
@@ -46,7 +47,7 @@ export default function NavBar({
                 <Link
                   key={it.href}
                   href={it.href}
-                  className={`px-3 py-1.5 rounded-lg font-medium transition-colors ${
+                  className={`px-3 py-1.5 rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
                     active
                       ? "bg-blue-50 text-blue-700"
                       : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
@@ -67,7 +68,7 @@ export default function NavBar({
             {roleLabel}
           </span>
           <form action={logout}>
-            <button className="text-slate-400 hover:text-rose-600 transition-colors font-medium">
+            <button className="text-slate-400 hover:text-rose-600 transition-colors font-medium px-2 py-2.5 -mx-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/50">
               登出
             </button>
           </form>

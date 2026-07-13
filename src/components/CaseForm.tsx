@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useState, useEffect } from "react";
+import { useActionState, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { ActionState } from "@/lib/actions";
 import { money } from "@/lib/format";
@@ -67,14 +67,13 @@ export default function CaseForm({
   const [modalOpen, setModalOpen] = useState(false);
   // 送出失敗時遞增，強制表單重新掛載以套用 state.values（保留使用者剛填的內容）
   const [formKey, setFormKey] = useState(0);
-  const seenRef = useRef(state);
-  useEffect(() => {
-    if (state !== seenRef.current) {
-      seenRef.current = state;
-      setModalOpen(true);
-      if (!state.ok) setFormKey((k) => k + 1);
-    }
-  }, [state]);
+  // 渲染中直接比對並調整狀態（React 建議做法），比 useEffect 少一次多餘的渲染
+  const [seenState, setSeenState] = useState(state);
+  if (state !== seenState) {
+    setSeenState(state);
+    setModalOpen(true);
+    if (!state.ok) setFormKey((k) => k + 1);
+  }
 
   // 送出失敗時，欄位值優先用剛才送出的內容（state.values），否則退回原始資料（initial）
   const v = (key: string, fallback?: string | number): string | undefined =>

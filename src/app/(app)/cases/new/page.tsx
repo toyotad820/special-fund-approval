@@ -23,7 +23,7 @@ export default async function NewCasePage() {
     }),
     prisma.carModel.findMany({
       where: { active: true },
-      orderBy: { sortOrder: "asc" },
+      orderBy: { name: "asc" },
     }),
     prisma.monthWindow.findUnique({ where: { month } }),
     deptEditable ? getDeptCodesForStore(user.storeCode) : Promise.resolve([]),

@@ -4,9 +4,14 @@
 //   修訂號：錯誤修正
 // 每次調整功能或修 bug，請同步更新 APP_VERSION，並在 CHANGELOG 開頭加一筆。
 
-export const APP_VERSION = "1.3.0";
+export const APP_VERSION = "1.4.0";
 
 export const CHANGELOG: { version: string; date: string; note: string }[] = [
+  {
+    version: "1.4.0",
+    date: "2026-07-13",
+    note: "修正 4 個 React 正確性問題（render 中建立元件／effect 內同步 setState／不純渲染）；清除孤兒腳本；logo 改用 TOYOTA 品牌標；按鈕/連結補上鍵盤 focus 樣式，登出按鈕觸控熱區加大",
+  },
   {
     version: "1.3.0",
     date: "2026-07-12",

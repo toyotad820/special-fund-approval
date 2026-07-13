@@ -4,7 +4,7 @@ import { CATEGORICAL } from "@/lib/chartColors";
 
 export type StackedComboDatum = { label: string; segments: number[]; line: number };
 
-const LINE_COLOR = "#1e293b"; // 深灰藍中性色，跟任何分類長條色都不撞
+const LINE_COLOR = "#7C3AED"; // 紫色，跟企業大口的紅色（CATEGORICAL[4] #E53935）色相差異夠大不混淆
 
 export default function SimpleComboChart({
   data,

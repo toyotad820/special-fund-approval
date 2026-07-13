@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { STATUS } from "@/lib/constants";
 import { money } from "@/lib/format";
+import { CATEGORICAL, CATEGORY_COLOR_BY_NAME } from "@/lib/chartColors";
 
 function currentMonth(): string {
   const d = new Date();
@@ -31,7 +32,7 @@ export default async function TargetVsActualPage({
     status: { notIn: [STATUS.DRAFT, STATUS.REJECTED, STATUS.WITHDRAWN] as string[] },
   };
 
-  const [grouped, targets] = await Promise.all([
+  const [grouped, targets, byCategoryOverall, byUnitCategory, categories] = await Promise.all([
     level === "dept"
       ? prisma.case.groupBy({
           by: ["storeCode", "deptCode"],
@@ -49,11 +50,55 @@ export default async function TargetVsActualPage({
     prisma.unitTarget.findMany({
       where: level === "dept" ? { month, deptCode: { not: "0" } } : { month, deptCode: "0" },
     }),
+    // 決定類別欄位順序（依金額總和排序，跟首頁一致）
+    prisma.case.groupBy({
+      by: ["categoryId"],
+      where: caseWhere,
+      _sum: { specialSubsidy: true },
+    }),
+    level === "dept"
+      ? prisma.case.groupBy({
+          by: ["storeCode", "deptCode", "categoryId"],
+          where: caseWhere,
+          _count: { _all: true },
+        })
+      : prisma.case.groupBy({
+          by: ["storeCode", "categoryId"],
+          where: caseWhere,
+          _count: { _all: true },
+        }),
+    prisma.caseCategory.findMany(),
   ]);
 
   const targetByKey = new Map(
     targets.map((t) => [level === "dept" ? `${t.storeCode}-${t.deptCode}` : t.storeCode, t])
   );
+
+  const catName = (id: string | null) =>
+    categories.find((c) => c.id === id)?.name ?? "（未分類）";
+  // 類別欄位涵蓋所有現行類別（不只本月有申請的），本月無資料的欄位顯示 0
+  const sumByCategoryId = new Map(byCategoryOverall.map((r) => [r.categoryId, r._sum.specialSubsidy ?? 0]));
+  const categoryOrder = categories
+    .map((c) => ({ id: c.id as string | null, name: c.name, sum: sumByCategoryId.get(c.id) ?? 0 }))
+    .sort((a, b) => b.sum - a.sum);
+  const categoryColor = (id: string | null) => {
+    const name = catName(id);
+    const idx = categories.findIndex((c) => c.id === id);
+    return (
+      CATEGORY_COLOR_BY_NAME[name] ??
+      CATEGORICAL[(idx < 0 ? categories.length : idx) % CATEGORICAL.length]
+    );
+  };
+
+  const countByUnitCategory = new Map<string, Map<string | null, number>>();
+  for (const r of byUnitCategory) {
+    const isDept = "deptCode" in r;
+    const key = isDept
+      ? `${r.storeCode}-${(r as { deptCode: string }).deptCode}`
+      : r.storeCode;
+    if (!countByUnitCategory.has(key)) countByUnitCategory.set(key, new Map());
+    countByUnitCategory.get(key)!.set(r.categoryId, r._count._all);
+  }
 
   const units: UnitStat[] = grouped.map((g) => {
     const isDept = "deptCode" in g;
@@ -95,6 +140,19 @@ export default async function TargetVsActualPage({
     }
   }
 
+  // 平均金額前3高標紅、後3低標綠：所別前3後3、課別前5後5
+  const withAvg = withRate.map((u) => ({ ...u, avg: u.count > 0 ? u.sum / u.count : 0 }));
+  const avgQualifying = withAvg.filter((u) => u.count > 0);
+  const sortedByAvgDesc = [...avgQualifying].sort((a, b) => b.avg - a.avg);
+  const avgRedKeys = new Set(sortedByAvgDesc.slice(0, N).map((u) => u.key));
+  const avgGreenKeys = new Set(sortedByAvgDesc.slice(-N).map((u) => u.key));
+  for (const k of [...avgRedKeys]) {
+    if (avgGreenKeys.has(k)) {
+      avgRedKeys.delete(k);
+      avgGreenKeys.delete(k);
+    }
+  }
+
   const th =
     "text-center text-xs font-semibold text-slate-500 px-2.5 py-2 whitespace-nowrap border-l border-slate-200 first:border-l-0";
   const td =
@@ -108,6 +166,12 @@ export default async function TargetVsActualPage({
         : td;
   const shareCellCls = (u: (typeof withRate)[number]) =>
     u.weight !== null && u.sharePct > u.weight ? `${td} bg-rose-100 text-rose-800 font-bold` : td;
+  const avgCellCls = (key: string) =>
+    avgRedKeys.has(key)
+      ? `${td} bg-rose-100 text-rose-800 font-bold`
+      : avgGreenKeys.has(key)
+        ? `${td} bg-emerald-100 text-emerald-800 font-bold`
+        : td;
 
   return (
     <div className="space-y-4">
@@ -128,7 +192,7 @@ export default async function TargetVsActualPage({
             <span className="inline-block mx-1 px-1.5 rounded bg-rose-100 text-rose-700">
               高於比重
             </span>
-            的單位標紅（尚未上傳目標以「-」表示）
+            的單位標紅；平均金額同申請比率標示規則（尚未上傳目標以「-」表示）
           </p>
         </div>
 
@@ -190,32 +254,53 @@ export default async function TargetVsActualPage({
                   單位（{level === "store" ? "所" : "課"}）
                 </th>
                 <th className={th}>目標台數</th>
+                {categoryOrder.map((c) => (
+                  <th key={c.id ?? "none"} className={th}>
+                    <span className="inline-flex items-center gap-1">
+                      <span
+                        className="w-1.5 h-1.5 rounded-sm shrink-0"
+                        style={{ background: categoryColor(c.id) }}
+                      />
+                      {c.name}
+                    </span>
+                  </th>
+                ))}
                 <th className={th}>申請台數</th>
                 <th className={th}>申請比率</th>
                 <th className={th}>金額總和</th>
                 <th className={th}>金額比率</th>
-                <th className={th}>平均</th>
+                <th className={th}>平均金額</th>
               </tr>
             </thead>
             <tbody>
-              {withRate.map((u) => (
+              {withAvg.map((u) => (
                 <tr key={u.key} className="border-t border-slate-100 even:bg-slate-50/40">
                   <td className="px-3 py-2 font-medium text-slate-800 sticky left-0 bg-inherit whitespace-nowrap">
                     {u.label}
                   </td>
                   <td className={td}>{u.targetCount ?? "-"}</td>
+                  {categoryOrder.map((c) => (
+                    <td key={c.id ?? "none"} className={td}>
+                      {countByUnitCategory.get(u.key)?.get(c.id) ?? 0}
+                    </td>
+                  ))}
                   <td className={td}>{u.count}</td>
                   <td className={rateCellCls(u.key)}>
                     {u.rate !== null ? `${Math.round(u.rate)}%` : "-"}
                   </td>
                   <td className={td}>{money(u.sum)}</td>
                   <td className={shareCellCls(u)}>{Math.round(u.sharePct)}%</td>
-                  <td className={td}>{money(Math.round(u.count ? u.sum / u.count : 0))}</td>
+                  <td className={avgCellCls(u.key)}>{money(Math.round(u.avg))}</td>
                 </tr>
               ))}
               <tr className="border-t-2 border-slate-300 font-bold text-slate-800 bg-slate-50/70">
                 <td className="px-3 py-2 sticky left-0 bg-inherit whitespace-nowrap">合計</td>
                 <td className={td}>{totalTarget || "-"}</td>
+                {categoryOrder.map((c) => (
+                  <td key={c.id ?? "none"} className={td}>
+                    {units.reduce((s, u) => s + (countByUnitCategory.get(u.key)?.get(c.id) ?? 0), 0)}
+                  </td>
+                ))}
                 <td className={td}>{totalCount}</td>
                 <td className={td}>{totalRate !== null ? `${Math.round(totalRate)}%` : "-"}</td>
                 <td className={td}>{money(totalAmount)}</td>

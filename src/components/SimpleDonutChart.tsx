@@ -21,7 +21,12 @@ export default function SimpleDonutChart({
     return <p className="text-sm text-slate-400 text-center py-6">本月尚無資料</p>;
   }
 
-  let offsetAcc = 0;
+  // 各區塊在圓周上的起始偏移量：依序累加前面所有區塊的弧長
+  const offsets: number[] = [];
+  data.reduce((acc, d) => {
+    offsets.push(acc);
+    return acc + (d.value / total) * circumference;
+  }, 0);
 
   return (
     <div className="flex items-center gap-6 flex-wrap">
@@ -48,8 +53,7 @@ export default function SimpleDonutChart({
           const gap = circumference - dash;
           // 區塊間留 2px 分隔縫
           const strokeDasharray = `${Math.max(0, dash - 2)} ${gap + 2}`;
-          const strokeDashoffset = -offsetAcc;
-          offsetAcc += dash;
+          const strokeDashoffset = -offsets[i];
           return (
             <circle
               key={d.label}
