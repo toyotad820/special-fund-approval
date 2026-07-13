@@ -181,18 +181,13 @@ export default async function TargetVsActualPage({
             各所申請比較 · {month}
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            申請比率
             <span className="inline-block mx-1 px-1.5 rounded bg-rose-100 text-rose-700">
-              最高 {N} 名
+              偏高／超標
             </span>
             <span className="inline-block mx-1 px-1.5 rounded bg-emerald-100 text-emerald-700">
-              最低 {N} 名
+              偏低
             </span>
-            ；金額比率
-            <span className="inline-block mx-1 px-1.5 rounded bg-rose-100 text-rose-700">
-              高於比重
-            </span>
-            的單位標紅；平均金額同申請比率標示規則（尚未上傳目標以「-」表示）
+            （尚未上傳目標以「-」表示）
           </p>
         </div>
 

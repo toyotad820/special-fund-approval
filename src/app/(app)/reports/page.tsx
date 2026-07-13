@@ -55,7 +55,8 @@ export default async function ReportsPage({
   const catName = (id: string | null) =>
     categories.find((c) => c.id === id)?.name ?? "（未分類）";
 
-  const th = "text-left text-xs font-semibold text-slate-500 px-3 py-2";
+  const th = "text-center text-xs font-semibold text-slate-500 px-3 py-2";
+  const thLabel = "text-left text-xs font-semibold text-slate-500 px-3 py-2";
   const td = "px-3 py-2 text-sm text-slate-800";
 
   // 各所目標對照：申請比率（申請台數/目標台數）前3高標紅、後3低標綠；
@@ -175,30 +176,18 @@ export default async function ReportsPage({
           依據點統計
         </h2>
         <p className="text-xs text-slate-400 px-4 pt-1">
-          申請比率
           <span className="inline-block mx-1 px-1.5 rounded bg-rose-100 text-rose-700">
-            最高 {N} 名
+            偏高／超標
           </span>
           <span className="inline-block mx-1 px-1.5 rounded bg-emerald-100 text-emerald-700">
-            最低 {N} 名
-          </span>
-          ；金額比率
-          <span className="inline-block mx-1 px-1.5 rounded bg-rose-100 text-rose-700">
-            高於比重
-          </span>
-          的所別標紅；平均金額
-          <span className="inline-block mx-1 px-1.5 rounded bg-rose-100 text-rose-700">
-            最高 {N} 名
-          </span>
-          <span className="inline-block mx-1 px-1.5 rounded bg-emerald-100 text-emerald-700">
-            最低 {N} 名
+            偏低
           </span>
           （尚未上傳目標的所別以「-」表示）
         </p>
         <table className="w-full mt-2">
           <thead className="bg-slate-50">
             <tr>
-              <th className={th}>據點</th>
+              <th className={thLabel}>據點</th>
               <th className={th}>目標</th>
               <th className={th}>件數</th>
               <th className={th}>申請比率</th>
@@ -264,7 +253,7 @@ export default async function ReportsPage({
         <table className="w-full mt-2">
           <thead className="bg-slate-50">
             <tr>
-              <th className={th}>類別</th>
+              <th className={thLabel}>類別</th>
               <th className={th}>件數</th>
               <th className={th}>特案金額總和</th>
               <th className={th}>平均</th>
@@ -274,9 +263,9 @@ export default async function ReportsPage({
             {byCategory.map((r) => (
               <tr key={r.categoryId} className="border-t border-slate-100">
                 <td className={td}>{catName(r.categoryId)}</td>
-                <td className={td}>{r._count._all}</td>
-                <td className={td}>{money(r._sum.specialSubsidy ?? 0)}</td>
-                <td className={td}>
+                <td className={`${td} text-right tabular-nums`}>{r._count._all}</td>
+                <td className={`${td} text-right tabular-nums`}>{money(r._sum.specialSubsidy ?? 0)}</td>
+                <td className={`${td} text-right tabular-nums`}>
                   {money(
                     Math.round((r._sum.specialSubsidy ?? 0) / r._count._all)
                   )}
@@ -295,9 +284,9 @@ export default async function ReportsPage({
             <tfoot>
               <tr className="border-t-2 border-slate-300 font-bold text-slate-800 bg-slate-50/70">
                 <td className={td}>總計</td>
-                <td className={td}>{total._count._all}</td>
-                <td className={td}>{money(total._sum.specialSubsidy ?? 0)}</td>
-                <td className={td}>
+                <td className={`${td} text-right tabular-nums`}>{total._count._all}</td>
+                <td className={`${td} text-right tabular-nums`}>{money(total._sum.specialSubsidy ?? 0)}</td>
+                <td className={`${td} text-right tabular-nums`}>
                   {money(
                     total._count._all
                       ? Math.round(

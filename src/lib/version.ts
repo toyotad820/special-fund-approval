@@ -4,9 +4,14 @@
 //   修訂號：錯誤修正
 // 每次調整功能或修 bug，請同步更新 APP_VERSION，並在 CHANGELOG 開頭加一筆。
 
-export const APP_VERSION = "1.4.0";
+export const APP_VERSION = "1.4.2";
 
 export const CHANGELOG: { version: string; date: string; note: string }[] = [
+  {
+    version: "1.4.2",
+    date: "2026-07-13",
+    note: "各表格表頭統一改置中、數字資料靠右；紅/綠標色說明文字簡化（不逐項列比較基準，只標示偏高/偏低）",
+  },
   {
     version: "1.4.0",
     date: "2026-07-13",

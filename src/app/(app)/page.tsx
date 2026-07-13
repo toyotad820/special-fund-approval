@@ -101,12 +101,12 @@ function StatTable({ rows, unitLabel }: { rows: StatRow[]; unitLabel: string }) 
     return (
       <table className="w-full mt-4 text-sm">
         <thead>
-          <tr className="text-xs text-slate-400 text-left">
-            <th className="py-1 font-medium">{unitLabel}</th>
-            <th className="py-1 font-medium text-right">件數</th>
-            <th className="py-1 font-medium text-right">金額總和</th>
-            <th className="py-1 font-medium text-right">佔比</th>
-            <th className="py-1 font-medium text-right">平均</th>
+          <tr className="text-xs text-slate-400">
+            <th className="py-1 font-medium text-left">{unitLabel}</th>
+            <th className="py-1 font-medium text-center">件數</th>
+            <th className="py-1 font-medium text-center">金額總和</th>
+            <th className="py-1 font-medium text-center">佔比</th>
+            <th className="py-1 font-medium text-center">平均</th>
           </tr>
         </thead>
         <tbody>
@@ -505,18 +505,13 @@ async function DashboardStats({ month }: { month: string }) {
       <section className="card p-4">
         <h2 className="section-title">各所統計（總額 × 平均）· {month}</h2>
         <p className="text-xs text-slate-400 mb-2">
-          申請比率
           <span className="inline-block mx-1 px-1.5 rounded bg-rose-100 text-rose-700">
-            最高 3 名
+            偏高／超標
           </span>
           <span className="inline-block mx-1 px-1.5 rounded bg-emerald-100 text-emerald-700">
-            最低 3 名
+            偏低
           </span>
-          ；金額佔比
-          <span className="inline-block mx-1 px-1.5 rounded bg-rose-100 text-rose-700">
-            高於比重
-          </span>
-          的所別標紅（尚未上傳目標的所別以「-」表示）
+          （尚未上傳目標的所別以「-」表示）
         </p>
         <div className="overflow-x-auto">
           <SimpleComboChart

@@ -46,11 +46,11 @@ export default async function AdminTargetsPage({
 
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-xs text-slate-400">
-              <th className="py-1.5 font-medium">所別</th>
-              <th className="py-1.5 font-medium">課別</th>
-              <th className="py-1.5 font-medium text-right">比重</th>
-              <th className="py-1.5 font-medium text-right">目標台數</th>
+            <tr className="text-xs text-slate-400">
+              <th className="py-1.5 font-medium text-left">所別</th>
+              <th className="py-1.5 font-medium text-left">課別</th>
+              <th className="py-1.5 font-medium text-center">比重</th>
+              <th className="py-1.5 font-medium text-center">目標台數</th>
             </tr>
           </thead>
           <tbody>
@@ -61,8 +61,8 @@ export default async function AdminTargetsPage({
                   key={t.id}
                   className={`border-t border-slate-100 ${isStoreLevel ? "bg-slate-50/70 font-semibold" : ""}`}
                 >
-                  <td className="py-1.5 text-slate-700">{t.storeCode}</td>
-                  <td className="py-1.5 text-slate-700">
+                  <td className="py-1.5 text-left text-slate-700">{t.storeCode}</td>
+                  <td className="py-1.5 text-left text-slate-700">
                     {isStoreLevel ? "（所）" : `${t.deptCode}課`}
                   </td>
                   <td className="py-1.5 text-right tabular-nums text-slate-600">

@@ -119,9 +119,9 @@ export default function SortableCaseTable({
                   key={c.key}
                   onClick={() => toggleSort(c.key)}
                   style={c.width ? { width: c.width, maxWidth: c.width } : undefined}
-                  className={`px-3 py-2.5 text-left text-xs font-semibold whitespace-nowrap cursor-pointer select-none hover:bg-slate-100 transition-colors ${
+                  className={`px-3 py-2.5 text-xs font-semibold whitespace-nowrap cursor-pointer select-none hover:bg-slate-100 transition-colors ${
                     active ? "text-blue-700" : "text-slate-500"
-                  } ${c.type === "number" ? "text-right" : ""}`}
+                  } ${c.type === "number" ? "text-center" : "text-left"}`}
                   title="點擊排序"
                 >
                   {c.label}

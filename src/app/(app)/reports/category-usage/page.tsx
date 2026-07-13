@@ -115,10 +115,10 @@ export default async function CategoryUsagePage({
           <p className="text-xs text-slate-400 mt-0.5">
             僅統計已核准案件；平均金額
             <span className="inline-block mx-1 px-1.5 rounded bg-rose-100 text-rose-700">
-              最高 {N} 名
+              偏高
             </span>
             <span className="inline-block mx-1 px-1.5 rounded bg-emerald-100 text-emerald-700">
-              最低 {N} 名
+              偏低
             </span>
           </p>
         </div>
