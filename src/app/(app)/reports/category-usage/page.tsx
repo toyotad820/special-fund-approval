@@ -210,7 +210,7 @@ export default async function CategoryUsagePage({
                 const isRed = redKeys.has(u.key);
                 const isGreen = greenKeys.has(u.key);
                 return (
-                  <tr key={u.key} className="border-t border-slate-100 even:bg-slate-50/40">
+                  <tr key={u.key} className="border-t border-slate-100 bg-white even:bg-slate-50">
                     <td className="px-3 py-2 font-medium text-slate-800 sticky left-0 bg-inherit whitespace-nowrap">
                       {u.label}
                     </td>

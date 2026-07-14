@@ -269,7 +269,7 @@ export default async function TargetVsActualPage({
             </thead>
             <tbody>
               {withAvg.map((u) => (
-                <tr key={u.key} className="border-t border-slate-100 even:bg-slate-50/40">
+                <tr key={u.key} className="border-t border-slate-100 bg-white even:bg-slate-50">
                   <td className="px-3 py-2 font-medium text-slate-800 sticky left-0 bg-inherit whitespace-nowrap">
                     {u.label}
                   </td>
@@ -288,7 +288,7 @@ export default async function TargetVsActualPage({
                   <td className={avgCellCls(u.key)}>{money(Math.round(u.avg))}</td>
                 </tr>
               ))}
-              <tr className="border-t-2 border-slate-300 font-bold text-slate-800 bg-slate-50/70">
+              <tr className="border-t-2 border-slate-300 font-bold text-slate-800 bg-slate-50">
                 <td className="px-3 py-2 sticky left-0 bg-inherit whitespace-nowrap">合計</td>
                 <td className={td}>{totalTarget || "-"}</td>
                 {categoryOrder.map((c) => (

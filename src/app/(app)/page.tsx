@@ -438,7 +438,7 @@ function CarModelStatTable({
         </thead>
         <tbody>
           {rows.map((r) => (
-            <tr key={r.carModel} className="border-t border-slate-100 even:bg-slate-50/40">
+            <tr key={r.carModel} className="border-t border-slate-100 bg-white even:bg-slate-50">
               <td className="px-2.5 py-2 font-medium text-slate-800 sticky left-0 bg-inherit whitespace-nowrap">
                 {r.carModel}
               </td>
@@ -455,7 +455,7 @@ function CarModelStatTable({
           ))}
         </tbody>
         <tfoot>
-          <tr className="border-t-2 border-slate-300 font-bold text-slate-800 bg-slate-50/70">
+          <tr className="border-t-2 border-slate-300 font-bold text-slate-800 bg-slate-50">
             <td className="px-2.5 py-2 sticky left-0 bg-inherit">總計</td>
             {categoryOrder.map((c) => (
               <td key={c.id ?? "none"} className={td}>
