@@ -92,6 +92,14 @@ type TargetRow = {
   weight: number | null; // 比重（所層級，未上傳則為 null）
 };
 
+type CarModelRow = {
+  carModel: string;
+  countByCategory: Map<string | null, number>;
+  totalCount: number;
+  totalSum: number;
+  avg: number;
+};
+
 // 統計區：各特案類別統計 + 各所統計（不含草稿／已駁回／已撤回），供部長/Staff 首頁使用
 function StatTable({ rows, unitLabel }: { rows: StatRow[]; unitLabel: string }) {
     const totalCount = rows.reduce((s, r) => s + r.count, 0);
@@ -380,34 +388,127 @@ function TransposedStatTable({
     );
 }
 
+// 各車種特案統計：只列有申請的車種，欄位為各特案類型件數 + 合計 + 特案金額 + 平均金額
+function CarModelStatTable({
+  rows,
+  categoryOrder,
+  categoryColor,
+}: {
+  rows: CarModelRow[];
+  categoryOrder: { id: string | null; name: string }[];
+  categoryColor: (id: string | null) => string;
+}) {
+  if (rows.length === 0) {
+    return <p className="text-sm text-slate-400 text-center py-4">本月尚無資料</p>;
+  }
+
+  const totalCount = rows.reduce((s, r) => s + r.totalCount, 0);
+  const totalSum = rows.reduce((s, r) => s + r.totalSum, 0);
+  const totalAvg = totalCount > 0 ? Math.round(totalSum / totalCount) : 0;
+
+  const th =
+    "text-center text-xs font-semibold text-slate-500 px-2.5 py-2 whitespace-nowrap border-l border-slate-200 first:border-l-0";
+  const thLabel =
+    "text-left text-xs font-semibold text-slate-500 px-2.5 py-2 whitespace-nowrap sticky left-0 bg-slate-50";
+  const td =
+    "text-right px-2.5 py-2 whitespace-nowrap border-l border-slate-100 first:border-l-0 tabular-nums text-slate-800";
+
+  return (
+    <div className="overflow-x-auto rounded-2xl border border-slate-200/80">
+      <table className="w-full min-w-max text-sm">
+        <thead className="bg-slate-50">
+          <tr>
+            <th className={thLabel}>車名</th>
+            {categoryOrder.map((c) => (
+              <th key={c.id ?? "none"} className={th}>
+                <span className="inline-flex items-center gap-1">
+                  <span
+                    className="w-1.5 h-1.5 rounded-sm shrink-0"
+                    style={{ background: categoryColor(c.id) }}
+                  />
+                  {c.name}
+                </span>
+              </th>
+            ))}
+            <th className={th}>合計</th>
+            <th className={th}>特案金額</th>
+            <th className={th}>佔比</th>
+            <th className={th}>平均金額</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.carModel} className="border-t border-slate-100 even:bg-slate-50/40">
+              <td className="px-2.5 py-2 font-medium text-slate-800 sticky left-0 bg-inherit whitespace-nowrap">
+                {r.carModel}
+              </td>
+              {categoryOrder.map((c) => (
+                <td key={c.id ?? "none"} className={td}>
+                  {r.countByCategory.get(c.id) ?? 0}
+                </td>
+              ))}
+              <td className={`${td} font-semibold`}>{r.totalCount}</td>
+              <td className={td}>{money(r.totalSum)}</td>
+              <td className={td}>{totalSum > 0 ? `${Math.round((r.totalSum / totalSum) * 100)}%` : "-"}</td>
+              <td className={td}>{money(r.avg)}</td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr className="border-t-2 border-slate-300 font-bold text-slate-800 bg-slate-50/70">
+            <td className="px-2.5 py-2 sticky left-0 bg-inherit">總計</td>
+            {categoryOrder.map((c) => (
+              <td key={c.id ?? "none"} className={td}>
+                {rows.reduce((s, r) => s + (r.countByCategory.get(c.id) ?? 0), 0)}
+              </td>
+            ))}
+            <td className={td}>{totalCount}</td>
+            <td className={td}>{money(totalSum)}</td>
+            <td className={td}>100%</td>
+            <td className={td}>{money(totalAvg)}</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  );
+}
+
 async function DashboardStats({ month }: { month: string }) {
   const statusFilter = {
     notIn: [STATUS.DRAFT, STATUS.REJECTED, STATUS.WITHDRAWN] as string[],
   };
 
-  const [byCategory, byStore, byStoreCategory, categories, storeTargets] = await Promise.all([
-    prisma.case.groupBy({
-      by: ["categoryId"],
-      where: { month, status: statusFilter },
-      _sum: { specialSubsidy: true },
-      _count: { _all: true },
-    }),
-    prisma.case.groupBy({
-      by: ["storeCode"],
-      where: { month, status: statusFilter },
-      _sum: { specialSubsidy: true },
-      _count: { _all: true },
-    }),
-    prisma.case.groupBy({
-      by: ["storeCode", "categoryId"],
-      where: { month, status: statusFilter },
-      _sum: { specialSubsidy: true },
-      _count: { _all: true },
-    }),
-    prisma.caseCategory.findMany({ orderBy: { sortOrder: "asc" } }),
-    // 所層級目標（deptCode="0"）：跟課層級各自獨立維護，見 UnitTarget
-    prisma.unitTarget.findMany({ where: { month, deptCode: "0" } }),
-  ]);
+  const [byCategory, byStore, byStoreCategory, byCarModelCategory, categories, storeTargets] =
+    await Promise.all([
+      prisma.case.groupBy({
+        by: ["categoryId"],
+        where: { month, status: statusFilter },
+        _sum: { specialSubsidy: true },
+        _count: { _all: true },
+      }),
+      prisma.case.groupBy({
+        by: ["storeCode"],
+        where: { month, status: statusFilter },
+        _sum: { specialSubsidy: true },
+        _count: { _all: true },
+      }),
+      prisma.case.groupBy({
+        by: ["storeCode", "categoryId"],
+        where: { month, status: statusFilter },
+        _sum: { specialSubsidy: true },
+        _count: { _all: true },
+      }),
+      // 各車種特案統計：只列有申請的車種（groupBy 天生只回傳實際出現過的組合）
+      prisma.case.groupBy({
+        by: ["carModel", "categoryId"],
+        where: { month, status: statusFilter },
+        _sum: { specialSubsidy: true },
+        _count: { _all: true },
+      }),
+      prisma.caseCategory.findMany({ orderBy: { sortOrder: "asc" } }),
+      // 所層級目標（deptCode="0"）：跟課層級各自獨立維護，見 UnitTarget
+      prisma.unitTarget.findMany({ where: { month, deptCode: "0" } }),
+    ]);
 
   const targetByStore = new Map(storeTargets.map((t) => [t.storeCode, t]));
 
@@ -471,6 +572,24 @@ async function DashboardStats({ month }: { month: string }) {
   const comboPaddingRight = 48;
   const comboBandW =
     (comboWidth - comboPaddingLeft - comboPaddingRight) / Math.max(1, storeRows.length);
+
+  // 各車種特案統計：依車名彙總各類別件數、總件數、總金額、平均金額，只列本月有申請的車種
+  const carModelMap = new Map<string, CarModelRow>();
+  for (const r of byCarModelCategory) {
+    let row = carModelMap.get(r.carModel);
+    if (!row) {
+      row = { carModel: r.carModel, countByCategory: new Map(), totalCount: 0, totalSum: 0, avg: 0 };
+      carModelMap.set(r.carModel, row);
+    }
+    const count = r._count._all;
+    const sum = r._sum.specialSubsidy ?? 0;
+    row.countByCategory.set(r.categoryId, count);
+    row.totalCount += count;
+    row.totalSum += sum;
+  }
+  const carModelRows = [...carModelMap.values()]
+    .map((r) => ({ ...r, avg: r.totalCount > 0 ? Math.round(r.totalSum / r.totalCount) : 0 }))
+    .sort((a, b) => b.totalCount - a.totalCount);
 
   const totalAmount = storeRows.reduce((s, r) => s + r.sum, 0);
   const targetRows: TargetRow[] = storeRows.map((r) => {
@@ -539,6 +658,16 @@ async function DashboardStats({ month }: { month: string }) {
             }))}
           />
         </div>
+      </section>
+
+      {/* 各車種特案統計：只列本月有申請的車種 */}
+      <section className="card p-4">
+        <h2 className="section-title">各車種特案統計 · {month}</h2>
+        <CarModelStatTable
+          rows={carModelRows}
+          categoryOrder={categoryOrder}
+          categoryColor={categoryColor}
+        />
       </section>
     </div>
   );
