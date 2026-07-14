@@ -30,8 +30,8 @@ export default function NavBar({
             <span className="hidden md:inline">
               <BrandMark size="sm" />
             </span>
-            <span className="md:hidden font-black tracking-wider text-[#EB0A1E] text-base leading-none">
-              TOYOTA
+            <span className="md:hidden">
+              <BrandMark size="sm" showTitle={false} />
             </span>
             <span
               title={`v${APP_VERSION} · ${CHANGELOG[0]?.note ?? ""}`}
