@@ -589,7 +589,7 @@ async function DashboardStats({ month }: { month: string }) {
   }
   const carModelRows = [...carModelMap.values()]
     .map((r) => ({ ...r, avg: r.totalCount > 0 ? Math.round(r.totalSum / r.totalCount) : 0 }))
-    .sort((a, b) => b.totalCount - a.totalCount);
+    .sort((a, b) => a.carModel.localeCompare(b.carModel));
 
   const totalAmount = storeRows.reduce((s, r) => s + r.sum, 0);
   const targetRows: TargetRow[] = storeRows.map((r) => {

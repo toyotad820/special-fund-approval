@@ -4,9 +4,14 @@
 //   修訂號：錯誤修正
 // 每次調整功能或修 bug，請同步更新 APP_VERSION，並在 CHANGELOG 開頭加一筆。
 
-export const APP_VERSION = "1.4.2";
+export const APP_VERSION = "1.5.0";
 
 export const CHANGELOG: { version: string; date: string; note: string }[] = [
+  {
+    version: "1.5.0",
+    date: "2026-07-14",
+    note: "部長/Staff 首頁新增「各車種特案統計」表（只列本月有申請的車種，含各類型件數/合計/特案金額/佔比/平均金額，依車名字母排序）",
+  },
   {
     version: "1.4.2",
     date: "2026-07-13",
