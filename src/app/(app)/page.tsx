@@ -185,7 +185,7 @@ function TransposedStatTable({
     const totalAvg = totalCount > 0 ? Math.round(totalSum / totalCount) : 0;
     const pct = (sum: number) => (totalSum > 0 ? `${Math.round((sum / totalSum) * 100)}%` : "-");
 
-    // 申請比率／金額佔比（併自「各所申請比較」表的邏輯）：
+    // 申請比率／金額佔比（併自「所課特案申請統計表」的邏輯）：
     // 台數達成率前3高標紅、後3低標綠；金額佔比高於比重的所別標紅
     const fixed = colWidth !== undefined;
     const fontSize = fixed ? 10 : 12;
@@ -362,11 +362,21 @@ function TransposedStatTable({
             {fundTotalByLabel && (
               <tr className="border-b border-slate-100">
                 <th className={th}>所基金合計</th>
-                {rows.map((r) => (
-                  <td key={r.label} className={`${td} text-slate-600`}>
-                    {money(fundTotalByLabel.get(r.label) ?? 0)}
-                  </td>
-                ))}
+                {rows.map((r) => {
+                  const fundTotal = fundTotalByLabel.get(r.label) ?? 0;
+                  return (
+                    <td
+                      key={r.label}
+                      className={
+                        fundTotal < r.sum
+                          ? `${td} bg-rose-100 text-rose-800 font-bold`
+                          : `${td} text-slate-600`
+                      }
+                    >
+                      {money(fundTotal)}
+                    </td>
+                  );
+                })}
                 <td className={`${td} font-bold text-slate-800 bg-slate-50/70`}>
                   {money(rows.reduce((s, r) => s + (fundTotalByLabel.get(r.label) ?? 0), 0))}
                 </td>

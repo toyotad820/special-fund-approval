@@ -101,7 +101,7 @@ export default async function ReportsPage({
       ? "px-3 py-2 text-sm text-right tabular-nums bg-rose-100 text-rose-800 font-bold"
       : `${td} text-right tabular-nums`;
 
-  // 平均金額前3高標紅、後3低標綠（跟首頁各所統計、所課別特案使用統計表的標色邏輯一致）
+  // 平均金額前3高標紅、後3低標綠（跟首頁各所統計、特案類型統計表的標色邏輯一致）
   const avgQualifying = storeStats.filter((r) => r.count > 0);
   const sortedByAvgDesc = [...avgQualifying].sort((a, b) => b.avg - a.avg);
   const avgRedKeys = new Set(sortedByAvgDesc.slice(0, N).map((r) => r.storeCode));

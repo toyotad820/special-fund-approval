@@ -110,7 +110,7 @@ export default async function CategoryUsagePage({
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-lg font-bold text-slate-800">
-            所課別特案使用統計表 · {month}
+            特案類型統計表 · {month}
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
             僅統計已核准案件；平均金額

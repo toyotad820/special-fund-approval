@@ -4,9 +4,14 @@
 //   修訂號：錯誤修正
 // 每次調整功能或修 bug，請同步更新 APP_VERSION，並在 CHANGELOG 開頭加一筆。
 
-export const APP_VERSION = "1.5.1";
+export const APP_VERSION = "1.6.0";
 
 export const CHANGELOG: { version: string; date: string; note: string }[] = [
+  {
+    version: "1.6.0",
+    date: "2026-07-14",
+    note: "所基金合計小於特案總和時標紅；報表頁改名（所課別特案使用統計表→特案類型統計表、各所申請比較→所課特案申請統計表），後者新增所基金合計欄位",
+  },
   {
     version: "1.5.1",
     date: "2026-07-14",

@@ -13,6 +13,7 @@ type UnitStat = {
   label: string;
   count: number;
   sum: number;
+  fundTotal: number; // 所基金合計 = 所課支援金 + 金牌金額 + 銀牌金額
   targetCount: number | null;
   weight: number | null;
 };
@@ -38,13 +39,23 @@ export default async function TargetVsActualPage({
           by: ["storeCode", "deptCode"],
           where: caseWhere,
           _count: { _all: true },
-          _sum: { specialSubsidy: true },
+          _sum: {
+            specialSubsidy: true,
+            subsidyDeptCourse: true,
+            goldMedal: true,
+            silverMedal: true,
+          },
         })
       : prisma.case.groupBy({
           by: ["storeCode"],
           where: caseWhere,
           _count: { _all: true },
-          _sum: { specialSubsidy: true },
+          _sum: {
+            specialSubsidy: true,
+            subsidyDeptCourse: true,
+            goldMedal: true,
+            silverMedal: true,
+          },
         }),
     // 所層級 target deptCode="0"；課層級 target 是實際課別（不含 "0"）
     prisma.unitTarget.findMany({
@@ -110,6 +121,8 @@ export default async function TargetVsActualPage({
       label,
       count: g._count._all,
       sum: g._sum.specialSubsidy ?? 0,
+      fundTotal:
+        (g._sum.subsidyDeptCourse ?? 0) + (g._sum.goldMedal ?? 0) + (g._sum.silverMedal ?? 0),
       targetCount: t?.targetCount ?? null,
       weight: t?.weight ?? null,
     };
@@ -118,6 +131,7 @@ export default async function TargetVsActualPage({
 
   const totalCount = units.reduce((s, u) => s + u.count, 0);
   const totalAmount = units.reduce((s, u) => s + u.sum, 0);
+  const totalFundTotal = units.reduce((s, u) => s + u.fundTotal, 0);
   const totalTarget = units.reduce((s, u) => s + (u.targetCount ?? 0), 0);
   const totalRate = totalTarget > 0 ? (totalCount / totalTarget) * 100 : null;
 
@@ -172,13 +186,16 @@ export default async function TargetVsActualPage({
       : avgGreenKeys.has(key)
         ? `${td} bg-emerald-100 text-emerald-800 font-bold`
         : td;
+  // 所基金合計 < 特案總和時標紅（等同支援金額比實際核發的基金還多，需留意）
+  const fundTotalCellCls = (u: (typeof withRate)[number]) =>
+    u.fundTotal < u.sum ? `${td} bg-rose-100 text-rose-800 font-bold` : td;
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-lg font-bold text-slate-800">
-            各所申請比較 · {month}
+            所課特案申請統計表 · {month}
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
             <span className="inline-block mx-1 px-1.5 rounded bg-rose-100 text-rose-700">
@@ -262,6 +279,7 @@ export default async function TargetVsActualPage({
                 ))}
                 <th className={th}>申請台數</th>
                 <th className={th}>申請比率</th>
+                <th className={th}>所基金合計</th>
                 <th className={th}>金額總和</th>
                 <th className={th}>金額比率</th>
                 <th className={th}>平均金額</th>
@@ -283,6 +301,7 @@ export default async function TargetVsActualPage({
                   <td className={rateCellCls(u.key)}>
                     {u.rate !== null ? `${Math.round(u.rate)}%` : "-"}
                   </td>
+                  <td className={fundTotalCellCls(u)}>{money(u.fundTotal)}</td>
                   <td className={td}>{money(u.sum)}</td>
                   <td className={shareCellCls(u)}>{Math.round(u.sharePct)}%</td>
                   <td className={avgCellCls(u.key)}>{money(Math.round(u.avg))}</td>
@@ -298,6 +317,7 @@ export default async function TargetVsActualPage({
                 ))}
                 <td className={td}>{totalCount}</td>
                 <td className={td}>{totalRate !== null ? `${Math.round(totalRate)}%` : "-"}</td>
+                <td className={td}>{money(totalFundTotal)}</td>
                 <td className={td}>{money(totalAmount)}</td>
                 <td className={td}>100%</td>
                 <td className={td}>
