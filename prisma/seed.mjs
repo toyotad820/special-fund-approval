@@ -49,7 +49,6 @@ async function main() {
     "HILUX",
     "LAND CRUISER",
     "PRIUS PHV",
-    "RAV4",
     "RAV4 HV",
     "RAV4 PHV",
     "SIENNA HV",

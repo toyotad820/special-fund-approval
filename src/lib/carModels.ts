@@ -20,7 +20,6 @@ export const STANDARD_CAR_MODELS = [
   "HILUX",
   "LAND CRUISER",
   "PRIUS PHV",
-  "RAV4",
   "RAV4 HV",
   "RAV4 PHV",
   "SIENNA HV",

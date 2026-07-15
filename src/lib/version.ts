@@ -4,9 +4,14 @@
 //   修訂號：錯誤修正
 // 每次調整功能或修 bug，請同步更新 APP_VERSION，並在 CHANGELOG 開頭加一筆。
 
-export const APP_VERSION = "1.7.2";
+export const APP_VERSION = "1.7.3";
 
 export const CHANGELOG: { version: string; date: string; note: string }[] = [
+  {
+    version: "1.7.3",
+    date: "2026-07-14",
+    note: "後台車種標準清單移除 RAV4（保留 RAV4 HV／RAV4 PHV）",
+  },
   {
     version: "1.7.2",
     date: "2026-07-14",
