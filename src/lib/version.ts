@@ -4,9 +4,14 @@
 //   修訂號：錯誤修正
 // 每次調整功能或修 bug，請同步更新 APP_VERSION，並在 CHANGELOG 開頭加一筆。
 
-export const APP_VERSION = "1.6.0";
+export const APP_VERSION = "1.7.0";
 
 export const CHANGELOG: { version: string; date: string; note: string }[] = [
+  {
+    version: "1.7.0",
+    date: "2026-07-14",
+    note: "部長「待審案件」頁新增「申請案件明細」區塊，可用所別/特案類型下拉複選篩選本月全部案件",
+  },
   {
     version: "1.6.0",
     date: "2026-07-14",
