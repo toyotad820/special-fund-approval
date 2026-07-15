@@ -9,6 +9,7 @@ export type CaseRowData = {
   id: string;
   orderNo: string;
   month: string;
+  storeDept: string; // 所別/課別，例：D01 / 1
   plateName: string;
   categoryName: string;
   categoryNo: string;
@@ -31,7 +32,7 @@ type Col = { key: keyof CaseRowData; label: string; type: ColType; width?: numbe
 // 審核狀態擺第一欄；不含送單人、送出時間、月份
 const COLUMNS: Col[] = [
   { key: "status", label: "審核狀態", type: "status" },
-  { key: "orderNo", label: "訂單編號", type: "text" },
+  { key: "storeDept", label: "所別/課別", type: "text" },
   { key: "plateName", label: "領牌名稱", type: "text" },
   { key: "categoryName", label: "特案類別", type: "text" },
   { key: "categoryNo", label: "類別編號", type: "text" },
@@ -166,13 +167,6 @@ export default function SortableCaseTable({
                       className="px-3 py-2 text-right whitespace-nowrap tabular-nums text-slate-800"
                     >
                       {money(v as number)}
-                    </td>
-                  );
-                }
-                if (c.key === "orderNo") {
-                  return (
-                    <td key={c.key} className="px-3 py-2 whitespace-nowrap font-mono font-medium text-blue-700">
-                      {v as string}
                     </td>
                   );
                 }

@@ -4,9 +4,14 @@
 //   修訂號：錯誤修正
 // 每次調整功能或修 bug，請同步更新 APP_VERSION，並在 CHANGELOG 開頭加一筆。
 
-export const APP_VERSION = "1.5.0";
+export const APP_VERSION = "1.5.1";
 
 export const CHANGELOG: { version: string; date: string; note: string }[] = [
+  {
+    version: "1.5.1",
+    date: "2026-07-14",
+    note: "待審/本月案件明細表訂單編號欄改成所別/課別；各所統計表新增「所基金合計」列（所課支援金+金牌+銀牌），金額總和更名為特案總和",
+  },
   {
     version: "1.5.0",
     date: "2026-07-14",

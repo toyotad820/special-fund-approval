@@ -37,6 +37,8 @@ export type CaseWithRels = {
   id: string;
   orderNo: string;
   month: string;
+  storeCode: string;
+  deptCode: string;
   plateName: string;
   categoryNo: string;
   carModel: string;
@@ -59,6 +61,7 @@ export function toRow(c: CaseWithRels): CaseRowData {
     id: c.id,
     orderNo: c.orderNo,
     month: c.month,
+    storeDept: `${c.storeCode} / ${c.deptCode}`,
     plateName: c.plateName,
     categoryName: c.category?.name ?? "（尚未選擇）",
     categoryNo: c.categoryNo,
@@ -154,7 +157,7 @@ function StatTable({ rows, unitLabel }: { rows: StatRow[]; unitLabel: string }) 
     );
 }
 
-  // 所別統計轉置表：所別當欄、指標（件數/金額總和/佔比/平均）當列，
+  // 所別統計轉置表：所別當欄、指標（件數/所基金合計/特案總和/佔比/平均）當列，
   // 因為所別可能多達 24 個以上，欄轉列比較容易一次看完全部所別
 function TransposedStatTable({
     rows,
@@ -163,6 +166,7 @@ function TransposedStatTable({
     firstColWidth,
     categoryBreakdown,
     targetRows,
+    fundTotalByLabel,
   }: {
     rows: StatRow[];
     unitLabel: string;
@@ -173,6 +177,8 @@ function TransposedStatTable({
     categoryBreakdown?: { name: string; color: string; countByLabel: Map<string, number> }[];
     // 給了才會顯示「申請比率」「金額佔比」兩列
     targetRows?: TargetRow[];
+    // 給了才會顯示「所基金合計」列（所課支援金＋金牌金額＋銀牌金額）
+    fundTotalByLabel?: Map<string, number>;
 }) {
     const totalCount = rows.reduce((s, r) => s + r.count, 0);
     const totalSum = rows.reduce((s, r) => s + r.sum, 0);
@@ -353,8 +359,21 @@ function TransposedStatTable({
                 </td>
               </tr>
             )}
+            {fundTotalByLabel && (
+              <tr className="border-b border-slate-100">
+                <th className={th}>所基金合計</th>
+                {rows.map((r) => (
+                  <td key={r.label} className={`${td} text-slate-600`}>
+                    {money(fundTotalByLabel.get(r.label) ?? 0)}
+                  </td>
+                ))}
+                <td className={`${td} font-bold text-slate-800 bg-slate-50/70`}>
+                  {money(rows.reduce((s, r) => s + (fundTotalByLabel.get(r.label) ?? 0), 0))}
+                </td>
+              </tr>
+            )}
             <tr className="border-b border-slate-100">
-              <th className={th}>金額總和</th>
+              <th className={th}>特案總和</th>
               {rows.map((r) => (
                 <td key={r.label} className={`${td} text-slate-800 font-medium`}>
                   {money(r.sum)}
@@ -489,7 +508,12 @@ async function DashboardStats({ month }: { month: string }) {
       prisma.case.groupBy({
         by: ["storeCode"],
         where: { month, status: statusFilter },
-        _sum: { specialSubsidy: true },
+        _sum: {
+          specialSubsidy: true,
+          subsidyDeptCourse: true,
+          goldMedal: true,
+          silverMedal: true,
+        },
         _count: { _all: true },
       }),
       prisma.case.groupBy({
@@ -543,6 +567,14 @@ async function DashboardStats({ month }: { month: string }) {
   const storeRows = byStore
     .map((r) => toStatRow(r.storeCode, r._sum.specialSubsidy, r._count._all))
     .sort((a, b) => a.label.localeCompare(b.label, "zh-Hant"));
+
+  // 所基金合計 = 所課支援金 + 金牌金額 + 銀牌金額（跟特案支援金額分開統計）
+  const fundTotalByStore = new Map(
+    byStore.map((r) => [
+      r.storeCode,
+      (r._sum.subsidyDeptCourse ?? 0) + (r._sum.goldMedal ?? 0) + (r._sum.silverMedal ?? 0),
+    ])
+  );
 
   // 堆疊長條的類別順序與顏色，需與甜甜圈圖（categoryRows，依金額總和排序）一致
   const categoryOrder = byCategory
@@ -646,6 +678,7 @@ async function DashboardStats({ month }: { month: string }) {
             colWidth={comboBandW}
             firstColWidth={comboPaddingLeft}
             targetRows={targetRows}
+            fundTotalByLabel={fundTotalByStore}
             categoryBreakdown={categoryOrder.map((c) => ({
               name: c.name,
               color: categoryColor(c.id),

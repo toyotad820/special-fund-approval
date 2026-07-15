@@ -1,4 +1,4 @@
-// 堆疊長條＋折線複合圖：長條（左軸）依特案類別堆疊呈現金額總和（顏色與甜甜圈圖一致），
+// 堆疊長條＋折線複合圖：長條（左軸）依特案類別堆疊呈現特案總和（顏色與甜甜圈圖一致），
 // 折線（右軸）呈現平均金額。兩軸量級不同，各自標色與座標軸區分，並附圖例。
 import { CATEGORICAL } from "@/lib/chartColors";
 
@@ -75,7 +75,7 @@ export default function SimpleComboChart({
         height={height}
         viewBox={`0 0 ${width} ${height}`}
         role="img"
-        aria-label={`各所金額總和（依特案類別堆疊）與${lineLabel}長條折線複合圖`}
+        aria-label={`各所特案總和（依特案類別堆疊）與${lineLabel}長條折線複合圖`}
       >
         {Array.from({ length: ticks + 1 }).map((_, i) => {
           const gy = padding.top + (plotH / ticks) * i;
@@ -187,7 +187,7 @@ export default function SimpleComboChart({
         ))}
 
         <text x={padding.left - 44} y={padding.top - 10} fontSize={9} fill="#898781">
-          金額總和
+          特案總和
         </text>
         <text x={width - padding.right + 2} y={padding.top - 10} fontSize={9} fill={LINE_COLOR}>
           {lineLabel}
