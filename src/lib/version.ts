@@ -4,9 +4,14 @@
 //   修訂號：錯誤修正
 // 每次調整功能或修 bug，請同步更新 APP_VERSION，並在 CHANGELOG 開頭加一筆。
 
-export const APP_VERSION = "1.7.0";
+export const APP_VERSION = "1.7.1";
 
 export const CHANGELOG: { version: string; date: string; note: string }[] = [
+  {
+    version: "1.7.1",
+    date: "2026-07-14",
+    note: "下拉篩選修正：兩個選單互斥開合＋點外部關閉，不再互相遮擋或蓋住表格；按鈕文字改「查詢」；所長/課長首頁本月明細也加上特案類型篩選；所基金合計標色規則改成大於特案總和才標綠（不再標紅）；所課特案申請統計表滿版寬度",
+  },
   {
     version: "1.7.0",
     date: "2026-07-14",

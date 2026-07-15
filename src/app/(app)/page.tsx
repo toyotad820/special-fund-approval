@@ -16,6 +16,7 @@ import SortableCaseTable, {
 } from "@/components/SortableCaseTable";
 import SimpleDonutChart from "@/components/SimpleDonutChart";
 import SimpleComboChart from "@/components/SimpleComboChart";
+import MultiSelectDropdown from "@/components/MultiSelectDropdown";
 
 export const caseInclude = {
   category: { select: { name: true } },
@@ -368,8 +369,8 @@ function TransposedStatTable({
                     <td
                       key={r.label}
                       className={
-                        fundTotal < r.sum
-                          ? `${td} bg-rose-100 text-rose-800 font-bold`
+                        fundTotal > r.sum
+                          ? `${td} bg-emerald-100 text-emerald-800 font-bold`
                           : `${td} text-slate-600`
                       }
                     >
@@ -716,7 +717,11 @@ async function DashboardStats({ month }: { month: string }) {
   );
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ categoryIds?: string | string[] }>;
+}) {
   const user = await requireUser();
 
   // 課長／所長／部長／Staff：角色專屬首頁（案件區塊 + 部長/Staff 多一塊統計區）
@@ -726,7 +731,7 @@ export default async function DashboardPage() {
     user.role === ROLE.BUZHUGUAN ||
     user.role === ROLE.STAFF
   ) {
-    return <RoleDashboard user={user} />;
+    return <RoleDashboard user={user} searchParams={searchParams} />;
   }
 
   const queueWhere = reviewQueueWhere(user);
@@ -809,6 +814,7 @@ export default async function DashboardPage() {
 
 async function RoleDashboard({
   user,
+  searchParams,
 }: {
   user: {
     id: string;
@@ -817,8 +823,16 @@ async function RoleDashboard({
     storeCode: string;
     deptCode: string | null;
   };
+  searchParams: Promise<{ categoryIds?: string | string[] }>;
 }) {
   const month = currentMonth();
+  const sp = await searchParams;
+  const selectedCategoryIds =
+    sp.categoryIds === undefined
+      ? null
+      : Array.isArray(sp.categoryIds)
+        ? sp.categoryIds
+        : [sp.categoryIds];
 
   // Staff：首頁只有統計區，沒有案件明細
   if (user.role === ROLE.STAFF) {
@@ -889,10 +903,15 @@ async function RoleDashboard({
     monthlyWhere = null;
   }
 
+  // 本月申請明細可另外用特案類型篩選（跟部長待審案件頁一致的下拉複選）
+  if (monthlyWhere && selectedCategoryIds) {
+    monthlyWhere = { ...monthlyWhere, categoryId: { in: selectedCategoryIds } };
+  }
+
   // 部主管的待審核案件已獨立成「/queue」頁籤，首頁不再重複顯示
   const showUnresolvedHere = user.role !== ROLE.BUZHUGUAN;
 
-  const [unresolved, monthly] = await Promise.all([
+  const [unresolved, monthly, categories] = await Promise.all([
     showUnresolvedHere
       ? prisma.case.findMany({
           where: unresolvedWhere,
@@ -907,6 +926,7 @@ async function RoleDashboard({
           orderBy: { submittedAt: "desc" },
         })
       : Promise.resolve([]),
+    monthlyWhere ? prisma.caseCategory.findMany({ orderBy: { sortOrder: "asc" } }) : Promise.resolve([]),
   ]);
 
   const canAdd = user.role === ROLE.KEZHANG || user.role === ROLE.SUOZHANG;
@@ -944,11 +964,22 @@ async function RoleDashboard({
       )}
 
       {monthlyWhere && (
-        <section>
+        <section className="space-y-3">
           <h2 className="section-title">
             {scopeName}本月申請明細 · {month}{" "}
             <span className="text-blue-600">({monthly.length})</span>
           </h2>
+          <form className="flex flex-wrap items-center gap-2">
+            <MultiSelectDropdown
+              label="特案類型"
+              name="categoryIds"
+              groupName="dashboard-filters"
+              options={categories.map((c) => ({ value: c.id, label: c.name }))}
+            />
+            <button type="submit" className="btn btn-primary btn-sm">
+              查詢
+            </button>
+          </form>
           <SortableCaseTable
             rows={monthly.map(toRow)}
             emptyText="本月尚無申請"

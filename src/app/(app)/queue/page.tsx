@@ -74,15 +74,17 @@ export default async function QueuePage({
           <MultiSelectDropdown
             label="所別"
             name="storeCodes"
+            groupName="queue-filters"
             options={stores.map((s) => ({ value: s, label: s }))}
           />
           <MultiSelectDropdown
             label="特案類型"
             name="categoryIds"
+            groupName="queue-filters"
             options={categories.map((c) => ({ value: c.id, label: c.name }))}
           />
           <button type="submit" className="btn btn-primary btn-sm">
-            套用篩選
+            查詢
           </button>
         </form>
         <SortableCaseTable rows={monthlyCases.map(toRow)} emptyText="沒有案件" showTotals />

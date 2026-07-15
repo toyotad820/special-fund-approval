@@ -186,9 +186,9 @@ export default async function TargetVsActualPage({
       : avgGreenKeys.has(key)
         ? `${td} bg-emerald-100 text-emerald-800 font-bold`
         : td;
-  // 所基金合計 < 特案總和時標紅（等同支援金額比實際核發的基金還多，需留意）
+  // 所基金合計 > 特案總和時標綠
   const fundTotalCellCls = (u: (typeof withRate)[number]) =>
-    u.fundTotal < u.sum ? `${td} bg-rose-100 text-rose-800 font-bold` : td;
+    u.fundTotal > u.sum ? `${td} bg-emerald-100 text-emerald-800 font-bold` : td;
 
   return (
     <div className="space-y-4">
@@ -259,7 +259,7 @@ export default async function TargetVsActualPage({
         </p>
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-          <table className="min-w-max text-sm">
+          <table className="w-full min-w-max text-sm">
             <thead className="bg-slate-50">
               <tr>
                 <th className="text-left text-xs font-semibold text-slate-500 px-3 py-2 sticky left-0 bg-slate-50 whitespace-nowrap">
