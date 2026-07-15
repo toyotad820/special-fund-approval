@@ -83,7 +83,7 @@ export default async function QueuePage({
             groupName="queue-filters"
             options={categories.map((c) => ({ value: c.id, label: c.name }))}
           />
-          <button type="submit" className="btn btn-primary btn-sm">
+          <button type="submit" className="btn btn-primary">
             查詢
           </button>
         </form>

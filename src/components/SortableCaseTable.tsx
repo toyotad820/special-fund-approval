@@ -31,17 +31,17 @@ type Col = { key: keyof CaseRowData; label: string; type: ColType; width?: numbe
 
 // 審核狀態擺第一欄；不含送單人、送出時間、月份
 const COLUMNS: Col[] = [
-  { key: "status", label: "審核狀態", type: "status" },
-  { key: "storeDept", label: "所別/課別", type: "text" },
-  { key: "plateName", label: "領牌名稱", type: "text" },
-  { key: "categoryName", label: "特案類別", type: "text" },
-  { key: "categoryNo", label: "類別編號", type: "text" },
-  { key: "carModel", label: "車名", type: "text" },
+  { key: "status", label: "審核狀態", type: "status", width: 110 },
+  { key: "storeDept", label: "所別/課別", type: "text", width: 84 },
+  { key: "plateName", label: "領牌名稱", type: "text", width: 110 },
+  { key: "categoryName", label: "特案類別", type: "text", width: 80 },
+  { key: "categoryNo", label: "類別編號", type: "text", width: 80 },
+  { key: "carModel", label: "車名", type: "text", width: 100 },
   { key: "subsidyDeptCourse", label: "所課支援金", type: "number", width: 96 },
-  { key: "goldMedal", label: "金牌金額", type: "number" },
-  { key: "silverMedal", label: "銀牌金額", type: "number" },
-  { key: "discountTotal", label: "折讓總額", type: "number" },
-  { key: "specialSubsidy", label: "特案支援金額", type: "number" },
+  { key: "goldMedal", label: "金牌金額", type: "number", width: 90 },
+  { key: "silverMedal", label: "銀牌金額", type: "number", width: 90 },
+  { key: "discountTotal", label: "折讓總額", type: "number", width: 96 },
+  { key: "specialSubsidy", label: "特案支援金額", type: "number", width: 100 },
   { key: "description", label: "特案內容說明", type: "text" },
 ];
 
@@ -145,7 +145,11 @@ export default function SortableCaseTable({
                 const v = r[c.key];
                 if (c.type === "status") {
                   return (
-                    <td key={c.key} className="px-3 py-2 whitespace-nowrap">
+                    <td
+                      key={c.key}
+                      style={c.width ? { width: c.width, maxWidth: c.width } : undefined}
+                      className="px-3 py-2 whitespace-nowrap"
+                    >
                       <span
                         className={`inline-flex items-center gap-1.5 text-xs font-medium rounded-full px-2.5 py-0.5 ${STATUS_STYLE[r.status] ?? "bg-slate-100 text-slate-600"}`}
                       >
@@ -178,7 +182,11 @@ export default function SortableCaseTable({
                   );
                 }
                 return (
-                  <td key={c.key} className="px-3 py-2 whitespace-nowrap text-slate-800">
+                  <td
+                    key={c.key}
+                    style={c.width ? { width: c.width, maxWidth: c.width } : undefined}
+                    className="px-3 py-2 whitespace-nowrap text-slate-800 truncate"
+                  >
                     {v as string}
                   </td>
                 );

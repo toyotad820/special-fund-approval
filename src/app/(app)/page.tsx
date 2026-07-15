@@ -872,25 +872,19 @@ async function RoleDashboard({
     scopeName = "本課";
     monthlyWhere = { ...dept, month, ...notOthersDraft };
   } else if (user.role === ROLE.SUOZHANG) {
-    // 本所：待審核／已駁回，以及「本人」撤回或草稿的案件（不含課長撤案）
+    // 本所：待所長審核／已駁回，以及「本人」撤回或草稿的案件（不含課長撤案）
+    // 已通過所長審核、進入待部長審核的案件不算「未結」——已經不是所長要處理的了
     unresolvedWhere = {
       storeCode: user.storeCode,
       OR: [
-        {
-          status: {
-            in: [
-              STATUS.PENDING_SUOZHANG,
-              STATUS.PENDING_BUZHUGUAN,
-              STATUS.REJECTED,
-            ],
-          },
-        },
+        { status: STATUS.PENDING_SUOZHANG },
+        { status: STATUS.REJECTED },
         { status: STATUS.WITHDRAWN, submittedById: user.id },
         { status: STATUS.DRAFT, submittedById: user.id },
       ],
     };
     unresolvedTitle = "未結案件";
-    unresolvedHint = "本所．待審核／已駁回／本人撤回或草稿";
+    unresolvedHint = "本所．所長待審核／已駁回／本人撤回或草稿";
     subtitle = `所長 · ${user.storeCode}`;
     scopeName = "本所";
     monthlyWhere = { storeCode: user.storeCode, month, ...notOthersDraft };
@@ -976,7 +970,7 @@ async function RoleDashboard({
               groupName="dashboard-filters"
               options={categories.map((c) => ({ value: c.id, label: c.name }))}
             />
-            <button type="submit" className="btn btn-primary btn-sm">
+            <button type="submit" className="btn btn-primary">
               查詢
             </button>
           </form>

@@ -4,9 +4,14 @@
 //   修訂號：錯誤修正
 // 每次調整功能或修 bug，請同步更新 APP_VERSION，並在 CHANGELOG 開頭加一筆。
 
-export const APP_VERSION = "1.7.1";
+export const APP_VERSION = "1.7.2";
 
 export const CHANGELOG: { version: string; date: string; note: string }[] = [
+  {
+    version: "1.7.2",
+    date: "2026-07-14",
+    note: "查詢按鈕大小對齊篩選視窗；所長未結案件排除已進入待部長審核的案件；申請明細表格欄寬調整（特案內容說明維持不變）",
+  },
   {
     version: "1.7.1",
     date: "2026-07-14",
