@@ -1,5 +1,5 @@
 import "server-only";
-import type { Prisma, User } from "@prisma/client";
+import type { User } from "@prisma/client";
 import { prisma } from "./prisma";
 import { ROLE, STATUS, OVERDUE_DAYS } from "./constants";
 import { normalizeDeptCode } from "./format";
@@ -25,34 +25,6 @@ export async function getDeptCodesForStore(storeCode: string): Promise<string[]>
     if (!Number.isNaN(na) && !Number.isNaN(nb)) return na - nb;
     return a.localeCompare(b);
   });
-}
-
-// 依角色回傳「可視案件」的查詢條件
-export function visibilityWhere(user: User): Prisma.CaseWhereInput {
-  switch (user.role) {
-    case ROLE.KEZHANG:
-      // 課長：本課（同所別 + 同課別）
-      return { storeCode: user.storeCode, deptCode: user.deptCode ?? undefined };
-    case ROLE.SUOZHANG:
-      // 所長：本所（同所別，全部課）
-      return { storeCode: user.storeCode };
-    case ROLE.BUZHUGUAN:
-    case ROLE.STAFF:
-    default:
-      // 部主管 / staff：全部
-      return {};
-  }
-}
-
-// 「待我審核」的查詢條件（無審核權限者回傳 null）
-export function reviewQueueWhere(user: User): Prisma.CaseWhereInput | null {
-  if (user.role === ROLE.SUOZHANG) {
-    return { status: STATUS.PENDING_SUOZHANG, storeCode: user.storeCode };
-  }
-  if (user.role === ROLE.BUZHUGUAN) {
-    return { status: STATUS.PENDING_BUZHUGUAN };
-  }
-  return null;
 }
 
 export function canSubmit(user: User): boolean {

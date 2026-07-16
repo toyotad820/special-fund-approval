@@ -40,14 +40,14 @@ export default function NavBar({
               v{APP_VERSION}
             </span>
           </Link>
-          <nav className="flex items-center gap-0.5 text-sm">
+          <nav className="flex items-center gap-0.5 text-sm overflow-x-auto">
             {items.map((it) => {
               const active = isActive(it.href);
               return (
                 <Link
                   key={it.href}
                   href={it.href}
-                  className={`px-3 py-1.5 rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
+                  className={`shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
                     active
                       ? "bg-blue-50 text-blue-700"
                       : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
@@ -60,7 +60,7 @@ export default function NavBar({
           </nav>
         </div>
 
-        <div className="flex items-center gap-2.5 text-sm min-w-0">
+        <div className="flex items-center gap-2.5 text-sm shrink-0">
           <span className="text-slate-600 truncate hidden sm:inline max-w-[8rem]">
             {userName}
           </span>
@@ -68,7 +68,7 @@ export default function NavBar({
             {roleLabel}
           </span>
           <form action={logout}>
-            <button className="text-slate-400 hover:text-rose-600 transition-colors font-medium px-2 py-2.5 -mx-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/50">
+            <button className="whitespace-nowrap text-slate-400 hover:text-rose-600 transition-colors font-medium px-2 py-2.5 -mx-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/50">
               登出
             </button>
           </form>

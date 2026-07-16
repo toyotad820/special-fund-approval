@@ -29,7 +29,7 @@ export default function SimpleDonutChart({
   }, 0);
 
   return (
-    <div className="flex items-center gap-6 flex-wrap">
+    <div className="flex items-center gap-4">
       <svg
         width={size}
         height={size}
@@ -69,7 +69,7 @@ export default function SimpleDonutChart({
           );
         })}
       </svg>
-      <ul className="space-y-1.5 text-sm min-w-[140px]">
+      <ul className="flex-1 min-w-0 max-w-[220px] space-y-1.5 text-sm">
         {data.map((d, i) => (
           <li key={d.label} className="flex items-center gap-2">
             <span

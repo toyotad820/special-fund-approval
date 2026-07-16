@@ -1,5 +1,5 @@
 // 以 Next.js no-JS server action 協定，完整跑一次核心流程
-const BASE = "http://localhost:3100";
+const BASE = "http://localhost:3000";
 
 function parseSetCookie(res, jar) {
   const raw = res.headers.getSetCookie?.() ?? [];
@@ -93,7 +93,8 @@ async function main() {
   // 2) 課長送單
   const newPage = await get("/cases/new", kez.jar);
   check("課長可開啟填單頁", newPage.status === 200 && newPage.body.includes("新增特案申請"));
-  const orderNo = "D" + Date.now().toString().slice(-12);
+  // 前 3 碼須為送單人所別（k01a 是 D01），共 13 碼英數字
+  const orderNo = "D01" + Date.now().toString().slice(-10);
   const submit = await postAction(
     "/cases/new",
     newPage.body,
@@ -147,11 +148,12 @@ async function main() {
   check("課長成功送單（回傳 ok+caseId）", submit2.status === 200 && okMatch && !!idMatch, `status=${submit2.status}`);
   const caseUrl = `/cases/${idMatch ? idMatch[1] : ""}`;
 
-  // 3) 所長 s01 登入 → 待審應看到此案 → 核准
+  // 3) 所長 s01 登入 → 待審應看到此案（v1.8.0 起首頁改統計儀表板，
+  //    未結案件清單搬到「案件審核」頁）→ 核准
   const suo = await loginAs("s01");
   check("所長登入", !!suo.jar["sfa_session"]);
-  const suoHome = await get("/", suo.jar);
-  check("所長待審清單看到新案", suoHome.body.includes(orderNo), orderNo);
+  const suoReview = await get("/cases-review", suo.jar);
+  check("所長待審清單看到新案", suoReview.body.includes(orderNo), orderNo);
 
   const casePage = await get(caseUrl, suo.jar);
   check("所長可開啟案件並看到審核區", casePage.status === 200 && casePage.body.includes("審核"));
