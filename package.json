@@ -10,7 +10,8 @@
     "db:push": "prisma db push",
     "db:seed": "node prisma/seed.mjs",
     "db:reset": "prisma db push --force-reset --accept-data-loss && node prisma/seed.mjs",
-    "smoke": "node scripts/verify-flow.mjs"
+    "smoke": "node scripts/verify-flow.mjs",
+    "import:cases": "node scripts/testing-import/run.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
