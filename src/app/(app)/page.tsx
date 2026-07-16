@@ -11,12 +11,9 @@ import { ROLE, ROLE_LABEL, STATUS } from "@/lib/constants";
 import { CATEGORICAL, CATEGORY_COLOR_BY_NAME } from "@/lib/chartColors";
 import { money } from "@/lib/format";
 import CaseList from "@/components/CaseList";
-import SortableCaseTable, {
-  type CaseRowData,
-} from "@/components/SortableCaseTable";
+import { type CaseRowData } from "@/components/SortableCaseTable";
 import SimpleDonutChart from "@/components/SimpleDonutChart";
 import SimpleComboChart from "@/components/SimpleComboChart";
-import MultiSelectDropdown from "@/components/MultiSelectDropdown";
 
 export const caseInclude = {
   category: { select: { name: true } },
@@ -156,6 +153,63 @@ function StatTable({ rows, unitLabel }: { rows: StatRow[]; unitLabel: string }) 
         )}
       </table>
     );
+}
+
+type FundStatRow = { label: string; subsidyDeptCourse: number; goldMedal: number; silverMedal: number };
+
+// 所課支援金明細：課長/所長首頁用，跟 StatTable 同樣輕量風格，只是欄位換成
+// 所課支援金／金牌金額／銀牌金額（三者加總＝所基金合計）
+function FundStatTable({ rows, unitLabel }: { rows: FundStatRow[]; unitLabel: string }) {
+  const totalOf = (key: keyof Omit<FundStatRow, "label">) => rows.reduce((s, r) => s + r[key], 0);
+  const totalSubsidy = totalOf("subsidyDeptCourse");
+  const totalGold = totalOf("goldMedal");
+  const totalSilver = totalOf("silverMedal");
+  const grandTotal = totalSubsidy + totalGold + totalSilver;
+
+  return (
+    <table className="w-full mt-4 text-sm">
+      <thead>
+        <tr className="text-xs text-slate-400">
+          <th className="py-1 font-medium text-left">{unitLabel}</th>
+          <th className="py-1 font-medium text-center">所課支援金</th>
+          <th className="py-1 font-medium text-center">金牌金額</th>
+          <th className="py-1 font-medium text-center">銀牌金額</th>
+          <th className="py-1 font-medium text-center">合計</th>
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((r) => (
+          <tr key={r.label} className="border-t border-slate-100">
+            <td className="py-1.5 text-slate-700">{r.label}</td>
+            <td className="py-1.5 text-right tabular-nums text-slate-600">{money(r.subsidyDeptCourse)}</td>
+            <td className="py-1.5 text-right tabular-nums text-slate-600">{money(r.goldMedal)}</td>
+            <td className="py-1.5 text-right tabular-nums text-slate-600">{money(r.silverMedal)}</td>
+            <td className="py-1.5 text-right tabular-nums text-slate-800 font-medium">
+              {money(r.subsidyDeptCourse + r.goldMedal + r.silverMedal)}
+            </td>
+          </tr>
+        ))}
+        {rows.length === 0 && (
+          <tr>
+            <td colSpan={5} className="text-center text-slate-400 py-4">
+              本月尚無資料
+            </td>
+          </tr>
+        )}
+      </tbody>
+      {rows.length > 0 && (
+        <tfoot>
+          <tr className="border-t-2 border-slate-300 font-bold text-slate-800">
+            <td className="py-1.5">合計</td>
+            <td className="py-1.5 text-right tabular-nums">{money(totalSubsidy)}</td>
+            <td className="py-1.5 text-right tabular-nums">{money(totalGold)}</td>
+            <td className="py-1.5 text-right tabular-nums">{money(totalSilver)}</td>
+            <td className="py-1.5 text-right tabular-nums">{money(grandTotal)}</td>
+          </tr>
+        </tfoot>
+      )}
+    </table>
+  );
 }
 
   // 所別統計轉置表：所別當欄、指標（件數/所基金合計/特案總和/佔比/平均）當列，
@@ -503,49 +557,113 @@ function CarModelStatTable({
   );
 }
 
-async function DashboardStats({ month }: { month: string }) {
+// 依所別分組（部長/Staff 首頁）或依課別分組（課長/所長首頁，範圍限本人所屬的所）。
+// Prisma groupBy 的回傳型別隨 by 欄位而不同，這裡統一正規化成 { label, key, _sum, _count }
+// 讓下游統計邏輯不用分兩套。
+type UnitGroupRow = {
+  label: string;
+  key: string;
+  _sum: { specialSubsidy: number | null; subsidyDeptCourse: number | null; goldMedal: number | null; silverMedal: number | null };
+  _count: { _all: number };
+};
+
+async function groupByUnit(
+  where: Prisma.CaseWhereInput,
+  scope?: { storeCode: string; deptCode?: string }
+): Promise<UnitGroupRow[]> {
+  const sums = {
+    specialSubsidy: true,
+    subsidyDeptCourse: true,
+    goldMedal: true,
+    silverMedal: true,
+  } as const;
+  if (scope) {
+    const rows = await prisma.case.groupBy({ by: ["deptCode"], where, _sum: sums, _count: { _all: true } });
+    return rows.map((r) => ({ label: `${r.deptCode}課`, key: r.deptCode, _sum: r._sum, _count: r._count }));
+  }
+  const rows = await prisma.case.groupBy({ by: ["storeCode"], where, _sum: sums, _count: { _all: true } });
+  return rows.map((r) => ({ label: r.storeCode, key: r.storeCode, _sum: r._sum, _count: r._count }));
+}
+
+type UnitCategoryGroupRow = {
+  label: string;
+  categoryId: string | null;
+  _sum: { specialSubsidy: number | null };
+  _count: { _all: number };
+};
+
+async function groupByUnitCategory(
+  where: Prisma.CaseWhereInput,
+  scope?: { storeCode: string; deptCode?: string }
+): Promise<UnitCategoryGroupRow[]> {
+  if (scope) {
+    const rows = await prisma.case.groupBy({
+      by: ["deptCode", "categoryId"],
+      where,
+      _sum: { specialSubsidy: true },
+      _count: { _all: true },
+    });
+    return rows.map((r) => ({
+      label: `${r.deptCode}課`,
+      categoryId: r.categoryId,
+      _sum: r._sum,
+      _count: r._count,
+    }));
+  }
+  const rows = await prisma.case.groupBy({
+    by: ["storeCode", "categoryId"],
+    where,
+    _sum: { specialSubsidy: true },
+    _count: { _all: true },
+  });
+  return rows.map((r) => ({ label: r.storeCode, categoryId: r.categoryId, _sum: r._sum, _count: r._count }));
+}
+
+async function DashboardStats({
+  month,
+  scope,
+}: {
+  month: string;
+  // 有給 scope：範圍限本人所屬的所（課長再加限本課），第二段表格改依課別分組。
+  // 不給：跨所全域統計（部長/Staff 首頁）。
+  scope?: { storeCode: string; deptCode?: string };
+}) {
   const statusFilter = {
     notIn: [STATUS.DRAFT, STATUS.REJECTED, STATUS.WITHDRAWN] as string[],
   };
+  const baseWhere: Prisma.CaseWhereInput = {
+    month,
+    status: statusFilter,
+    ...(scope
+      ? { storeCode: scope.storeCode, ...(scope.deptCode ? { deptCode: scope.deptCode } : {}) }
+      : {}),
+  };
+  const unitLabel = scope ? "課別" : "所別";
 
-  const [byCategory, byStore, byStoreCategory, byCarModelCategory, categories, storeTargets] =
+  const [byCategory, byUnit, byUnitCategory, byCarModelCategory, categories, unitTargets] =
     await Promise.all([
       prisma.case.groupBy({
         by: ["categoryId"],
-        where: { month, status: statusFilter },
+        where: baseWhere,
         _sum: { specialSubsidy: true },
         _count: { _all: true },
       }),
-      prisma.case.groupBy({
-        by: ["storeCode"],
-        where: { month, status: statusFilter },
-        _sum: {
-          specialSubsidy: true,
-          subsidyDeptCourse: true,
-          goldMedal: true,
-          silverMedal: true,
-        },
-        _count: { _all: true },
-      }),
-      prisma.case.groupBy({
-        by: ["storeCode", "categoryId"],
-        where: { month, status: statusFilter },
-        _sum: { specialSubsidy: true },
-        _count: { _all: true },
-      }),
+      groupByUnit(baseWhere, scope),
+      groupByUnitCategory(baseWhere, scope),
       // 各車種特案統計：只列有申請的車種（groupBy 天生只回傳實際出現過的組合）
       prisma.case.groupBy({
         by: ["carModel", "categoryId"],
-        where: { month, status: statusFilter },
+        where: baseWhere,
         _sum: { specialSubsidy: true },
         _count: { _all: true },
       }),
       prisma.caseCategory.findMany({ orderBy: { sortOrder: "asc" } }),
-      // 所層級目標（deptCode="0"）：跟課層級各自獨立維護，見 UnitTarget
-      prisma.unitTarget.findMany({ where: { month, deptCode: "0" } }),
+      // 所層級目標（deptCode="0"）：只有跨所全域統計（部長/Staff）才需要跟目標比對；
+      // 課長/所長首頁的各課統計是簡化版，不比對目標
+      scope ? Promise.resolve([]) : prisma.unitTarget.findMany({ where: { month, deptCode: "0" } }),
     ]);
 
-  const targetByStore = new Map(storeTargets.map((t) => [t.storeCode, t]));
+  const targetByUnit = new Map(unitTargets.map((t) => [scope ? t.deptCode : t.storeCode, t]));
 
   const catName = (id: string | null) =>
     categories.find((c) => c.id === id)?.name ?? "（未分類）";
@@ -575,46 +693,56 @@ async function DashboardStats({ month }: { month: string }) {
     }))
     .sort((a, b) => b.sum - a.sum);
 
-  const storeRows = byStore
-    .map((r) => toStatRow(r.storeCode, r._sum.specialSubsidy, r._count._all))
+  // key（原始所別／課別代碼，target 查找用）跟 label（顯示文字）分開存，因為課別分組時
+  // label 是「1課」這種顯示格式，不能直接拿去查 UnitTarget（存的是原始課別代碼）
+  const keyByLabel = new Map(byUnit.map((r) => [r.label, r.key]));
+  const unitRows = byUnit
+    .map((r) => toStatRow(r.label, r._sum.specialSubsidy, r._count._all))
     .sort((a, b) => a.label.localeCompare(b.label, "zh-Hant"));
 
   // 所基金合計 = 所課支援金 + 金牌金額 + 銀牌金額（跟特案支援金額分開統計）
-  const fundTotalByStore = new Map(
-    byStore.map((r) => [
-      r.storeCode,
+  const fundTotalByUnit = new Map(
+    byUnit.map((r) => [
+      r.label,
       (r._sum.subsidyDeptCourse ?? 0) + (r._sum.goldMedal ?? 0) + (r._sum.silverMedal ?? 0),
     ])
   );
+  const fundRows: FundStatRow[] = byUnit
+    .map((r) => ({
+      label: r.label,
+      subsidyDeptCourse: r._sum.subsidyDeptCourse ?? 0,
+      goldMedal: r._sum.goldMedal ?? 0,
+      silverMedal: r._sum.silverMedal ?? 0,
+    }))
+    .sort((a, b) => a.label.localeCompare(b.label, "zh-Hant"));
 
   // 堆疊長條的類別順序與顏色，需與甜甜圈圖（categoryRows，依金額總和排序）一致
   const categoryOrder = byCategory
     .map((r) => ({ id: r.categoryId, name: catName(r.categoryId), sum: r._sum.specialSubsidy ?? 0 }))
     .sort((a, b) => b.sum - a.sum);
 
-  const storeCategorySums = new Map<string, Map<string | null, number>>();
-  const storeCategoryCounts = new Map<string, Map<string | null, number>>();
-  for (const r of byStoreCategory) {
-    if (!storeCategorySums.has(r.storeCode)) storeCategorySums.set(r.storeCode, new Map());
-    if (!storeCategoryCounts.has(r.storeCode)) storeCategoryCounts.set(r.storeCode, new Map());
-    storeCategorySums.get(r.storeCode)!.set(r.categoryId, r._sum.specialSubsidy ?? 0);
-    storeCategoryCounts.get(r.storeCode)!.set(r.categoryId, r._count._all);
+  const unitCategorySums = new Map<string, Map<string | null, number>>();
+  const unitCategoryCounts = new Map<string, Map<string | null, number>>();
+  for (const r of byUnitCategory) {
+    if (!unitCategorySums.has(r.label)) unitCategorySums.set(r.label, new Map());
+    if (!unitCategoryCounts.has(r.label)) unitCategoryCounts.set(r.label, new Map());
+    unitCategorySums.get(r.label)!.set(r.categoryId, r._sum.specialSubsidy ?? 0);
+    unitCategoryCounts.get(r.label)!.set(r.categoryId, r._count._all);
   }
 
-  const storeStackedRows = storeRows.map((r) => ({
+  const unitStackedRows = unitRows.map((r) => ({
     label: r.label,
-    segments: categoryOrder.map((c) => storeCategorySums.get(r.label)?.get(c.id) ?? 0),
+    segments: categoryOrder.map((c) => unitCategorySums.get(r.label)?.get(c.id) ?? 0),
     line: r.avg,
   }));
 
-
-  // 所別可能多達 24 個以上，長條折線圖需要足夠寬度才不會擠成一團
-  const comboWidth = Math.max(360, storeRows.length * 55 + 110);
+  // 所別（或課別）可能多達 20 個以上，長條折線圖需要足夠寬度才不會擠成一團
+  const comboWidth = Math.max(360, unitRows.length * 55 + 110);
   // 下方表格欄寬需與圖表算法一致（SimpleComboChart 的 padding/bandW），標籤才能對齊
   const comboPaddingLeft = 54;
   const comboPaddingRight = 48;
   const comboBandW =
-    (comboWidth - comboPaddingLeft - comboPaddingRight) / Math.max(1, storeRows.length);
+    (comboWidth - comboPaddingLeft - comboPaddingRight) / Math.max(1, unitRows.length);
 
   // 各車種特案統計：依車名彙總各類別件數、總件數、總金額、平均金額，只列本月有申請的車種
   const carModelMap = new Map<string, CarModelRow>();
@@ -634,9 +762,9 @@ async function DashboardStats({ month }: { month: string }) {
     .map((r) => ({ ...r, avg: r.totalCount > 0 ? Math.round(r.totalSum / r.totalCount) : 0 }))
     .sort((a, b) => a.carModel.localeCompare(b.carModel));
 
-  const totalAmount = storeRows.reduce((s, r) => s + r.sum, 0);
-  const targetRows: TargetRow[] = storeRows.map((r) => {
-    const t = targetByStore.get(r.label);
+  const totalAmount = unitRows.reduce((s, r) => s + r.sum, 0);
+  const targetRows: TargetRow[] = unitRows.map((r) => {
+    const t = targetByUnit.get(keyByLabel.get(r.label) ?? r.label);
     return {
       label: r.label,
       count: r.count,
@@ -663,75 +791,88 @@ async function DashboardStats({ month }: { month: string }) {
         </div>
       </section>
 
-      {/* 下：各所統計，上圖下表（所別多達24個，圖表需可橫向捲動） */}
-      <section className="card p-4">
-        <h2 className="section-title">各所統計（總額 × 平均）· {month}</h2>
-        <p className="text-xs text-slate-400 mb-2">
-          <span className="inline-block mx-1 px-1.5 rounded bg-rose-100 text-rose-700">
-            偏高／超標
-          </span>
-          <span className="inline-block mx-1 px-1.5 rounded bg-emerald-100 text-emerald-700">
-            偏低
-          </span>
-          （尚未上傳目標的所別以「-」表示）
-        </p>
-        <div className="overflow-x-auto">
-          <SimpleComboChart
-            seriesNames={categoryOrder.map((c) => c.name)}
-            seriesColors={categoryOrder.map((c) => categoryColor(c.id))}
-            lineLabel="平均金額"
-            width={comboWidth}
-            data={storeStackedRows}
-          />
-          <TransposedStatTable
-            rows={storeRows}
-            unitLabel="所別"
-            colWidth={comboBandW}
-            firstColWidth={comboPaddingLeft}
-            targetRows={targetRows}
-            fundTotalByLabel={fundTotalByStore}
-            categoryBreakdown={categoryOrder.map((c) => ({
-              name: c.name,
-              color: categoryColor(c.id),
-              countByLabel: new Map(
-                storeRows.map((r) => [
-                  r.label,
-                  storeCategoryCounts.get(r.label)?.get(c.id) ?? 0,
-                ])
-              ),
-            }))}
-          />
-        </div>
-      </section>
+      {/* 下：各所／各課統計。部長/Staff 是跨所比較版（圖+目標比對大表，所別多達24個，
+          需可橫向捲動）；所長範圍限本所、課數少，用精簡小表即可；課長本來就只有一課，
+          再列一次「各課統計」只會是單一列，沒有比較意義，直接不顯示 */}
+      {scope?.deptCode ? null : scope ? (
+        <section className="card p-4">
+          <h2 className="section-title">各課統計 · {month}</h2>
+          <StatTable rows={unitRows} unitLabel={unitLabel} />
+        </section>
+      ) : (
+        <section className="card p-4">
+          <h2 className="section-title">各所統計（總額 × 平均）· {month}</h2>
+          <p className="text-xs text-slate-400 mb-2">
+            <span className="inline-block mx-1 px-1.5 rounded bg-rose-100 text-rose-700">
+              偏高／超標
+            </span>
+            <span className="inline-block mx-1 px-1.5 rounded bg-emerald-100 text-emerald-700">
+              偏低
+            </span>
+            （尚未上傳目標的{unitLabel}以「-」表示）
+          </p>
+          <div className="overflow-x-auto">
+            <SimpleComboChart
+              seriesNames={categoryOrder.map((c) => c.name)}
+              seriesColors={categoryOrder.map((c) => categoryColor(c.id))}
+              lineLabel="平均金額"
+              width={comboWidth}
+              data={unitStackedRows}
+            />
+            <TransposedStatTable
+              rows={unitRows}
+              unitLabel={unitLabel}
+              colWidth={comboBandW}
+              firstColWidth={comboPaddingLeft}
+              targetRows={targetRows}
+              fundTotalByLabel={fundTotalByUnit}
+              categoryBreakdown={categoryOrder.map((c) => ({
+                name: c.name,
+                color: categoryColor(c.id),
+                countByLabel: new Map(
+                  unitRows.map((r) => [
+                    r.label,
+                    unitCategoryCounts.get(r.label)?.get(c.id) ?? 0,
+                  ])
+                ),
+              }))}
+            />
+          </div>
+        </section>
+      )}
 
-      {/* 各車種特案統計：只列本月有申請的車種 */}
-      <section className="card p-4">
-        <h2 className="section-title">各車種特案統計 · {month}</h2>
-        <CarModelStatTable
-          rows={carModelRows}
-          categoryOrder={categoryOrder}
-          categoryColor={categoryColor}
-        />
-      </section>
+      {/* 第三張：課長/所長看所課支援金明細，部長/Staff 看各車種特案統計 */}
+      {scope ? (
+        <section className="card p-4">
+          <h2 className="section-title">所課支援金明細 · {month}</h2>
+          <FundStatTable rows={fundRows} unitLabel={unitLabel} />
+        </section>
+      ) : (
+        <section className="card p-4">
+          <h2 className="section-title">各車種特案統計 · {month}</h2>
+          <CarModelStatTable
+            rows={carModelRows}
+            categoryOrder={categoryOrder}
+            categoryColor={categoryColor}
+          />
+        </section>
+      )}
     </div>
   );
 }
 
-export default async function DashboardPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ categoryIds?: string | string[] }>;
-}) {
+export default async function DashboardPage() {
   const user = await requireUser();
 
-  // 課長／所長／部長／Staff：角色專屬首頁（案件區塊 + 部長/Staff 多一塊統計區）
+  // 課長／所長／部長／Staff：首頁一律是統計儀表板（課長/所長範圍限本課／本所；
+  // 案件明細另外在「案件審核」頁，見 /cases-review）
   if (
     user.role === ROLE.KEZHANG ||
     user.role === ROLE.SUOZHANG ||
     user.role === ROLE.BUZHUGUAN ||
     user.role === ROLE.STAFF
   ) {
-    return <RoleDashboard user={user} searchParams={searchParams} />;
+    return <RoleDashboard user={user} />;
   }
 
   const queueWhere = reviewQueueWhere(user);
@@ -814,7 +955,6 @@ export default async function DashboardPage({
 
 async function RoleDashboard({
   user,
-  searchParams,
 }: {
   user: {
     id: string;
@@ -823,105 +963,25 @@ async function RoleDashboard({
     storeCode: string;
     deptCode: string | null;
   };
-  searchParams: Promise<{ categoryIds?: string | string[] }>;
 }) {
   const month = currentMonth();
-  const sp = await searchParams;
-  const selectedCategoryIds =
-    sp.categoryIds === undefined
-      ? null
-      : Array.isArray(sp.categoryIds)
-        ? sp.categoryIds
-        : [sp.categoryIds];
 
-  // Staff：首頁只有統計區，沒有案件明細
-  if (user.role === ROLE.STAFF) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-lg font-bold text-slate-800">您好，{user.name}</h1>
-          <p className="text-sm text-slate-500">Staff</p>
-        </div>
-        <DashboardStats month={month} />
-      </div>
-    );
-  }
+  const subtitle =
+    user.role === ROLE.KEZHANG
+      ? `課長 · ${user.storeCode}${user.deptCode ? ` ${user.deptCode} 課` : ""}`
+      : user.role === ROLE.SUOZHANG
+        ? `所長 · ${user.storeCode}`
+        : user.role === ROLE.BUZHUGUAN
+          ? "部長"
+          : "Staff";
 
-  let unresolvedWhere: Prisma.CaseWhereInput;
-  let unresolvedTitle: string;
-  let unresolvedHint: string;
-  let subtitle: string;
-  let scopeName = "";
-  let monthlyWhere: Prisma.CaseWhereInput | null = null;
-
-  // 草稿為私人資料，其他人不可見；此條件排除「他人的草稿」
-  const notOthersDraft: Prisma.CaseWhereInput = {
-    OR: [{ status: { not: STATUS.DRAFT } }, { submittedById: user.id }],
-  };
-
-  if (user.role === ROLE.KEZHANG) {
-    const dept = { storeCode: user.storeCode, deptCode: user.deptCode ?? "" };
-    unresolvedWhere = {
-      ...dept,
-      status: { not: STATUS.APPROVED },
-      ...notOthersDraft,
-    };
-    unresolvedTitle = "未結案件";
-    unresolvedHint = "本課．待審核／已駁回／已撤回／草稿";
-    subtitle = `課長 · ${user.storeCode}${user.deptCode ? ` ${user.deptCode} 課` : ""}`;
-    scopeName = "本課";
-    monthlyWhere = { ...dept, month, ...notOthersDraft };
-  } else if (user.role === ROLE.SUOZHANG) {
-    // 本所：待所長審核／已駁回，以及「本人」撤回或草稿的案件（不含課長撤案）
-    // 已通過所長審核、進入待部長審核的案件不算「未結」——已經不是所長要處理的了
-    unresolvedWhere = {
-      storeCode: user.storeCode,
-      OR: [
-        { status: STATUS.PENDING_SUOZHANG },
-        { status: STATUS.REJECTED },
-        { status: STATUS.WITHDRAWN, submittedById: user.id },
-        { status: STATUS.DRAFT, submittedById: user.id },
-      ],
-    };
-    unresolvedTitle = "未結案件";
-    unresolvedHint = "本所．所長待審核／已駁回／本人撤回或草稿";
-    subtitle = `所長 · ${user.storeCode}`;
-    scopeName = "本所";
-    monthlyWhere = { storeCode: user.storeCode, month, ...notOthersDraft };
-  } else {
-    // 部主管：只顯示待部主管審核的案件
-    unresolvedWhere = { status: STATUS.PENDING_BUZHUGUAN };
-    unresolvedTitle = "待審核案件";
-    unresolvedHint = "待部長審核";
-    subtitle = "部長";
-    monthlyWhere = null;
-  }
-
-  // 本月申請明細可另外用特案類型篩選（跟部長待審案件頁一致的下拉複選）
-  if (monthlyWhere && selectedCategoryIds) {
-    monthlyWhere = { ...monthlyWhere, categoryId: { in: selectedCategoryIds } };
-  }
-
-  // 部主管的待審核案件已獨立成「/queue」頁籤，首頁不再重複顯示
-  const showUnresolvedHere = user.role !== ROLE.BUZHUGUAN;
-
-  const [unresolved, monthly, categories] = await Promise.all([
-    showUnresolvedHere
-      ? prisma.case.findMany({
-          where: unresolvedWhere,
-          include: caseInclude,
-          orderBy: { submittedAt: "desc" },
-        })
-      : Promise.resolve([]),
-    monthlyWhere
-      ? prisma.case.findMany({
-          where: monthlyWhere,
-          include: caseInclude,
-          orderBy: { submittedAt: "desc" },
-        })
-      : Promise.resolve([]),
-    monthlyWhere ? prisma.caseCategory.findMany({ orderBy: { sortOrder: "asc" } }) : Promise.resolve([]),
-  ]);
+  // 課長：範圍限本課；所長：範圍限本所（各課合併比較）；部長/Staff：不限（跨所全域統計）
+  const scope =
+    user.role === ROLE.KEZHANG
+      ? { storeCode: user.storeCode, deptCode: user.deptCode ?? "" }
+      : user.role === ROLE.SUOZHANG
+        ? { storeCode: user.storeCode }
+        : undefined;
 
   const canAdd = user.role === ROLE.KEZHANG || user.role === ROLE.SUOZHANG;
 
@@ -942,45 +1002,7 @@ async function RoleDashboard({
         )}
       </div>
 
-      {user.role === ROLE.BUZHUGUAN && <DashboardStats month={month} />}
-
-      {showUnresolvedHere && (
-        <section>
-          <h2 className="section-title">
-            {unresolvedTitle}{" "}
-            <span className="text-blue-600">({unresolved.length})</span>
-            <span className="text-xs text-slate-400 font-normal ml-2">
-              {unresolvedHint}
-            </span>
-          </h2>
-          <SortableCaseTable rows={unresolved.map(toRow)} emptyText="沒有案件" />
-        </section>
-      )}
-
-      {monthlyWhere && (
-        <section className="space-y-3">
-          <h2 className="section-title">
-            {scopeName}本月申請明細 · {month}{" "}
-            <span className="text-blue-600">({monthly.length})</span>
-          </h2>
-          <form className="flex flex-wrap items-center gap-2">
-            <MultiSelectDropdown
-              label="特案類型"
-              name="categoryIds"
-              groupName="dashboard-filters"
-              options={categories.map((c) => ({ value: c.id, label: c.name }))}
-            />
-            <button type="submit" className="btn btn-primary">
-              查詢
-            </button>
-          </form>
-          <SortableCaseTable
-            rows={monthly.map(toRow)}
-            emptyText="本月尚無申請"
-            showTotals
-          />
-        </section>
-      )}
+      <DashboardStats month={month} scope={scope} />
     </div>
   );
 }

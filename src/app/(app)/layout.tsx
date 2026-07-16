@@ -12,6 +12,9 @@ export default async function AppLayout({
 
   const items: NavItem[] = [{ href: "/", label: "首頁" }];
   if (canSubmit(user)) items.push({ href: "/cases/new", label: "新增申請" });
+  if (user.role === ROLE.KEZHANG || user.role === ROLE.SUOZHANG) {
+    items.push({ href: "/cases-review", label: "案件審核" });
+  }
   if (user.role === ROLE.BUZHUGUAN) items.push({ href: "/queue", label: "待審案件" });
   if (canViewReports(user)) items.push({ href: "/reports", label: "報表" });
   if (canAdmin(user)) items.push({ href: "/admin", label: "後台" });

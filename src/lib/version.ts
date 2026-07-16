@@ -4,9 +4,14 @@
 //   修訂號：錯誤修正
 // 每次調整功能或修 bug，請同步更新 APP_VERSION，並在 CHANGELOG 開頭加一筆。
 
-export const APP_VERSION = "1.7.3";
+export const APP_VERSION = "1.8.0";
 
 export const CHANGELOG: { version: string; date: string; note: string }[] = [
+  {
+    version: "1.8.0",
+    date: "2026-07-16",
+    note: "課長/所長首頁改成統計儀表板（範圍限本課／本所，各所統計表改依課別分組）；原首頁的未結案件與本月申請明細搬到新頁「案件審核」",
+  },
   {
     version: "1.7.3",
     date: "2026-07-14",
