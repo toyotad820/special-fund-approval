@@ -784,7 +784,7 @@ async function DashboardStats({
           再列一次「各課統計」只會是單一列，沒有比較意義，直接不顯示 */}
       {scope?.deptCode ? null : scope ? (
         <section className="card p-4">
-          <h2 className="section-title">各課統計 · {month}</h2>
+          <h2 className="section-title">各課特案申請統計 · {month}</h2>
           <StatTable rows={unitRows} unitLabel={unitLabel} />
         </section>
       ) : (
@@ -832,7 +832,7 @@ async function DashboardStats({
       {/* 第三張：課長/所長看所課支援金明細，部長/Staff 看各車種特案統計 */}
       {scope ? (
         <section className="card p-4">
-          <h2 className="section-title">所課支援金明細 · {month}</h2>
+          <h2 className="section-title">所基金使用明細 · {month}</h2>
           <FundStatTable rows={fundRows} unitLabel={unitLabel} />
         </section>
       ) : (

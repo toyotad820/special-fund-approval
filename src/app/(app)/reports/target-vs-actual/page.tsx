@@ -280,7 +280,7 @@ export default async function TargetVsActualPage({
                 <th className={th}>申請台數</th>
                 <th className={th}>申請比率</th>
                 <th className={th}>所基金合計</th>
-                <th className={th}>金額總和</th>
+                <th className={th}>特案總和</th>
                 <th className={th}>金額比率</th>
                 <th className={th}>平均金額</th>
               </tr>
