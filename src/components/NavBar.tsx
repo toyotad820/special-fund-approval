@@ -40,14 +40,19 @@ export default function NavBar({
               v{APP_VERSION}
             </span>
           </Link>
-          <nav className="flex items-center gap-0.5 text-sm overflow-x-auto">
+          <nav className="flex items-center gap-0.5 text-sm min-w-0">
             {items.map((it) => {
               const active = isActive(it.href);
+              // 短標籤（2字）本來就夠窄，固定不縮放；長標籤（4字）才允許縮小換行，
+              // 避免 flex-shrink 平均分攤把不需要換行的短標籤也擠成單字一行
+              const shortLabel = it.label.length <= 2;
               return (
                 <Link
                   key={it.href}
                   href={it.href}
-                  className={`shrink-0 whitespace-nowrap px-3 py-1.5 rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
+                  className={`text-balance text-center leading-tight px-2 sm:px-3 py-1.5 rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
+                    shortLabel ? "shrink-0" : ""
+                  } ${
                     active
                       ? "bg-blue-50 text-blue-700"
                       : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"

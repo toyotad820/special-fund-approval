@@ -52,10 +52,15 @@ export default function SimpleComboChart({
     .join(" ");
 
   const ticks = 4;
+  const rightW = width - padding.left;
 
   return (
-    <div>
-      <div className="flex items-center gap-4 flex-wrap text-xs text-slate-600 mb-2">
+    <div
+      role="img"
+      aria-label={`各所特案總和（依特案類別堆疊）與${lineLabel}長條折線複合圖`}
+      style={{ width }}
+    >
+      <div className="sticky left-0 z-10 inline-flex items-center gap-4 flex-wrap text-xs text-slate-600 mb-2 bg-white pr-2" style={{ maxWidth: width }}>
         {seriesNames.map((name, i) => (
           <span key={name} className="flex items-center gap-1.5">
             <span
@@ -70,30 +75,47 @@ export default function SimpleComboChart({
           {lineLabel}
         </span>
       </div>
-      <svg
-        width={width}
-        height={height}
-        viewBox={`0 0 ${width} ${height}`}
-        role="img"
-        aria-label={`各所特案總和（依特案類別堆疊）與${lineLabel}長條折線複合圖`}
-      >
-        {Array.from({ length: ticks + 1 }).map((_, i) => {
-          const gy = padding.top + (plotH / ticks) * i;
-          const val = maxBar * (1 - i / ticks);
-          return (
-            <g key={`l${i}`}>
-              <line
-                x1={padding.left}
-                x2={width - padding.right}
-                y1={gy}
-                y2={gy}
-                stroke="#e1e0d9"
-                strokeWidth={1}
-              />
-              <text x={padding.left - 8} y={gy + 3} textAnchor="end" fontSize={9} fill="#898781">
+      <div className="flex">
+        {/* 左軸：獨立於可捲動長條圖之外的固定 SVG，捲動時用 sticky 釘在左側 */}
+        <svg
+          width={padding.left}
+          height={height}
+          viewBox={`0 0 ${padding.left} ${height}`}
+          aria-hidden="true"
+          className="sticky left-0 z-10 bg-white shrink-0"
+        >
+          {Array.from({ length: ticks + 1 }).map((_, i) => {
+            const gy = padding.top + (plotH / ticks) * i;
+            const val = maxBar * (1 - i / ticks);
+            return (
+              <text key={`l${i}`} x={padding.left - 8} y={gy + 3} textAnchor="end" fontSize={9} fill="#898781">
                 {barFormatter(Math.round(val))}
               </text>
-            </g>
+            );
+          })}
+          <text x={padding.left - 44} y={padding.top - 10} fontSize={9} fill="#898781">
+            特案總和
+          </text>
+        </svg>
+
+        <svg
+          width={rightW}
+          height={height}
+          viewBox={`${padding.left} 0 ${rightW} ${height}`}
+          aria-hidden="true"
+        >
+        {Array.from({ length: ticks + 1 }).map((_, i) => {
+          const gy = padding.top + (plotH / ticks) * i;
+          return (
+            <line
+              key={`gl${i}`}
+              x1={padding.left}
+              x2={width - padding.right}
+              y1={gy}
+              y2={gy}
+              stroke="#e1e0d9"
+              strokeWidth={1}
+            />
           );
         })}
         {Array.from({ length: ticks + 1 }).map((_, i) => {
@@ -141,7 +163,7 @@ export default function SimpleComboChart({
                     height={Math.max(0, yBottom - yTop)}
                     fill={colorFor(si)}
                     stroke="#fff"
-                    strokeWidth={1.5}
+                    strokeWidth={1}
                   />
                 );
               })}
@@ -186,13 +208,11 @@ export default function SimpleComboChart({
           </text>
         ))}
 
-        <text x={padding.left - 44} y={padding.top - 10} fontSize={9} fill="#898781">
-          特案總和
-        </text>
         <text x={width - padding.right + 2} y={padding.top - 10} fontSize={9} fill={LINE_COLOR}>
           {lineLabel}
         </text>
-      </svg>
+        </svg>
+      </div>
     </div>
   );
 }
