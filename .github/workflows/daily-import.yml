@@ -1,0 +1,39 @@
+# 測試期間專用：每日 06:00（台灣時間）從 Google Drive 抓最新的申請彙整試算表，
+# 清洗後覆蓋寫入正式站資料庫（企業大口類別不受影響）。
+# 正式站上線、不再靠 Excel 匯入申請資料後，這支 workflow 連同整個 scripts/testing-import 目錄可以刪除。
+name: 每日申請資料匯入（測試期間）
+
+on:
+  schedule:
+    # cron 是 UTC 時間；22:00 UTC = 06:00 台灣時間（UTC+8）
+    - cron: "0 22 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: 安裝相依套件
+        run: |
+          npm ci
+          pip install openpyxl
+
+      - name: 產生正式站（Postgres）用的 Prisma Client
+        run: npx prisma generate --schema=prisma/schema.production.prisma
+
+      - name: 執行匯入
+        env:
+          GDRIVE_SA_KEY: ${{ secrets.GDRIVE_SA_KEY }}
+          DRIVE_FILE_ID: "1MckBEqIwxu9Fy-5jmWo5rJzy9TG70uaNJBWrNcTAN40"
+          PROD_DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: node scripts/testing-import/ci-import.mjs

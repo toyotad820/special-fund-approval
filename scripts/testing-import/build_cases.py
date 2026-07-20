@@ -20,13 +20,24 @@ CAR_OVERRIDES = {
     "PU": "TOWN ACE", "PU-TSS": "TOWN ACE", "TOWN-PU": "TOWN ACE",
     "RA-H尊爵+": "RAV4 HV", "RA 尊爵+": "RAV4 HV",
     "TW-n": "TOWN ACE VAN",
+    "CA汽油旗艦": "CAMRY",
+    "PU/52.5/藍": "TOWN ACE",
+    "L CRUISER": "LAND CRUISER",
+    "VO 豪華版": "VIOS",
+    "SPORT": "COROLLA SP",
 }
 
 CATEGORY_MAP = {"一般車": "一般車", "員購車": "員工車", "營業車": "營業車", "租賃車": "租賃車"}
 CATEGORY_ABBR = {"一般車": "一般", "員工車": "員工", "營業車": "營業", "租賃車": "租賃"}
-STATUS_MAP = {"審核通過": "APPROVED", "待審核": "PENDING_BUZHUGUAN"}
+STATUS_MAP = {
+    "審核通過": "APPROVED",
+    "待審核": "PENDING_BUZHUGUAN",
+    "作廢": "WITHDRAWN",
+    "退回": "REJECTED",
+}
 
-REQUIRED_HEADERS = ["申請日期", "所別", "課別", "領牌名稱", "訂單編號", "特案類別", "車名",
+# 所別不再讀 Excel「所別」欄，改用訂單編號前 3 碼（如 D01），跟課長帳號的 storeCode 對齊
+REQUIRED_HEADERS = ["申請日期", "課別", "領牌名稱", "訂單編號", "特案類別", "車名",
                     "所課支援金", "金牌", "折讓總額", "特案支援金額", "備註", "審核狀態"]
 
 
@@ -121,10 +132,10 @@ def main():
 
     records = []
     for order, (date, row) in by_order.items():
-        store = str(row[idx["所別"]]).strip()
+        store = order[:3]
         dept = norm_dept(row[idx["課別"]])
         cat_raw = str(row[idx["特案類別"]]).strip() if row[idx["特案類別"]] else None
-        cat = CATEGORY_MAP.get(cat_raw)
+        cat = CATEGORY_MAP.get(cat_raw.replace("ㄧ", "一") if cat_raw else cat_raw)
         car_raw = str(row[idx["車名"]]).strip() if row[idx["車名"]] else None
         car = norm_car(car_raw) if car_raw else None
         status = STATUS_MAP.get(str(row[idx["審核狀態"]]).strip()) if row[idx["審核狀態"]] else None
