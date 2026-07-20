@@ -96,10 +96,17 @@ function StatTable({ rows, unitLabel }: { rows: StatRow[]; unitLabel: string }) 
     const totalAvg = totalCount > 0 ? Math.round(totalSum / totalCount) : 0;
 
     return (
-      <table className="w-full mt-4 text-sm">
+      <table className="w-full mt-4 text-sm" style={{ tableLayout: "fixed" }}>
+        <colgroup>
+          <col style={{ width: "20%" }} />
+          <col style={{ width: "20%" }} />
+          <col style={{ width: "20%" }} />
+          <col style={{ width: "20%" }} />
+          <col style={{ width: "20%" }} />
+        </colgroup>
         <thead>
           <tr className="text-xs text-slate-400">
-            <th className="py-1 font-medium text-left">{unitLabel}</th>
+            <th className="py-1 font-medium text-center">{unitLabel}</th>
             <th className="py-1 font-medium text-center">件數</th>
             <th className="py-1 font-medium text-center">金額總和</th>
             <th className="py-1 font-medium text-center">佔比</th>
@@ -109,15 +116,15 @@ function StatTable({ rows, unitLabel }: { rows: StatRow[]; unitLabel: string }) 
         <tbody>
           {rows.map((r) => (
             <tr key={r.label} className="border-t border-slate-100">
-              <td className="py-1.5 text-slate-700">{r.label}</td>
+              <td className="py-1.5 text-center text-slate-700">{r.label}</td>
               <td className="py-1.5 text-right tabular-nums text-slate-600">{r.count}</td>
-              <td className="py-1.5 text-right tabular-nums text-slate-800 font-medium">
+              <td className="py-1.5 text-right tabular-nums text-slate-800 font-bold">
                 {money(r.sum)}
               </td>
               <td className="py-1.5 text-right tabular-nums text-slate-600">
                 {totalSum > 0 ? `${Math.round((r.sum / totalSum) * 100)}%` : "-"}
               </td>
-              <td className="py-1.5 text-right tabular-nums text-slate-600">{money(r.avg)}</td>
+              <td className="py-1.5 text-right tabular-nums text-slate-800 font-bold">{money(r.avg)}</td>
             </tr>
           ))}
           {rows.length === 0 && (
@@ -130,12 +137,12 @@ function StatTable({ rows, unitLabel }: { rows: StatRow[]; unitLabel: string }) 
         </tbody>
         {rows.length > 0 && (
           <tfoot>
-            <tr className="border-t-2 border-slate-300 font-bold text-slate-800">
-              <td className="py-1.5">合計</td>
+            <tr className="border-t-2 border-slate-300 text-slate-800">
+              <td className="py-1.5 text-center font-medium">合計</td>
               <td className="py-1.5 text-right tabular-nums">{totalCount}</td>
-              <td className="py-1.5 text-right tabular-nums">{money(totalSum)}</td>
+              <td className="py-1.5 text-right tabular-nums font-bold">{money(totalSum)}</td>
               <td className="py-1.5 text-right tabular-nums">100%</td>
-              <td className="py-1.5 text-right tabular-nums">{money(totalAvg)}</td>
+              <td className="py-1.5 text-right tabular-nums font-bold">{money(totalAvg)}</td>
             </tr>
           </tfoot>
         )}
@@ -155,10 +162,17 @@ function FundStatTable({ rows, unitLabel }: { rows: FundStatRow[]; unitLabel: st
   const grandTotal = totalSubsidy + totalGold + totalSilver;
 
   return (
-    <table className="w-full mt-4 text-sm">
+    <table className="w-full mt-4 text-sm" style={{ tableLayout: "fixed" }}>
+      <colgroup>
+        <col style={{ width: "20%" }} />
+        <col style={{ width: "20%" }} />
+        <col style={{ width: "20%" }} />
+        <col style={{ width: "20%" }} />
+        <col style={{ width: "20%" }} />
+      </colgroup>
       <thead>
         <tr className="text-xs text-slate-400">
-          <th className="py-1 font-medium text-left">{unitLabel}</th>
+          <th className="py-1 font-medium text-center">{unitLabel}</th>
           <th className="py-1 font-medium text-center">所課支援金</th>
           <th className="py-1 font-medium text-center">金牌金額</th>
           <th className="py-1 font-medium text-center">銀牌金額</th>
@@ -168,11 +182,11 @@ function FundStatTable({ rows, unitLabel }: { rows: FundStatRow[]; unitLabel: st
       <tbody>
         {rows.map((r) => (
           <tr key={r.label} className="border-t border-slate-100">
-            <td className="py-1.5 text-slate-700">{r.label}</td>
+            <td className="py-1.5 text-center text-slate-700">{r.label}</td>
             <td className="py-1.5 text-right tabular-nums text-slate-600">{money(r.subsidyDeptCourse)}</td>
             <td className="py-1.5 text-right tabular-nums text-slate-600">{money(r.goldMedal)}</td>
             <td className="py-1.5 text-right tabular-nums text-slate-600">{money(r.silverMedal)}</td>
-            <td className="py-1.5 text-right tabular-nums text-slate-800 font-medium">
+            <td className="py-1.5 text-right tabular-nums text-slate-800 font-bold">
               {money(r.subsidyDeptCourse + r.goldMedal + r.silverMedal)}
             </td>
           </tr>
@@ -187,12 +201,12 @@ function FundStatTable({ rows, unitLabel }: { rows: FundStatRow[]; unitLabel: st
       </tbody>
       {rows.length > 0 && (
         <tfoot>
-          <tr className="border-t-2 border-slate-300 font-bold text-slate-800">
-            <td className="py-1.5">合計</td>
+          <tr className="border-t-2 border-slate-300 text-slate-800">
+            <td className="py-1.5 text-center font-medium">合計</td>
             <td className="py-1.5 text-right tabular-nums">{money(totalSubsidy)}</td>
             <td className="py-1.5 text-right tabular-nums">{money(totalGold)}</td>
             <td className="py-1.5 text-right tabular-nums">{money(totalSilver)}</td>
-            <td className="py-1.5 text-right tabular-nums">{money(grandTotal)}</td>
+            <td className="py-1.5 text-right tabular-nums font-bold">{money(grandTotal)}</td>
           </tr>
         </tfoot>
       )}
@@ -481,7 +495,7 @@ function CarModelStatTable({
   const th =
     "text-center text-xs font-semibold text-slate-500 px-2.5 py-2 whitespace-nowrap border-l border-slate-200 first:border-l-0";
   const thLabel =
-    "text-left text-xs font-semibold text-slate-500 px-2.5 py-2 whitespace-nowrap sticky left-0 bg-slate-50";
+    "text-center text-xs font-semibold text-slate-500 px-2.5 py-2 whitespace-nowrap sticky left-0 bg-slate-50";
   const td =
     "text-right px-2.5 py-2 whitespace-nowrap border-l border-slate-100 first:border-l-0 tabular-nums text-slate-800";
 
@@ -520,9 +534,9 @@ function CarModelStatTable({
                 </td>
               ))}
               <td className={`${td} font-semibold`}>{r.totalCount}</td>
-              <td className={td}>{money(r.totalSum)}</td>
+              <td className={`${td} font-bold`}>{money(r.totalSum)}</td>
               <td className={td}>{totalSum > 0 ? `${Math.round((r.totalSum / totalSum) * 100)}%` : "-"}</td>
-              <td className={td}>{money(r.avg)}</td>
+              <td className={`${td} font-bold`}>{money(r.avg)}</td>
             </tr>
           ))}
         </tbody>

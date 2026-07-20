@@ -179,7 +179,7 @@ export default async function CategoryUsagePage({
               <tr>
                 <th
                   rowSpan={2}
-                  className="text-left text-xs font-semibold text-slate-500 px-3 py-2 sticky left-0 bg-slate-50 whitespace-nowrap"
+                  className="text-center text-xs font-semibold text-slate-500 px-3 py-2 sticky left-0 bg-slate-50 whitespace-nowrap"
                 >
                   單位（{level === "store" ? "所" : "課"}）
                 </th>

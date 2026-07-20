@@ -56,7 +56,7 @@ export default async function ReportsPage({
     categories.find((c) => c.id === id)?.name ?? "（未分類）";
 
   const th = "text-center text-xs font-semibold text-slate-500 px-3 py-2";
-  const thLabel = "text-left text-xs font-semibold text-slate-500 px-3 py-2";
+  const thLabel = "text-center text-xs font-semibold text-slate-500 px-3 py-2";
   const td = "px-3 py-2 text-sm text-slate-800";
 
   // 各所目標對照：申請比率（申請台數/目標台數）前3高標紅、後3低標綠；
@@ -117,7 +117,7 @@ export default async function ReportsPage({
       ? "px-3 py-2 text-sm text-right tabular-nums bg-rose-100 text-rose-800 font-bold"
       : avgGreenKeys.has(storeCode)
         ? "px-3 py-2 text-sm text-right tabular-nums bg-emerald-100 text-emerald-800 font-bold"
-        : `${td} text-right tabular-nums`;
+        : `${td} text-right tabular-nums font-bold`;
 
   const totalTarget = storeStats.reduce((s, r) => s + (r.targetCount ?? 0), 0);
   const totalRate = totalTarget > 0 ? (total._count._all / totalTarget) * 100 : null;
@@ -205,7 +205,7 @@ export default async function ReportsPage({
                 <td className={rateCellCls(r.storeCode)}>
                   {r.rate !== null ? `${Math.round(r.rate)}%` : "-"}
                 </td>
-                <td className={`${td} text-right tabular-nums`}>{money(r.sum)}</td>
+                <td className={`${td} text-right tabular-nums font-bold`}>{money(r.sum)}</td>
                 <td className={shareCellCls(r)}>{Math.round(r.sharePct)}%</td>
                 <td className={avgCellCls(r.storeCode)}>{money(Math.round(r.avg))}</td>
               </tr>
@@ -264,8 +264,8 @@ export default async function ReportsPage({
               <tr key={r.categoryId} className="border-t border-slate-100">
                 <td className={td}>{catName(r.categoryId)}</td>
                 <td className={`${td} text-right tabular-nums`}>{r._count._all}</td>
-                <td className={`${td} text-right tabular-nums`}>{money(r._sum.specialSubsidy ?? 0)}</td>
-                <td className={`${td} text-right tabular-nums`}>
+                <td className={`${td} text-right tabular-nums font-bold`}>{money(r._sum.specialSubsidy ?? 0)}</td>
+                <td className={`${td} text-right tabular-nums font-bold`}>
                   {money(
                     Math.round((r._sum.specialSubsidy ?? 0) / r._count._all)
                   )}

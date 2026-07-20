@@ -47,8 +47,8 @@ export default async function AdminTargetsPage({
         <table className="w-full text-sm">
           <thead>
             <tr className="text-xs text-slate-400">
-              <th className="py-1.5 font-medium text-left">所別</th>
-              <th className="py-1.5 font-medium text-left">課別</th>
+              <th className="py-1.5 font-medium text-center">所別</th>
+              <th className="py-1.5 font-medium text-center">課別</th>
               <th className="py-1.5 font-medium text-center">比重</th>
               <th className="py-1.5 font-medium text-center">目標台數</th>
             </tr>
