@@ -98,10 +98,10 @@ function StatTable({ rows, unitLabel }: { rows: StatRow[]; unitLabel: string }) 
     return (
       <table className="w-full mt-4 text-sm" style={{ tableLayout: "fixed" }}>
         <colgroup>
-          <col style={{ width: "18%" }} />
+          <col style={{ width: "20%" }} />
           <col style={{ width: "14%" }} />
           <col style={{ width: "26%" }} />
-          <col style={{ width: "20%" }} />
+          <col style={{ width: "18%" }} />
           <col style={{ width: "22%" }} />
         </colgroup>
         <thead>
