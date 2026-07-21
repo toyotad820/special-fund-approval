@@ -107,7 +107,7 @@ function StatTable({ rows, unitLabel }: { rows: StatRow[]; unitLabel: string }) 
         <thead>
           <tr className="text-xs text-slate-400">
             <th className="py-1 font-medium text-center">{unitLabel}</th>
-            <th className="py-1 font-medium text-center">件數</th>
+            <th className="py-1 font-medium text-center pr-2">件數</th>
             <th className="py-1 font-medium text-center">金額總和</th>
             <th className="py-1 font-medium text-center">佔比</th>
             <th className="py-1 font-medium text-center">平均</th>
@@ -117,7 +117,7 @@ function StatTable({ rows, unitLabel }: { rows: StatRow[]; unitLabel: string }) 
           {rows.map((r) => (
             <tr key={r.label} className="border-t border-slate-100">
               <td className="py-1.5 text-center text-slate-700">{r.label}</td>
-              <td className="py-1.5 text-right tabular-nums text-slate-600">{r.count}</td>
+              <td className="py-1.5 pr-2 text-right tabular-nums text-slate-600">{r.count}</td>
               <td className="py-1.5 text-right tabular-nums text-slate-800 font-bold">
                 {money(r.sum)}
               </td>
@@ -139,7 +139,7 @@ function StatTable({ rows, unitLabel }: { rows: StatRow[]; unitLabel: string }) 
           <tfoot>
             <tr className="border-t-2 border-slate-300 text-slate-800">
               <td className="py-1.5 text-center font-medium">合計</td>
-              <td className="py-1.5 text-right tabular-nums">{totalCount}</td>
+              <td className="py-1.5 pr-2 text-right tabular-nums">{totalCount}</td>
               <td className="py-1.5 text-right tabular-nums font-bold">{money(totalSum)}</td>
               <td className="py-1.5 text-right tabular-nums">100%</td>
               <td className="py-1.5 text-right tabular-nums font-bold">{money(totalAvg)}</td>
