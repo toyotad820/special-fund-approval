@@ -1,12 +1,14 @@
-# 測試期間專用：每日 06:00（台灣時間）從 Google Drive 抓最新的申請彙整試算表，
+# 測試期間專用：每日約 23:37（台灣時間）從 Google Drive 抓最新的申請彙整試算表，
 # 清洗後覆蓋寫入正式站資料庫（企業大口類別不受影響）。
 # 正式站上線、不再靠 Excel 匯入申請資料後，這支 workflow 連同整個 scripts/testing-import 目錄可以刪除。
 name: 每日申請資料匯入（測試期間）
 
 on:
   schedule:
-    # cron 是 UTC 時間；22:00 UTC = 06:00 台灣時間（UTC+8）
-    - cron: "0 22 * * *"
+    # cron 是 UTC 時間；15:37 UTC = 23:37 台灣時間（UTC+8）
+    # 避開整點觸發（GitHub Actions 排程在整點常因大量 repo 搶跑而延遲/被跳過），
+    # 只要在晚上 22:00～隔天 07:00（台灣時間）內即可，故選離峰的 :37 分
+    - cron: "37 15 * * *"
   workflow_dispatch: {}
 
 jobs:
