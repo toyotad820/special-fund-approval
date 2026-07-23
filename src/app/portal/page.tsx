@@ -19,16 +19,16 @@ export default async function PortalPage() {
   return (
     <div className="flex-1 flex flex-col items-center p-4 sm:p-6">
       <div className="w-full max-w-3xl">
-        <div className="flex items-center justify-between gap-3 mb-8 mt-4">
+        <div className="flex items-start justify-between gap-3 mb-8 mt-4">
           <div className="min-w-0">
             <span className="hidden sm:inline">
               <PortalMark size="md" />
             </span>
             <span className="sm:hidden">
-              <PortalMark size="sm" showTitle={false} />
+              <PortalMark size="sm" />
             </span>
           </div>
-          <div className="flex items-center gap-2.5 sm:gap-3 text-sm shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 text-sm shrink-0 pt-1 sm:pt-0">
             <span className="text-slate-600 truncate hidden sm:inline max-w-[8rem]">
               {user.name}
             </span>
