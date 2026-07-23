@@ -52,20 +52,22 @@ export default function NavBar({
             </div>
           </div>
 
-          {/* 第二排：功能項目（裝不下時整排換行，跟第一排左邊對齊）　...　登出
-              items-start：nav 換成兩行時，登出要貼齊第二排第一行，不要被夾在兩行中間置中 */}
-          <div className="flex items-start justify-between gap-3">
-            <nav className="flex items-center flex-wrap gap-0.5 text-sm min-w-0 -ml-2 sm:-ml-3">
+          {/* 第二排：功能項目（手機版裝不下時整排換行，跟第一排左邊對齊）　...　登出
+              items-start sm:items-center：手機版換行時登出要貼齊第一行；電腦版空間夠、單行不受影響，維持原本置中 */}
+          <div className="flex items-start sm:items-center justify-between gap-3">
+            {/* items-start sm:items-center：手機版 2 行的 4 字標籤跟 1 行的 2 字標籤混在同一排時，
+                items-center 會把矮的單行項目往下壓置中，改頂部對齊才會齊頭；電腦版都單行維持原本置中 */}
+            <nav className="flex items-start sm:items-center flex-wrap gap-0.5 text-sm min-w-0 -ml-2 sm:-ml-3">
               {items.map((it) => {
                 const active = isActive(it.href);
-                // 4 字標籤固定用 max-w 斷成「2+2」兩行（不是靠 flex-shrink 擠壓，
-                // 避免容器一擠就壓成單字直排）；2 字標籤維持單行不換行
+                // 4 字標籤只在手機版用 max-w 斷成「2+2」兩行（不是靠 flex-shrink 擠壓，
+                // 避免容器一擠就壓成單字直排）；電腦版空間夠，維持原本單行不換行
                 const longLabel = it.label.length > 2;
                 return (
                   <Link
                     key={it.href}
                     href={it.href}
-                    className={`${longLabel ? "text-balance max-w-[3.75rem] sm:max-w-[4.25rem] text-center leading-tight" : "whitespace-nowrap"} px-2 sm:px-3 py-1.5 rounded-lg font-medium transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
+                    className={`${longLabel ? "text-balance max-w-[3.75rem] sm:max-w-none text-center sm:text-left leading-tight sm:whitespace-nowrap" : "whitespace-nowrap"} px-2 sm:px-3 py-1.5 rounded-lg font-medium transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
                       active
                         ? "bg-blue-50 text-blue-700"
                         : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
