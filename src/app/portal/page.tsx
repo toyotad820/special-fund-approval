@@ -31,8 +31,6 @@ export default async function PortalPage() {
           </div>
         </div>
 
-        <h1 className="section-title">我的系統</h1>
-
         {cards.length === 0 ? (
           <p className="text-sm text-slate-400">目前沒有任何系統使用權限，請聯絡管理員。</p>
         ) : (
