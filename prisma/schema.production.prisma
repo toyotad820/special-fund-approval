@@ -20,6 +20,7 @@ model User {
   role         String // KEZHANG(課長) | SUOZHANG(所長) | BUZHUGUAN(部主管) | STAFF
   storeCode    String // 所別 Dxx
   deptCode     String? // 課別（部主管/staff 可為空）
+  systems      String   @default("fund") // 可用系統，逗號分隔（見 src/lib/constants.ts 的 SYSTEM）
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
 

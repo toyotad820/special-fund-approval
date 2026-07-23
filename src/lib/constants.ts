@@ -15,6 +15,19 @@ export const ROLE_LABEL: Record<string, string> = {
   STAFF: "Staff",
 };
 
+// 系統（入口選單用，User.systems 逗號分隔存這裡的 key）
+export const SYSTEM = {
+  FUND: "fund", // 特案支援金報備系統
+  CAR_SPEC_CHANGE: "car-spec-change", // 特仕車變更申請（開發中，無功能）
+} as const;
+
+export type SystemKey = (typeof SYSTEM)[keyof typeof SYSTEM];
+
+export const SYSTEM_LABEL: Record<string, string> = {
+  [SYSTEM.FUND]: "特案支援金報備",
+  [SYSTEM.CAR_SPEC_CHANGE]: "特仕車變更申請",
+};
+
 // 案件狀態
 export const STATUS = {
   DRAFT: "DRAFT", // 草稿（尚未送出）

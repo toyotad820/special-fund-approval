@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "特案支援金報備系統",
-  description: "特案支援金線上報備與簽核",
+  title: "TOYOTA車輛部申請系統",
+  description: "TOYOTA車輛部各項申請系統入口",
 };
 
 export default function RootLayout({

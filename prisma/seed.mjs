@@ -74,21 +74,21 @@ async function main() {
 
   // 人員
   const users = [
-    { username: "boss", name: "王大明", role: "BUZHUGUAN", storeCode: "HQ", deptCode: null },
-    { username: "staff1", name: "Staff 陳小美", role: "STAFF", storeCode: "HQ", deptCode: null },
+    { username: "boss", name: "王大明", role: "BUZHUGUAN", storeCode: "HQ", deptCode: null, systems: "fund,car-spec-change" },
+    { username: "staff1", name: "Staff 陳小美", role: "STAFF", storeCode: "HQ", deptCode: null, systems: "fund" },
 
-    { username: "s01", name: "D01 所長 林所長", role: "SUOZHANG", storeCode: "D01", deptCode: null },
-    { username: "k01a", name: "D01 一課 課長 張課長", role: "KEZHANG", storeCode: "D01", deptCode: "1" },
-    { username: "k01b", name: "D01 二課 課長 李課長", role: "KEZHANG", storeCode: "D01", deptCode: "2" },
+    { username: "s01", name: "D01 所長 林所長", role: "SUOZHANG", storeCode: "D01", deptCode: null, systems: "fund" },
+    { username: "k01a", name: "D01 一課 課長 張課長", role: "KEZHANG", storeCode: "D01", deptCode: "1", systems: "fund" },
+    { username: "k01b", name: "D01 二課 課長 李課長", role: "KEZHANG", storeCode: "D01", deptCode: "2", systems: "fund" },
 
-    { username: "s02", name: "D02 所長 吳所長", role: "SUOZHANG", storeCode: "D02", deptCode: null },
-    { username: "k02a", name: "D02 一課 課長 黃課長", role: "KEZHANG", storeCode: "D02", deptCode: "1" },
+    { username: "s02", name: "D02 所長 吳所長", role: "SUOZHANG", storeCode: "D02", deptCode: null, systems: "fund" },
+    { username: "k02a", name: "D02 一課 課長 黃課長", role: "KEZHANG", storeCode: "D02", deptCode: "1", systems: "fund" },
   ];
 
   for (const u of users) {
     await prisma.user.upsert({
       where: { username: u.username },
-      update: { name: u.name, role: u.role, storeCode: u.storeCode, deptCode: u.deptCode },
+      update: { name: u.name, role: u.role, storeCode: u.storeCode, deptCode: u.deptCode, systems: u.systems },
       create: { ...u, passwordHash: pw },
     });
   }

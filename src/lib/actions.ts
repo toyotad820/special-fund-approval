@@ -52,7 +52,7 @@ export async function login(
   const session = await getSession();
   session.userId = user.id;
   await session.save();
-  redirect("/");
+  redirect("/portal");
 }
 
 export async function logout() {

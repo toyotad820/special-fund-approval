@@ -10,7 +10,9 @@ export default async function AppLayout({
 }) {
   const user = await requireUser();
 
+  const mySystems = user.systems.split(",").map((s) => s.trim()).filter(Boolean);
   const items: NavItem[] = [{ href: "/", label: "首頁" }];
+  if (mySystems.length > 1) items.push({ href: "/portal", label: "系統選單" });
   if (canSubmit(user)) items.push({ href: "/cases/new", label: "新增申請" });
   if (user.role === ROLE.KEZHANG || user.role === ROLE.SUOZHANG) {
     items.push({ href: "/cases-review", label: "案件審核" });
