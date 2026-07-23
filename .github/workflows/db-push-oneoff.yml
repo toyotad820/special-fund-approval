@@ -1,0 +1,24 @@
+# 一次性用途：手動觸發，把 prisma/schema.production.prisma 的異動 push 到正式站 Postgres。
+# 本機工具環境連不到 Neon 的 5432 port，借這個 workflow 的 runner 跑。跑完確認成功後這個檔案會刪掉。
+name: 正式站 DB Push（一次性）
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  db-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 安裝相依套件
+        run: npm ci
+
+      - name: prisma db push（正式站 schema）
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: npx prisma db push --schema=prisma/schema.production.prisma --accept-data-loss
