@@ -6,6 +6,10 @@
 
 export const APP_VERSION = "1.8.0";
 
+// Portal（登入頁／系統選單）版號，跟上面特案支援金報備系統自己的 APP_VERSION 分開計，
+// 從 2.0.0 開始（代表新的多系統入口架構）。
+export const PORTAL_VERSION = "2.0.0";
+
 export const CHANGELOG: { version: string; date: string; note: string }[] = [
   {
     version: "1.8.0",
