@@ -58,11 +58,14 @@ export default function NavBar({
             <nav className="flex items-center flex-wrap gap-0.5 text-sm min-w-0 -ml-2 sm:-ml-3">
               {items.map((it) => {
                 const active = isActive(it.href);
+                // 4 字標籤固定用 max-w 斷成「2+2」兩行（不是靠 flex-shrink 擠壓，
+                // 避免容器一擠就壓成單字直排）；2 字標籤維持單行不換行
+                const longLabel = it.label.length > 2;
                 return (
                   <Link
                     key={it.href}
                     href={it.href}
-                    className={`whitespace-nowrap px-2 sm:px-3 py-1.5 rounded-lg font-medium transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
+                    className={`${longLabel ? "text-balance max-w-[3.75rem] sm:max-w-[4.25rem] text-center leading-tight" : "whitespace-nowrap"} px-2 sm:px-3 py-1.5 rounded-lg font-medium transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
                       active
                         ? "bg-blue-50 text-blue-700"
                         : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
