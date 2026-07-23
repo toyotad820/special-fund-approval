@@ -1,0 +1,28 @@
+# 一次性用途：把測試帳號（s01, k01a, staff1）的 systems 欄位改成能看到全部系統，
+# 方便在正式站測試 portal 選單。本機工具環境連不到 Neon 的 5432 port，借這個 workflow 的 runner 跑。
+# 跑完確認成功後這個檔案會刪掉。
+name: 正式站測試帳號 systems 更新（一次性）
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 安裝相依套件
+        run: npm ci
+
+      - name: 產生正式站 Prisma Client
+        run: npx prisma generate --schema=prisma/schema.production.prisma
+
+      - name: 更新測試帳號 systems
+        env:
+          DATABASE_URL: ${{ secrets.PROD_DATABASE_URL }}
+        run: node scripts/testing-import/set-test-systems.mjs
