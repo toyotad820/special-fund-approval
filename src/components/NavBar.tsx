@@ -52,8 +52,9 @@ export default function NavBar({
             </div>
           </div>
 
-          {/* 第二排：功能項目（裝不下時整排換行，跟第一排左邊對齊）　...　登出 */}
-          <div className="flex items-center justify-between gap-3">
+          {/* 第二排：功能項目（裝不下時整排換行，跟第一排左邊對齊）　...　登出
+              items-start：nav 換成兩行時，登出要貼齊第二排第一行，不要被夾在兩行中間置中 */}
+          <div className="flex items-start justify-between gap-3">
             <nav className="flex items-center flex-wrap gap-0.5 text-sm min-w-0 -ml-2 sm:-ml-3">
               {items.map((it) => {
                 const active = isActive(it.href);
@@ -73,7 +74,7 @@ export default function NavBar({
               })}
             </nav>
             <form action={logout} className="shrink-0">
-              <button className="whitespace-nowrap text-slate-400 hover:text-rose-600 transition-colors font-bold px-2 py-1.5 -mx-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/50">
+              <button className="whitespace-nowrap text-slate-400 hover:text-rose-600 transition-colors font-bold px-1.5 py-1.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/50">
                 登出
               </button>
             </form>
