@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logout } from "@/lib/actions";
 import { APP_VERSION, CHANGELOG } from "@/lib/version";
-import BrandMark from "@/components/BrandMark";
 
 export type NavItem = { href: string; label: string };
 
@@ -24,24 +23,32 @@ export default function NavBar({
 
   return (
     <header className="sticky top-0 z-20 bg-white/85 backdrop-blur-md border-b border-slate-200">
-      <div className="max-w-5xl mx-auto px-4 py-2 min-h-14 flex items-start justify-between gap-3">
-        <div className="flex items-center flex-wrap gap-x-2 sm:gap-x-5 gap-y-1 min-w-0 py-0.5">
-          <Link href="/" className="flex items-center gap-2 shrink-0">
-            <span className="hidden md:inline">
-              <BrandMark size="sm" />
-            </span>
-            <span className="md:hidden">
-              <BrandMark size="sm" showTitle={false} />
-            </span>
+      <div className="max-w-5xl mx-auto px-4 py-2">
+        {/* 第一排：品牌（logo 用純 icon，不含直式 TOYOTA 字樣）＋系統名稱＋版本號　...　角色 */}
+        <div className="flex items-center justify-between gap-3">
+          <Link href="/" className="flex items-center gap-2 min-w-0">
+            {/* eslint-disable-next-line @next/next/no-img-element -- 固定小尺寸 icon，不需要 next/image 最佳化 */}
+            <img src="/toyota-icon.png" alt="TOYOTA" height={22} style={{ height: 22, width: "auto" }} className="shrink-0" />
+            <span className="font-bold text-slate-800 text-sm truncate">特案支援金報備</span>
             <span
               title={`v${APP_VERSION} · ${CHANGELOG[0]?.note ?? ""}`}
-              className="text-[10px] font-mono text-slate-400 bg-slate-100 rounded-full px-1.5 py-0.5 whitespace-nowrap cursor-default"
+              className="text-[10px] font-mono text-slate-400 bg-slate-100 rounded-full px-1.5 py-0.5 whitespace-nowrap cursor-default shrink-0"
             >
               v{APP_VERSION}
             </span>
           </Link>
-          {/* 標籤都 shrink-0、不換字，項目一多裝不下時整排（nav）用 flex-wrap 換到第二行，
-              不用橫向捲動、也不會被壓成單字直排 */}
+          <div className="flex items-center gap-2.5 text-sm shrink-0">
+            <span className="text-slate-600 truncate hidden sm:inline max-w-[8rem]">
+              {userName}
+            </span>
+            <span className="text-xs bg-slate-100 text-slate-600 rounded-full px-2.5 py-0.5 whitespace-nowrap font-medium">
+              {roleLabel}
+            </span>
+          </div>
+        </div>
+
+        {/* 第二排：功能項目（裝不下時整排換行）　...　登出 */}
+        <div className="flex items-center justify-between gap-3 mt-1">
           <nav className="flex items-center flex-wrap gap-0.5 text-sm min-w-0">
             {items.map((it) => {
               const active = isActive(it.href);
@@ -60,16 +67,7 @@ export default function NavBar({
               );
             })}
           </nav>
-        </div>
-
-        <div className="flex items-center gap-2.5 text-sm shrink-0 py-2">
-          <span className="text-slate-600 truncate hidden sm:inline max-w-[8rem]">
-            {userName}
-          </span>
-          <span className="text-xs bg-slate-100 text-slate-600 rounded-full px-2.5 py-0.5 whitespace-nowrap font-medium">
-            {roleLabel}
-          </span>
-          <form action={logout}>
+          <form action={logout} className="shrink-0">
             <button className="whitespace-nowrap text-slate-400 hover:text-rose-600 transition-colors font-bold px-2 py-1.5 -mx-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/50">
               登出
             </button>
