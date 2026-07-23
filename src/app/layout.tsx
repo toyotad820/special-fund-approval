@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "TOYOTA車輛部申請系統",
+  title: "TOYOTA車輛部系統",
   description: "TOYOTA車輛部各項申請系統入口",
 };
 

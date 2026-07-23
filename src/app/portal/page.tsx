@@ -19,12 +19,21 @@ export default async function PortalPage() {
   return (
     <div className="flex-1 flex flex-col items-center p-4 sm:p-6">
       <div className="w-full max-w-3xl">
-        <div className="flex items-center justify-between mb-8 mt-4">
-          <PortalMark size="md" />
-          <div className="flex items-center gap-3 text-sm">
-            <span className="text-slate-600">{user.name}</span>
+        <div className="flex items-center justify-between gap-3 mb-8 mt-4">
+          <div className="min-w-0">
+            <span className="hidden sm:inline">
+              <PortalMark size="md" />
+            </span>
+            <span className="sm:hidden">
+              <PortalMark size="sm" showTitle={false} />
+            </span>
+          </div>
+          <div className="flex items-center gap-2.5 sm:gap-3 text-sm shrink-0">
+            <span className="text-slate-600 truncate hidden sm:inline max-w-[8rem]">
+              {user.name}
+            </span>
             <form action={logout}>
-              <button className="text-slate-400 hover:text-rose-600 transition-colors font-medium">
+              <button className="whitespace-nowrap text-slate-400 hover:text-rose-600 transition-colors font-bold">
                 登出
               </button>
             </form>

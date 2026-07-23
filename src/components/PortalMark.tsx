@@ -1,5 +1,5 @@
-// TOYOTA車輛部申請系統的入口品牌標：登入頁／系統選單頁共用，跟各子系統
-// 進去後 NavBar 用的 BrandMark 標題不同（這裡固定顯示「TOYOTA車輛部申請系統」），
+// TOYOTA車輛部系統的入口品牌標：登入頁／系統選單頁共用，跟各子系統
+// 進去後 NavBar 用的 BrandMark 標題不同（這裡固定顯示「TOYOTA車輛部系統」），
 // 但 logo 圖片沿用同一份官方 TOYOTA 素材。
 export default function PortalMark({
   size = "md",
@@ -21,8 +21,8 @@ export default function PortalMark({
         style={{ height: logoHeight, width: "auto" }}
       />
       {showTitle && (
-        <span className={`font-bold text-slate-800 ${titleSize} leading-none border-l border-slate-300 pl-2.5`}>
-          TOYOTA車輛部申請系統
+        <span className={`text-balance font-bold text-slate-800 ${titleSize} leading-tight border-l border-slate-300 pl-2.5`}>
+          TOYOTA車輛部系統
         </span>
       )}
     </span>

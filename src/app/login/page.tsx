@@ -15,8 +15,8 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="flex flex-col items-center mb-6">
           <BrandMark size="lg" showTitle={false} />
-          <h1 className="text-xl font-bold text-slate-800 mt-3">
-            TOYOTA車輛部申請系統
+          <h1 className="text-balance text-xl font-bold text-slate-800 mt-3 text-center">
+            TOYOTA車輛部系統
           </h1>
           <p className="text-sm text-slate-500 mt-1">請登入以繼續</p>
           <span className="text-[10px] font-mono text-slate-400 bg-slate-100 rounded-full px-2 py-0.5 mt-2">

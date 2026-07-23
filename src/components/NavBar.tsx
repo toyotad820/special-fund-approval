@@ -40,19 +40,16 @@ export default function NavBar({
               v{APP_VERSION}
             </span>
           </Link>
-          <nav className="flex items-center gap-0.5 text-sm min-w-0">
+          {/* min-w-0 讓 overflow-x-auto 生效；每個標籤都 shrink-0，
+              避免項目一多時 flex-shrink 把標籤擠成單字直排，改成整排橫向捲動 */}
+          <nav className="flex items-center gap-0.5 text-sm min-w-0 overflow-x-auto">
             {items.map((it) => {
               const active = isActive(it.href);
-              // 短標籤（2字）本來就夠窄，固定不縮放；長標籤（4字）才允許縮小換行，
-              // 避免 flex-shrink 平均分攤把不需要換行的短標籤也擠成單字一行
-              const shortLabel = it.label.length <= 2;
               return (
                 <Link
                   key={it.href}
                   href={it.href}
-                  className={`text-balance text-center leading-tight px-2 sm:px-3 py-1.5 rounded-lg font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
-                    shortLabel ? "shrink-0" : ""
-                  } ${
+                  className={`text-balance text-center leading-tight px-2 sm:px-3 py-1.5 rounded-lg font-medium transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
                     active
                       ? "bg-blue-50 text-blue-700"
                       : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
@@ -73,7 +70,7 @@ export default function NavBar({
             {roleLabel}
           </span>
           <form action={logout}>
-            <button className="whitespace-nowrap text-slate-400 hover:text-rose-600 transition-colors font-medium px-2 py-2.5 -mx-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/50">
+            <button className="whitespace-nowrap text-slate-400 hover:text-rose-600 transition-colors font-bold px-2 py-2.5 -mx-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500/50">
               登出
             </button>
           </form>
