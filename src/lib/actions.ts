@@ -535,7 +535,8 @@ export async function reviewCase(
   ]);
 
   revalidatePath(`/cases/${caseId}`);
-  redirect(`/cases/${caseId}`);
+  // 審核完成後回到待審清單，方便繼續審下一筆，而不是留在單一案件頁
+  redirect(user.role === ROLE.BUZHUGUAN ? "/queue" : "/cases-review");
 }
 
 // ---------- 撤回 ----------
