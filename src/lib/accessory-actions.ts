@@ -3,7 +3,13 @@
 import { redirect } from "next/navigation";
 import { prisma } from "./prisma";
 import { requireUser } from "./session";
-import { canSubmitAccessory, canReviewAccessory, canConfirmAccessory } from "./dal";
+import {
+  canSubmitAccessory,
+  canReviewAccessory,
+  canConfirmAccessory,
+  canWithdrawAccessory,
+  canResubmitAccessory,
+} from "./dal";
 import { ACC_STATUS, ACTION_LABEL } from "./constants";
 import { ocrExtractFields, type OcrResult } from "./ocr";
 import { checkAccessoryBlocks } from "./accessory-validate";
@@ -192,6 +198,99 @@ export async function createAccessoryRequest(
     }
     throw e;
   }
+}
+
+// ---- 編輯後重送／存草稿（申請者對已退件、已撤回、草稿案件）----
+export async function editAccessoryRequest(
+  _prev: AccActionState,
+  formData: FormData
+): Promise<AccActionState> {
+  const user = await requireUser();
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { error: "缺少案件 ID" };
+
+  const existing = await prisma.accessoryRequest.findUnique({ where: { id } });
+  if (!existing) return { error: "案件不存在" };
+  if (!canResubmitAccessory(user, existing)) return { error: "此案件無法編輯" };
+
+  const intent = String(formData.get("intent") ?? "submit");
+  const values = extractValues(formData);
+  const images = parseImages(formData);
+  const dataNo = values.dataNo.trim().toUpperCase();
+
+  if (!dataNo)
+    return { fieldErrors: { dataNo: "資料編號必填" }, values };
+
+  const isSubmit = intent === "submit";
+
+  try {
+    await prisma.$transaction([
+      prisma.accessoryImage.deleteMany({ where: { requestId: id } }),
+      prisma.accessoryRequest.update({
+        where: { id },
+        data: {
+          dataNo,
+          storeCode: values.storeCode.trim().toUpperCase(),
+          salesName: values.salesName.trim(),
+          customerName: values.customerName.trim(),
+          carModel: values.carModel.trim(),
+          accessoryBefore: values.accessoryBefore.trim(),
+          accessoryAfter: values.accessoryAfter.trim(),
+          changeDescription: values.changeDescription.trim(),
+          status: isSubmit ? ACC_STATUS.PENDING_REVIEW : ACC_STATUS.DRAFT,
+          ...(isSubmit ? { submittedAt: new Date() } : {}),
+          images: {
+            create: images.map((img, i) => ({
+              mimeType: img.mimeType,
+              imageData: img.data,
+              ocrRaw: img.ocrRaw ?? null,
+              sortOrder: i,
+            })),
+          },
+          logs: {
+            create: isSubmit
+              ? { step: "SUBMIT", action: "RESUBMIT", reviewerId: user.id }
+              : { step: "DRAFT", action: "SAVE_DRAFT", reviewerId: user.id },
+          },
+        },
+      }),
+    ]);
+    return {
+      ok: true,
+      requestId: id,
+      message: isSubmit ? "已重新送出，等待部長審核。" : "草稿已更新。",
+    };
+  } catch (e: unknown) {
+    if (e && typeof e === "object" && "code" in e && e.code === "P2002") {
+      return { fieldErrors: { dataNo: "此資料編號已存在（全系統唯一）" }, values };
+    }
+    throw e;
+  }
+}
+
+// ---- 申請者撤回（待審核時）----
+export async function withdrawAccessory(formData: FormData): Promise<void> {
+  const user = await requireUser();
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) throw new Error("缺少案件 ID");
+
+  const r = await prisma.accessoryRequest.findUnique({ where: { id } });
+  if (!r) throw new Error("案件不存在");
+  if (!canWithdrawAccessory(user, r)) throw new Error("此案件無法撤回");
+
+  await prisma.accessoryRequest.update({
+    where: { id },
+    data: {
+      status: ACC_STATUS.WITHDRAWN,
+      logs: {
+        create: { step: "WITHDRAWN", action: "WITHDRAW", reviewerId: user.id },
+      },
+    },
+  });
+
+  redirect(`/accessory/${id}`);
 }
 
 // ---- 部長核准 ----

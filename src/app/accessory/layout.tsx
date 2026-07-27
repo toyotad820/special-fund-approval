@@ -19,7 +19,7 @@ export default async function AccessoryLayout({
 
   const items: NavItem[] = [];
   if (mySystems.length > 1) items.push({ href: "/portal", label: "系統選單" });
-  items.push({ href: "/accessory", label: "申請首頁" });
+  items.push({ href: "/accessory", label: "案件明細" });
   if (canSubmitAccessory(user)) {
     items.push({ href: "/accessory/new", label: "新增申請" });
   }

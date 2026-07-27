@@ -4,6 +4,7 @@ import { useActionState, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   createAccessoryRequest,
+  editAccessoryRequest,
   ocrAccessory,
   type AccActionState,
 } from "@/lib/accessory-actions";
@@ -22,6 +23,12 @@ const EMPTY_FIELDS = {
   changeDescription: "",
 };
 type Fields = typeof EMPTY_FIELDS;
+
+export type AccessoryInitial = {
+  id: string;
+  fields: Fields;
+  images: ImageItem[];
+};
 
 // 前端壓縮：長邊縮到 1600px、輸出 JPEG，降低體積與 OCR 成本，並避開 server action body 上限
 function fileToCompressedBase64(
@@ -53,17 +60,18 @@ function fileToCompressedBase64(
   });
 }
 
-export default function AccessoryForm() {
+export default function AccessoryForm({ initial }: { initial?: AccessoryInitial }) {
   const router = useRouter();
+  const isEdit = !!initial?.id;
   const [state, formAction, pending] = useActionState<AccActionState, FormData>(
-    createAccessoryRequest,
+    isEdit ? editAccessoryRequest : createAccessoryRequest,
     {}
   );
   const formRef = useRef<HTMLFormElement>(null);
   const intentRef = useRef<HTMLInputElement>(null);
 
-  const [images, setImages] = useState<ImageItem[]>([]);
-  const [fields, setFields] = useState<Fields>(EMPTY_FIELDS);
+  const [images, setImages] = useState<ImageItem[]>(initial?.images ?? []);
+  const [fields, setFields] = useState<Fields>(initial?.fields ?? EMPTY_FIELDS);
   const [ocrDataNo, setOcrDataNo] = useState("");
   const [ocrRunning, setOcrRunning] = useState(false);
   const [ocrMsg, setOcrMsg] = useState<string | null>(null);
@@ -153,9 +161,9 @@ export default function AccessoryForm() {
   const canSubmit =
     !pending && !!fields.dataNo.trim() && blocks.length === 0;
 
-  // 送出成功 → 導回列表
+  // 送出成功 → 導回列表（編輯模式回該案件明細）
   if (state.ok && state.requestId) {
-    router.push("/accessory");
+    router.push(isEdit ? `/accessory/${initial!.id}` : "/accessory");
   }
 
   const submit = (intent: "draft" | "submit") => {
@@ -170,6 +178,7 @@ export default function AccessoryForm() {
   return (
     <form ref={formRef} action={formAction} className="space-y-5">
       <input ref={intentRef} type="hidden" name="intent" defaultValue="submit" />
+      {isEdit && <input type="hidden" name="id" value={initial!.id} />}
       <input type="hidden" name="ocrDataNo" value={ocrDataNo} />
       <input type="hidden" name="imagesJson" value={JSON.stringify(images)} />
 
@@ -325,7 +334,7 @@ export default function AccessoryForm() {
           disabled={!canSubmit}
           className="flex-1 rounded-lg bg-blue-600 text-white py-2.5 font-medium hover:bg-blue-700 disabled:opacity-50"
         >
-          {pending ? "送出中…" : "送出申請"}
+          {pending ? "送出中…" : isEdit ? "重新送出" : "送出申請"}
         </button>
         <button
           type="button"

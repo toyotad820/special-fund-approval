@@ -2,11 +2,16 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { canViewAccessory } from "@/lib/dal";
+import {
+  canViewAccessory,
+  canWithdrawAccessory,
+  canResubmitAccessory,
+} from "@/lib/dal";
 import { ACTION_LABEL } from "@/lib/constants";
 import { dt } from "@/lib/format";
 import AccStatusBadge from "@/components/AccStatusBadge";
 import ImageLightbox from "@/components/ImageLightbox";
+import ApplicantActions from "@/components/ApplicantActions";
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -41,10 +46,13 @@ export default async function AccessoryDetailPage({
 
   if (!r || !canViewAccessory(user, r)) notFound();
 
+  const canWithdraw = canWithdrawAccessory(user, r);
+  const canResubmit = canResubmitAccessory(user, r);
+
   return (
     <div className="max-w-2xl mx-auto space-y-4">
       <Link href="/accessory" className="text-sm text-blue-600 hover:underline">
-        ← 回申請首頁
+        ← 回案件明細
       </Link>
 
       <div className="bg-white rounded-2xl border border-slate-200 p-5">
@@ -118,6 +126,12 @@ export default async function AccessoryDetailPage({
           ))}
         </ol>
       </div>
+
+      <ApplicantActions
+        requestId={r.id}
+        canWithdraw={canWithdraw}
+        canResubmit={canResubmit}
+      />
     </div>
   );
 }
