@@ -18,6 +18,7 @@ export type OcrFields = {
   salesName: string; // 業務姓名
   customerName: string; // 客戶名稱
   carModel: string; // 車名
+  remarks: string; // 備註/簽決欄位（用「換」字分割變更前/後）
 };
 
 export type OcrResult = {
@@ -33,6 +34,7 @@ const EMPTY_FIELDS: OcrFields = {
   salesName: "",
   customerName: "",
   carModel: "",
+  remarks: "",
 };
 
 const PROMPT = `你是 TOYOTA 經銷商「OPT 委託安裝工單」的資料擷取助手。請從這張工單圖片擷取以下欄位，逐項回傳；找不到的欄位回傳空字串，不要臆測：
@@ -42,6 +44,7 @@ const PROMPT = `你是 TOYOTA 經銷商「OPT 委託安裝工單」的資料擷�
 - salesName：業代編號＋姓名，保留前面的業代編號一起回傳（例如「B4569 陳建勳」）
 - customerName：客戶名稱
 - carModel：車名（例如 Y CROSS、CAMRY、C CROSS）
+- remarks：工單下方「簽決簽審意見」或備註欄的內容，逐字回傳不要省略
 
 只回傳 JSON，不要多餘說明。`;
 
@@ -53,6 +56,7 @@ const RESPONSE_SCHEMA = {
     salesName: { type: "string" },
     customerName: { type: "string" },
     carModel: { type: "string" },
+    remarks: { type: "string" },
   },
   required: [
     "dataNo",
@@ -60,6 +64,7 @@ const RESPONSE_SCHEMA = {
     "salesName",
     "customerName",
     "carModel",
+    "remarks",
   ],
 } as const;
 

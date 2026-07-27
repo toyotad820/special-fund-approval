@@ -36,6 +36,7 @@ export async function ocrAccessory(
         salesName: "",
         customerName: "",
         carModel: "",
+        remarks: "",
       },
       raw: "",
       ok: false,
