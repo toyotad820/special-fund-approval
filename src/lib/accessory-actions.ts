@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "./prisma";
 import { requireUser } from "./session";
-import { canSubmitAccessory, canReviewAccessory } from "./dal";
+import { canSubmitAccessory, canReviewAccessory, canConfirmAccessory } from "./dal";
 import { ACC_STATUS, ACTION_LABEL } from "./constants";
 import { ocrExtractFields, type OcrResult } from "./ocr";
 import { checkAccessoryBlocks } from "./accessory-validate";
@@ -275,4 +275,64 @@ export async function rejectAccessory(formData: FormData): Promise<void> {
   });
 
   redirect("/accessory/review");
+}
+
+// ---- 配件中心確認（結案）----
+export async function confirmAccessory(formData: FormData): Promise<void> {
+  const user = await requireUser();
+
+  const id = String(formData.get("id") ?? "");
+  const remark = String(formData.get("remark") ?? "").trim();
+  if (!id) throw new Error("缺少案件 ID");
+
+  const r = await prisma.accessoryRequest.findUnique({ where: { id } });
+  if (!r) throw new Error("案件不存在");
+  if (!canConfirmAccessory(user, r)) throw new Error("您沒有權限確認此案件");
+
+  await prisma.accessoryRequest.update({
+    where: { id },
+    data: {
+      status: ACC_STATUS.CONFIRMED,
+      logs: {
+        create: {
+          step: "CONFIRMED",
+          action: "CONFIRM",
+          reviewerId: user.id,
+          ...(remark ? { comment: remark } : {}),
+        },
+      },
+    },
+  });
+
+  redirect("/accessory/confirm");
+}
+
+// ---- 配件中心退回重審（打回部長）----
+export async function returnAccessory(formData: FormData): Promise<void> {
+  const user = await requireUser();
+
+  const id = String(formData.get("id") ?? "");
+  const remark = String(formData.get("remark") ?? "").trim();
+  if (!id) throw new Error("缺少案件 ID");
+
+  const r = await prisma.accessoryRequest.findUnique({ where: { id } });
+  if (!r) throw new Error("案件不存在");
+  if (!canConfirmAccessory(user, r)) throw new Error("您沒有權限退回此案件");
+
+  await prisma.accessoryRequest.update({
+    where: { id },
+    data: {
+      status: ACC_STATUS.PENDING_REVIEW,
+      logs: {
+        create: {
+          step: "RETURN",
+          action: "RETURN",
+          reviewerId: user.id,
+          ...(remark ? { comment: remark } : {}),
+        },
+      },
+    },
+  });
+
+  redirect("/accessory/confirm");
 }
