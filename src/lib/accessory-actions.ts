@@ -254,3 +254,49 @@ export async function approveAccessory(
     return { error: `核准失敗: ${msg}` };
   }
 }
+
+// ---- 部長駁回 ----
+export async function rejectAccessory(
+  _prev: AccActionState,
+  formData: FormData
+): Promise<AccActionState> {
+  const user = await requireUser();
+  if (!canReviewAccessory(user)) return { error: "您沒有配件審核權限" };
+
+  const id = String(formData.get("id") ?? "");
+  const reason = String(formData.get("reason") ?? "").trim();
+
+  if (!id) return { error: "缺少案件 ID" };
+  if (!reason) return { fieldErrors: { reason: "必填" } };
+
+  try {
+    const r = await prisma.accessoryRequest.findUnique({ where: { id } });
+    if (!r) return { error: "案件不存在" };
+    if (r.status !== ACC_STATUS.PENDING_REVIEW) return { error: "案件非待審核狀態" };
+
+    // 更新案件狀態為駁回
+    const updated = await prisma.accessoryRequest.update({
+      where: { id },
+      data: {
+        status: ACC_STATUS.REJECTED,
+        logs: {
+          create: {
+            step: "REJECTED",
+            action: "REJECT",
+            reviewerId: user.id,
+            comment: reason,
+          },
+        },
+      },
+    });
+
+    return {
+      ok: true,
+      requestId: updated.id,
+      message: "案件已駁回。",
+    };
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    return { error: `駁回失敗: ${msg}` };
+  }
+}

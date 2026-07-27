@@ -8,6 +8,7 @@ import { dt } from "@/lib/format";
 import { approveAccessory } from "@/lib/accessory-actions";
 import AccStatusBadge from "@/components/AccStatusBadge";
 import ImageLightbox from "@/components/ImageLightbox";
+import RejectForm from "@/components/RejectForm";
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -149,9 +150,7 @@ export default async function AccessoryReviewDetailPage({
               ✓ 核准
             </button>
           </form>
-          <button className="flex-1 rounded-lg bg-rose-600 text-white py-2.5 font-medium hover:bg-rose-700 transition-colors">
-            ✕ 駁回
-          </button>
+          <RejectForm requestId={r.id} />
         </div>
       )}
     </div>
