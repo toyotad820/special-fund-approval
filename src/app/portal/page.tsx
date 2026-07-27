@@ -80,6 +80,16 @@ export default async function PortalPage() {
                 </Link>
               );
             })}
+            {isAdmin && (
+              <Link href="/users" className="group flex flex-col items-center">
+                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl shadow-sm bg-slate-700 grid place-items-center text-white text-2xl sm:text-3xl transition-transform group-hover:scale-[1.04]">
+                  👤
+                </div>
+                <span className="mt-2 text-xs sm:text-sm text-slate-700 text-center leading-tight">
+                  人員管理
+                </span>
+              </Link>
+            )}
           </div>
         )}
       </div>

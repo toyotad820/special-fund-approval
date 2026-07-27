@@ -4,7 +4,6 @@ import { canAdmin } from "@/lib/dal";
 import { redirect } from "next/navigation";
 
 const tabs = [
-  { href: "/admin/users", label: "人員" },
   { href: "/admin/categories", label: "特案類別" },
   { href: "/admin/cars", label: "車種" },
   { href: "/admin/months", label: "月份開關" },

@@ -15,7 +15,7 @@ export default async function EditUserPage({
 
   return (
     <div className="space-y-4">
-      <Link href="/admin/users" className="text-sm text-blue-600 hover:underline">
+      <Link href="/users" className="text-sm text-blue-600 hover:underline">
         ← 返回人員清單
       </Link>
       <div className="bg-white rounded-2xl border border-slate-200 p-5">
@@ -33,6 +33,7 @@ export default async function EditUserPage({
             storeCode: user.storeCode,
             deptCode: user.deptCode,
             active: user.active,
+            systems: user.systems,
           }}
         />
       </div>

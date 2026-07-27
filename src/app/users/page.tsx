@@ -11,7 +11,7 @@ const ERR_MSG: Record<string, string> = {
   inuse: "此人員已有案件或審核紀錄，無法刪除，請改為「停用」（進入編輯取消勾選啟用）。",
 };
 
-export default async function AdminUsersPage({
+export default async function UsersPage({
   searchParams,
 }: {
   searchParams: Promise<{ err?: string }>;
@@ -78,7 +78,7 @@ export default async function AdminUsersPage({
                   <td className={td}>
                     <div className="flex items-center gap-3">
                       <Link
-                        href={`/admin/users/${u.id}`}
+                        href={`/users/${u.id}`}
                         className="text-blue-600 hover:underline"
                       >
                         編輯
