@@ -316,13 +316,13 @@ export async function returnCase(
   await prisma.$transaction([
     prisma.case.update({
       where: { id: c.id },
-      data: { status: STATUS.REJECTED },
+      data: { status: STATUS.WITHDRAWN },
     }),
     prisma.approvalLog.create({
       data: {
         caseId: c.id,
         step: "STAFF",
-        action: "REJECT",
+        action: "WITHDRAW",
         reviewerId: user.id,
         comment: `[管理員強制退回] ${comment}`,
       },

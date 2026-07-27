@@ -61,7 +61,7 @@ export default function ReturnCaseForm({ orderNo }: { orderNo: string }) {
             onClick={(e) => e.stopPropagation()}
           >
             <p className="text-slate-800 font-medium">
-              確定要將訂單 {orderNo} 強制退回申請者嗎？此動作會將案件狀態改為已駁回，需由申請者修改後重送。
+              確定要將訂單 {orderNo} 強制退回申請者嗎？此動作會將案件狀態改為已撤回，需由申請者修改後重送。
             </p>
             <div className="flex gap-3 justify-end">
               <button
