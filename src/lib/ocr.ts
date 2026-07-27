@@ -101,59 +101,76 @@ export async function ocrExtractFields(image: {
     typeof image.data === "string" ? image.data : image.data.toString("base64");
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { text: PROMPT },
-              { inline_data: { mime_type: image.mimeType, data: base64 } },
-            ],
-          },
+  const requestBody = JSON.stringify({
+    contents: [
+      {
+        parts: [
+          { text: PROMPT },
+          { inline_data: { mime_type: image.mimeType, data: base64 } },
         ],
-        generationConfig: {
-          responseMimeType: "application/json",
-          responseSchema: RESPONSE_SCHEMA,
-          temperature: 0,
-        },
-      }),
-    });
+      },
+    ],
+    generationConfig: {
+      responseMimeType: "application/json",
+      responseSchema: RESPONSE_SCHEMA,
+      temperature: 0,
+    },
+  });
 
-    if (!res.ok) {
-      const body = await res.text();
-      return {
-        fields: { ...EMPTY_FIELDS },
-        raw: body,
-        ok: false,
-        error: `Gemini 回應 ${res.status}`,
-      };
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: requestBody,
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        if (res.status === 429 && attempt < 2) {
+          const delay = Math.pow(2, attempt) * 1000;
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          continue;
+        }
+        return {
+          fields: { ...EMPTY_FIELDS },
+          raw: text,
+          ok: false,
+          error: `Gemini 回應 ${res.status}`,
+        };
+      }
+
+      const json = await res.json();
+      const text: string =
+        json?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
+      if (!text) {
+        return {
+          fields: { ...EMPTY_FIELDS },
+          raw: JSON.stringify(json),
+          ok: false,
+          error: "Gemini 未回傳內容",
+        };
+      }
+
+      const parsed = JSON.parse(text);
+      return { fields: coerceFields(parsed), raw: text, ok: true };
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      if (attempt === 2) {
+        return {
+          fields: { ...EMPTY_FIELDS },
+          raw: "",
+          ok: false,
+          error: `辨識失敗：${msg}`,
+        };
+      }
     }
-
-    const json = await res.json();
-    const text: string =
-      json?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-    if (!text) {
-      return {
-        fields: { ...EMPTY_FIELDS },
-        raw: JSON.stringify(json),
-        ok: false,
-        error: "Gemini 未回傳內容",
-      };
-    }
-
-    const parsed = JSON.parse(text);
-    return { fields: coerceFields(parsed), raw: text, ok: true };
-  } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return {
-      fields: { ...EMPTY_FIELDS },
-      raw: "",
-      ok: false,
-      error: `辨識失敗：${msg}`,
-    };
   }
+
+  return {
+    fields: { ...EMPTY_FIELDS },
+    raw: "",
+    ok: false,
+    error: "辨識失敗：重試次數超限",
+  };
 }
