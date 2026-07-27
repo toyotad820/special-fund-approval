@@ -29,8 +29,6 @@ export default async function AccessoryReviewDetailPage({
   const { id } = await params;
   const user = await requireUser();
 
-  if (!canReviewAccessory(user)) notFound();
-
   const r = await prisma.accessoryRequest.findUnique({
     where: { id },
     include: {
@@ -43,7 +41,7 @@ export default async function AccessoryReviewDetailPage({
     },
   });
 
-  if (!r) notFound();
+  if (!r || !canReviewAccessory(user, r)) notFound();
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
