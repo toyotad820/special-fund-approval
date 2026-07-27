@@ -15,6 +15,7 @@ import { ACC_STATUS, ACTION_LABEL } from "./constants";
 import { ocrExtractFields, type OcrResult } from "./ocr";
 import { checkAccessoryBlocks } from "./accessory-validate";
 import { stampImage } from "./accessory-stamp";
+import { uploadToDrive, isDriveEnabled } from "./drive";
 
 export type AccActionState = {
   error?: string;
@@ -363,6 +364,26 @@ export async function approveAccessory(formData: FormData): Promise<void> {
     },
   });
 
+  // 歸檔至 Google Drive（第一張用蓋章圖，其餘用原圖）。失敗不阻斷核准。
+  if (isDriveEnabled()) {
+    for (let i = 0; i < r.images.length; i++) {
+      const img = r.images[i];
+      const base64 = i === 0 && stampedData ? stampedData : img.imageData;
+      if (!base64) continue;
+      const fileName =
+        r.images.length > 1 ? `${r.dataNo}_${i + 1}.jpg` : `${r.dataNo}.jpg`;
+      try {
+        const fileId = await uploadToDrive(fileName, img.mimeType, Buffer.from(base64, "base64"));
+        await prisma.accessoryImage.update({
+          where: { id: img.id },
+          data: { driveFileId: fileId },
+        });
+      } catch (e) {
+        console.error(`[drive] 上傳失敗 ${fileName}:`, e instanceof Error ? e.message : e);
+      }
+    }
+  }
+
   redirect("/accessory/review");
 }
 
@@ -422,6 +443,12 @@ export async function confirmAccessory(formData: FormData): Promise<void> {
         },
       },
     },
+  });
+
+  // 結案後清空已歸檔 Drive 的 base64（省 DB 空間；未歸檔者保留）
+  await prisma.accessoryImage.updateMany({
+    where: { requestId: id, driveFileId: { not: null } },
+    data: { imageData: null, stampedData: null },
   });
 
   redirect("/accessory/confirm");
