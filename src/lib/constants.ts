@@ -1,9 +1,10 @@
 // 角色
 export const ROLE = {
-  KEZHANG: "KEZHANG", // 課長：只送單
+  KEZHANG: "KEZHANG", // 課長：只送單（配件系統中代表副所長，可直接送部長）
   SUOZHANG: "SUOZHANG", // 所長：送單 + 第一關審核
   BUZHUGUAN: "BUZHUGUAN", // 部主管：第二關審核
   STAFF: "STAFF", // Staff：全域報表 + 後台設定
+  PEIJIAN: "PEIJIAN", // 配件中心：配件變更核准後的明細確認
 } as const;
 
 export type Role = (typeof ROLE)[keyof typeof ROLE];
@@ -13,6 +14,7 @@ export const ROLE_LABEL: Record<string, string> = {
   SUOZHANG: "所長",
   BUZHUGUAN: "部長",
   STAFF: "Staff",
+  PEIJIAN: "配件中心",
 };
 
 // 系統（入口選單用，User.systems 逗號分隔存這裡的 key）
@@ -89,4 +91,51 @@ export const ACTION_LABEL: Record<string, string> = {
   WITHDRAW: "撤回",
   APPROVE: "核准",
   REJECT: "駁回",
+  CONFIRM: "確認",
+  RETURN: "退回重審",
+};
+
+// ============================================================
+// 配件變更申請系統（特仕車變更申請）常數
+// 單層審核：SUOZHANG/KEZHANG 送單 → BUZHUGUAN 審核 → 核准後 PEIJIAN 確認
+// ============================================================
+
+// 配件申請案件狀態
+export const ACC_STATUS = {
+  DRAFT: "DRAFT", // 草稿（尚未送出）
+  PENDING_REVIEW: "PENDING_REVIEW", // 待部長審核
+  REJECTED: "REJECTED", // 已退件（可修改後重送）
+  APPROVED: "APPROVED", // 已核准（已蓋章、待配件中心確認）
+  CONFIRMED: "CONFIRMED", // 配件中心已確認（結案）
+  WITHDRAWN: "WITHDRAWN", // 已撤回
+} as const;
+
+export type AccStatus = (typeof ACC_STATUS)[keyof typeof ACC_STATUS];
+
+export const ACC_STATUS_LABEL: Record<string, string> = {
+  DRAFT: "草稿",
+  PENDING_REVIEW: "待審核",
+  REJECTED: "已退件",
+  APPROVED: "已核准",
+  CONFIRMED: "已確認",
+  WITHDRAWN: "已撤回",
+};
+
+// 狀態顏色（沿用特案系統色票規則）
+export const ACC_STATUS_STYLE: Record<string, string> = {
+  DRAFT: "bg-violet-100 text-violet-700",
+  PENDING_REVIEW: "bg-amber-100 text-amber-800",
+  REJECTED: "bg-rose-100 text-rose-800",
+  APPROVED: "bg-blue-100 text-blue-800",
+  CONFIRMED: "bg-emerald-100 text-emerald-800",
+  WITHDRAWN: "bg-gray-200 text-gray-600",
+};
+
+export const ACC_STATUS_DOT: Record<string, string> = {
+  DRAFT: "bg-violet-500",
+  PENDING_REVIEW: "bg-amber-500",
+  REJECTED: "bg-rose-500",
+  APPROVED: "bg-blue-500",
+  CONFIRMED: "bg-emerald-500",
+  WITHDRAWN: "bg-slate-400",
 };

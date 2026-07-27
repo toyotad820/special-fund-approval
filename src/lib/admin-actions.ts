@@ -23,7 +23,13 @@ async function requireAdmin() {
   return user;
 }
 
-const VALID_ROLES = [ROLE.KEZHANG, ROLE.SUOZHANG, ROLE.BUZHUGUAN, ROLE.STAFF] as const;
+const VALID_ROLES = [
+  ROLE.KEZHANG,
+  ROLE.SUOZHANG,
+  ROLE.BUZHUGUAN,
+  ROLE.STAFF,
+  ROLE.PEIJIAN,
+] as const;
 
 // 接受代碼或中文，回傳角色代碼；無效回 null
 function normalizeRole(v: string): string | null {

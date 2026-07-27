@@ -1,7 +1,7 @@
 import "server-only";
 import type { User } from "@prisma/client";
 import { prisma } from "./prisma";
-import { ROLE, STATUS, OVERDUE_DAYS } from "./constants";
+import { ROLE, STATUS, ACC_STATUS, OVERDUE_DAYS } from "./constants";
 import { normalizeDeptCode } from "./format";
 
 // 該所目前有效的課別代碼（依課長帳號推得），供所長申請時的課別下拉選單使用
@@ -106,4 +106,70 @@ export function isOverdue(c: { status: string; stepEnteredAt: Date }): boolean {
   }
   const ms = Date.now() - new Date(c.stepEnteredAt).getTime();
   return ms > OVERDUE_DAYS * 24 * 60 * 60 * 1000;
+}
+
+// ============================================================
+// 配件變更申請系統權限
+// 單層審核：SUOZHANG/KEZHANG 送單 → BUZHUGUAN 審核 → PEIJIAN 確認
+// ============================================================
+
+type AccLike = { status: string; storeCode: string; submittedById: string };
+
+// 能否送配件變更申請（所長與副所長=課長皆可，一律直送部長）
+export function canSubmitAccessory(user: User): boolean {
+  return user.role === ROLE.SUOZHANG || user.role === ROLE.KEZHANG;
+}
+
+// 能否檢視這張配件申請單（草稿為私人資料，僅本人可見）
+export function canViewAccessory(user: User, r: AccLike): boolean {
+  if (r.submittedById === user.id) return true;
+  if (r.status === ACC_STATUS.DRAFT) return false;
+  // 部長、配件中心、Staff 可見全部（非草稿）
+  if (
+    user.role === ROLE.BUZHUGUAN ||
+    user.role === ROLE.PEIJIAN ||
+    user.role === ROLE.STAFF
+  ) {
+    return true;
+  }
+  // 同所的所長/副所長可見本所案件
+  if (user.role === ROLE.SUOZHANG || user.role === ROLE.KEZHANG) {
+    return r.storeCode === user.storeCode;
+  }
+  return false;
+}
+
+// 部長能否審核（待審狀態）
+export function canReviewAccessory(user: User, r: AccLike): boolean {
+  return user.role === ROLE.BUZHUGUAN && r.status === ACC_STATUS.PENDING_REVIEW;
+}
+
+// 配件中心能否對已核准案件確認或退回重審
+export function canConfirmAccessory(user: User, r: AccLike): boolean {
+  return user.role === ROLE.PEIJIAN && r.status === ACC_STATUS.APPROVED;
+}
+
+// 送單人能否撤回（尚未審核前）
+export function canWithdrawAccessory(user: User, r: AccLike): boolean {
+  return r.submittedById === user.id && r.status === ACC_STATUS.PENDING_REVIEW;
+}
+
+// 送單人能否修改後重送（已退件、已撤回、或草稿）
+export function canResubmitAccessory(user: User, r: AccLike): boolean {
+  return (
+    r.submittedById === user.id &&
+    (r.status === ACC_STATUS.REJECTED ||
+      r.status === ACC_STATUS.WITHDRAWN ||
+      r.status === ACC_STATUS.DRAFT)
+  );
+}
+
+// 送單人能否刪除（自己的草稿、已退件或已撤回）
+export function canDeleteAccessory(user: User, r: AccLike): boolean {
+  return (
+    r.submittedById === user.id &&
+    (r.status === ACC_STATUS.DRAFT ||
+      r.status === ACC_STATUS.REJECTED ||
+      r.status === ACC_STATUS.WITHDRAWN)
+  );
 }
