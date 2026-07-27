@@ -1,5 +1,6 @@
 "use server";
 
+import { redirect } from "next/navigation";
 import { prisma } from "./prisma";
 import { requireUser } from "./session";
 import { canSubmitAccessory, canReviewAccessory } from "./dal";
@@ -194,110 +195,84 @@ export async function createAccessoryRequest(
 }
 
 // ---- 部長核准 ----
-export async function approveAccessory(
-  _prev: AccActionState,
-  formData: FormData
-): Promise<AccActionState> {
+export async function approveAccessory(formData: FormData): Promise<void> {
   const user = await requireUser();
 
   const id = String(formData.get("id") ?? "");
   const remark = String(formData.get("remark") ?? "").trim();
-  if (!id) return { error: "缺少案件 ID" };
+  if (!id) throw new Error("缺少案件 ID");
 
-  try {
-    const r = await prisma.accessoryRequest.findUnique({
-      where: { id },
-      include: { images: { orderBy: { sortOrder: "asc" } } },
-    });
+  const r = await prisma.accessoryRequest.findUnique({
+    where: { id },
+    include: { images: { orderBy: { sortOrder: "asc" } } },
+  });
 
-    if (!r) return { error: "案件不存在" };
-    if (!canReviewAccessory(user, r)) return { error: "您沒有權限審核此案件" };
+  if (!r) throw new Error("案件不存在");
+  if (!canReviewAccessory(user, r)) throw new Error("您沒有權限審核此案件");
 
-    // 蓋章第一張圖片（如果存在且有 base64）
-    const firstImg = r.images[0];
-    let stampedData: string | null = null;
-    if (firstImg?.imageData) {
-      const date = new Date().toLocaleDateString("zh-TW");
-      stampedData = await stampImage(firstImg.imageData, firstImg.mimeType, user.name, date);
-    }
+  // 蓋章第一張圖片（如果存在且有 base64）
+  const firstImg = r.images[0];
+  let stampedData: string | null = null;
+  if (firstImg?.imageData) {
+    const date = new Date().toLocaleDateString("zh-TW");
+    stampedData = await stampImage(firstImg.imageData, firstImg.mimeType, user.name, date);
+  }
 
-    // 更新案件狀態
-    const updated = await prisma.accessoryRequest.update({
-      where: { id },
-      data: {
-        status: ACC_STATUS.APPROVED,
-        ...(firstImg && stampedData
-          ? {
-              images: {
-                update: {
-                  where: { id: firstImg.id },
-                  data: { stampedData },
-                },
+  await prisma.accessoryRequest.update({
+    where: { id },
+    data: {
+      status: ACC_STATUS.APPROVED,
+      ...(firstImg && stampedData
+        ? {
+            images: {
+              update: {
+                where: { id: firstImg.id },
+                data: { stampedData },
               },
-            }
-          : {}),
-        logs: {
-          create: {
-            step: "APPROVED",
-            action: "APPROVE",
-            reviewerId: user.id,
-            ...(remark ? { comment: remark } : {}),
-          },
+            },
+          }
+        : {}),
+      logs: {
+        create: {
+          step: "APPROVED",
+          action: "APPROVE",
+          reviewerId: user.id,
+          ...(remark ? { comment: remark } : {}),
         },
       },
-    });
+    },
+  });
 
-    return {
-      ok: true,
-      requestId: updated.id,
-      message: "案件已核准。",
-    };
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : String(error);
-    return { error: `核准失敗: ${msg}` };
-  }
+  redirect("/accessory/review");
 }
 
 // ---- 部長駁回 ----
-export async function rejectAccessory(
-  _prev: AccActionState,
-  formData: FormData
-): Promise<AccActionState> {
+export async function rejectAccessory(formData: FormData): Promise<void> {
   const user = await requireUser();
 
   const id = String(formData.get("id") ?? "");
   const remark = String(formData.get("remark") ?? "").trim();
 
-  if (!id) return { error: "缺少案件 ID" };
+  if (!id) throw new Error("缺少案件 ID");
 
-  try {
-    const r = await prisma.accessoryRequest.findUnique({ where: { id } });
-    if (!r) return { error: "案件不存在" };
-    if (!canReviewAccessory(user, r)) return { error: "您沒有權限審核此案件" };
+  const r = await prisma.accessoryRequest.findUnique({ where: { id } });
+  if (!r) throw new Error("案件不存在");
+  if (!canReviewAccessory(user, r)) throw new Error("您沒有權限審核此案件");
 
-    // 更新案件狀態為駁回
-    const updated = await prisma.accessoryRequest.update({
-      where: { id },
-      data: {
-        status: ACC_STATUS.REJECTED,
-        logs: {
-          create: {
-            step: "REJECTED",
-            action: "REJECT",
-            reviewerId: user.id,
-            ...(remark ? { comment: remark } : {}),
-          },
+  await prisma.accessoryRequest.update({
+    where: { id },
+    data: {
+      status: ACC_STATUS.REJECTED,
+      logs: {
+        create: {
+          step: "REJECTED",
+          action: "REJECT",
+          reviewerId: user.id,
+          ...(remark ? { comment: remark } : {}),
         },
       },
-    });
+    },
+  });
 
-    return {
-      ok: true,
-      requestId: updated.id,
-      message: "案件已駁回。",
-    };
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : String(error);
-    return { error: `駁回失敗: ${msg}` };
-  }
+  redirect("/accessory/review");
 }

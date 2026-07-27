@@ -1,35 +1,17 @@
 "use client";
 
 import { approveAccessory, rejectAccessory } from "@/lib/accessory-actions";
-import { useActionState, useRef } from "react";
 
 export default function ReviewForm({ requestId }: { requestId: string }) {
-  const remarkRef = useRef<HTMLTextAreaElement>(null);
-  const [_state, approveAction] = useActionState(approveAccessory, {});
-  const [_state2, rejectAction] = useActionState(rejectAccessory, {});
-
-  const handleApproveClick = () => {
-    const fd = new FormData();
-    fd.set("id", requestId);
-    fd.set("remark", remarkRef.current?.value ?? "");
-    approveAction(fd);
-  };
-
-  const handleRejectClick = () => {
-    const fd = new FormData();
-    fd.set("id", requestId);
-    fd.set("remark", remarkRef.current?.value ?? "");
-    rejectAction(fd);
-  };
-
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
+    <form className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
+      <input type="hidden" name="id" value={requestId} />
       <div>
         <label className="block text-sm font-medium text-slate-600 mb-2">
           批示結果 <span className="text-slate-400">（選填）</span>
         </label>
         <textarea
-          ref={remarkRef}
+          name="remark"
           placeholder="核准或駁回時可填寫批示結果"
           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
           rows={3}
@@ -37,20 +19,20 @@ export default function ReviewForm({ requestId }: { requestId: string }) {
       </div>
       <div className="flex gap-3">
         <button
-          type="button"
-          onClick={handleApproveClick}
+          type="submit"
+          formAction={approveAccessory}
           className="flex-1 rounded-lg bg-green-600 text-white py-2.5 font-medium hover:bg-green-700 transition-colors"
         >
           ✓ 核准
         </button>
         <button
-          type="button"
-          onClick={handleRejectClick}
+          type="submit"
+          formAction={rejectAccessory}
           className="flex-1 rounded-lg bg-rose-600 text-white py-2.5 font-medium hover:bg-rose-700 transition-colors"
         >
           ✕ 駁回
         </button>
       </div>
-    </div>
+    </form>
   );
 }
