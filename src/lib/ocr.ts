@@ -97,7 +97,7 @@ export async function ocrExtractFields(image: {
     };
   }
 
-  const model = process.env.GEMINI_MODEL || "gemini-flash-latest";
+  const model = process.env.GEMINI_MODEL || "gemini-2.0-flash-lite";
   const base64 =
     typeof image.data === "string" ? image.data : image.data.toString("base64");
 
