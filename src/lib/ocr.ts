@@ -64,7 +64,6 @@ const RESPONSE_SCHEMA = {
     "salesName",
     "customerName",
     "carModel",
-    "remarks",
   ],
 } as const;
 
