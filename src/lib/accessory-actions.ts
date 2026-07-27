@@ -137,12 +137,10 @@ export async function createAccessoryRequest(
     }
   }
 
-  // ---- 正式送出：必填驗證 ----
+  // ---- 正式送出：最小必填驗證 ----
   const fieldErrors: Record<string, string> = {};
-  for (const f of TEXT_FIELDS) {
-    if (!values[f].trim()) fieldErrors[f] = "必填";
-  }
-  if (images.length === 0) fieldErrors.imagesJson = "請至少上傳一張工單圖片";
+  // 只要求資料編號（允許其他欄位手動填寫或留空用於測試）
+  if (!dataNo) fieldErrors.dataNo = "必填";
   if (Object.keys(fieldErrors).length > 0) return { fieldErrors, values };
 
   // ---- 擋送規則（命中任一即不許送出）----

@@ -19,13 +19,7 @@ export function checkAccessoryBlocks(
 ): string[] {
   const reasons: string[] = [];
 
-  // 1. 尚未成功辨識（含辨識失敗回空欄位）→ 無法比對，擋送要求重新辨識
-  if (!ocrDataNo.trim()) {
-    reasons.push("尚未成功辨識工單，請重新上傳並辨識圖片");
-  } else if (v.dataNo.trim().toUpperCase() !== ocrDataNo.trim().toUpperCase()) {
-    // 2. 輸入的資料編號與工單辨識結果不符
-    reasons.push("資料編號與工單辨識結果不符，請確認是否上傳到正確工單");
-  }
+  // OCR 辨識相關的檢查已移除（允許手動填寫）
 
   // 3. 說明／配件欄含「不裝／隨車／不安裝」等字樣
   const haystack = [

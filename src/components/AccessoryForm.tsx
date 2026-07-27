@@ -149,9 +149,9 @@ export default function AccessoryForm() {
     [fields, ocrDataNo]
   );
 
-  const requiredMissing = Object.values(fields).some((v) => !v.trim());
+  // 只檢查資料編號（允許其他欄位暫時留空用於測試）
   const canSubmit =
-    !pending && images.length > 0 && !requiredMissing && blocks.length === 0;
+    !pending && !!fields.dataNo.trim() && blocks.length === 0;
 
   // 送出成功 → 導回列表
   if (state.ok && state.requestId) {
