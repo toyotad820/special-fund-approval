@@ -17,7 +17,6 @@ const EMPTY_FIELDS = {
   salesName: "",
   customerName: "",
   carModel: "",
-  accessoryNameQty: "",
   accessoryBefore: "",
   accessoryAfter: "",
   changeDescription: "",
@@ -112,7 +111,6 @@ export default function AccessoryForm() {
         salesName: f.salesName || prev.salesName,
         customerName: f.customerName || prev.customerName,
         carModel: f.carModel || prev.carModel,
-        accessoryNameQty: f.accessoryNameQty || prev.accessoryNameQty,
       }));
       setOcrDataNo(f.dataNo);
       setImages((prev) =>
@@ -130,7 +128,6 @@ export default function AccessoryForm() {
       checkAccessoryBlocks(
         {
           dataNo: fields.dataNo,
-          accessoryNameQty: fields.accessoryNameQty,
           accessoryBefore: fields.accessoryBefore,
           accessoryAfter: fields.accessoryAfter,
           changeDescription: fields.changeDescription,
@@ -256,17 +253,6 @@ export default function AccessoryForm() {
             className={inputCls}
           />
         </Field>
-        <div className="sm:col-span-2">
-          <Field label="配件名稱／數量" required error={err("accessoryNameQty")}>
-            <textarea
-              name="accessoryNameQty"
-              rows={5}
-              value={fields.accessoryNameQty}
-              onChange={(e) => set("accessoryNameQty", e.target.value)}
-              className={inputCls}
-            />
-          </Field>
-        </div>
       </section>
 
       {/* 人工填寫欄位 */}

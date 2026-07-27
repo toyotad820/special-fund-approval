@@ -3,7 +3,6 @@
 
 export type AccessoryCheckValues = {
   dataNo: string;
-  accessoryNameQty: string;
   accessoryBefore: string;
   accessoryAfter: string;
   changeDescription: string;
@@ -28,18 +27,8 @@ export function checkAccessoryBlocks(
     reasons.push("資料編號與工單辨識結果不符，請確認是否上傳到正確工單");
   }
 
-  // 3. 任一配件數量 > 1（辨識格式「名稱 xN」）
-  const qtyMatches = v.accessoryNameQty.matchAll(/x\s*(\d+)/gi);
-  for (const m of qtyMatches) {
-    if (Number(m[1]) > 1) {
-      reasons.push("配件數量不可超過 1（偵測到數量大於 1 的項目）");
-      break;
-    }
-  }
-
-  // 4. 說明／配件欄含「不裝／隨車／不安裝」等字樣
+  // 3. 說明／配件欄含「不裝／隨車／不安裝」等字樣
   const haystack = [
-    v.accessoryNameQty,
     v.accessoryBefore,
     v.accessoryAfter,
     v.changeDescription,
