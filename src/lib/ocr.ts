@@ -41,7 +41,7 @@ const PROMPT = `你是 TOYOTA 經銷商「OPT 委託安裝工單」的資料擷�
 
 - dataNo：訂單編號（Dxx 開頭、共 13 碼英數字，例如 D111507010401）
 - storeCode：所別代碼（訂單編號前 3 碼，例如 D11）
-- salesName：業務／業代姓名（「業代編號」或「業務」欄位中的人名，去掉編號只留姓名）
+- salesName：業代編號＋姓名，保留前面的業代編號一起回傳（例如「B4569 陳建勳」）
 - customerName：客戶名稱
 - carModel：車名（例如 Y CROSS、CAMRY、C CROSS）
 - accessoryNameQty：明細區所有配件的「名稱」與「數量」，逐列一行，格式「名稱 x數量」，多列以換行分隔；專案代碼列可略過。

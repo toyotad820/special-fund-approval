@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import type { ActionState } from "@/lib/admin-actions";
-import { ROLE_LABEL } from "@/lib/constants";
+import { ROLE_LABEL, SYSTEM, SYSTEM_LABEL } from "@/lib/constants";
 
 type Initial = {
   id?: string;
@@ -11,6 +11,7 @@ type Initial = {
   role?: string;
   storeCode?: string;
   deptCode?: string | null;
+  systems?: string;
   active?: boolean;
 };
 
@@ -26,14 +27,22 @@ export default function UserForm({
   isEdit?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(submitAction, {});
+  const [systems, setSystems] = useState<string[]>(
+    initial?.systems ? initial.systems.split(",").filter(Boolean) : ["fund"]
+  );
   const fe = state.fieldErrors ?? {};
   const err = (n: string) =>
     fe[n] ? <p className="text-xs text-rose-600 mt-1">{fe[n]}</p> : null;
   const cls =
     "w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500";
 
+  const handleFormAction = (fd: FormData) => {
+    fd.set("systems", systems.join(","));
+    return formAction(fd);
+  };
+
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={handleFormAction} className="space-y-4">
       {isEdit && <input type="hidden" name="id" value={initial?.id} />}
       {state.error && (
         <p className="text-sm text-rose-600 bg-rose-50 rounded-lg px-3 py-2">
@@ -109,6 +118,31 @@ export default function UserForm({
           <input name="password" type="text" className={cls} />
         </div>
       </div>
+
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium text-slate-600">
+          可使用系統 <span className="text-rose-500">*</span>
+        </legend>
+        <div className="space-y-2">
+          {[SYSTEM.FUND, SYSTEM.CAR_SPEC_CHANGE].map((sys) => (
+            <label key={sys} className="flex items-center gap-2 text-sm text-slate-600">
+              <input
+                type="checkbox"
+                checked={systems.includes(sys)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setSystems([...systems, sys]);
+                  } else {
+                    setSystems(systems.filter((s) => s !== sys));
+                  }
+                }}
+                className="rounded"
+              />
+              {SYSTEM_LABEL[sys] ?? sys}
+            </label>
+          ))}
+        </div>
+      </fieldset>
 
       {isEdit && (
         <label className="flex items-center gap-2 text-sm text-slate-600">

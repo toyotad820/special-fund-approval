@@ -53,6 +53,7 @@ export async function createUser(
   const storeCode = String(formData.get("storeCode") ?? "").trim();
   const deptCode = normalizeDeptCode(String(formData.get("deptCode") ?? "").trim());
   const password = String(formData.get("password") ?? "").trim() || "1234";
+  const systems = String(formData.get("systems") ?? "fund").trim() || "fund";
 
   const fieldErrors: Record<string, string> = {};
   if (!username) fieldErrors.username = "必填";
@@ -73,6 +74,7 @@ export async function createUser(
       role: role!,
       storeCode,
       deptCode: deptCode || null,
+      systems,
       passwordHash: await bcrypt.hash(password, 10),
     },
   });
@@ -94,6 +96,7 @@ export async function updateUser(
   const deptCode = normalizeDeptCode(String(formData.get("deptCode") ?? "").trim());
   const active = formData.get("active") === "on";
   const newPassword = String(formData.get("password") ?? "").trim();
+  const systems = String(formData.get("systems") ?? "fund").trim() || "fund";
 
   const fieldErrors: Record<string, string> = {};
   if (!name) fieldErrors.name = "必填";
@@ -109,6 +112,7 @@ export async function updateUser(
       role: role!,
       storeCode,
       deptCode: deptCode || null,
+      systems,
       active,
       ...(newPassword ? { passwordHash: await bcrypt.hash(newPassword, 10) } : {}),
     },

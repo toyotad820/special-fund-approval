@@ -6,6 +6,7 @@ import { canViewAccessory } from "@/lib/dal";
 import { ACTION_LABEL } from "@/lib/constants";
 import { dt } from "@/lib/format";
 import AccStatusBadge from "@/components/AccStatusBadge";
+import ImageLightbox from "@/components/ImageLightbox";
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -66,29 +67,30 @@ export default async function AccessoryDetailPage({
       {r.images.length > 0 && (
         <div className="bg-white rounded-2xl border border-slate-200 p-5">
           <h2 className="text-sm font-semibold text-slate-700 mb-3">工單圖片</h2>
-          <div className="flex flex-wrap gap-3">
-            {r.images.map((img) => {
-              const src = img.imageData
-                ? `data:${img.mimeType};base64,${img.imageData}`
-                : null;
-              return src ? (
-                // eslint-disable-next-line @next/next/no-img-element -- base64 內嵌圖
-                <img
-                  key={img.id}
-                  src={src}
-                  alt="工單"
-                  className="w-40 rounded-lg border border-slate-200"
-                />
-              ) : (
-                <div
-                  key={img.id}
-                  className="w-40 h-52 grid place-items-center rounded-lg border border-slate-200 text-xs text-slate-400 text-center px-2"
-                >
-                  已歸檔至 Google Drive
-                </div>
-              );
-            })}
-          </div>
+          <ImageLightbox
+            images={r.images
+              .map((img) => {
+                const src = img.imageData
+                  ? `data:${img.mimeType};base64,${img.imageData}`
+                  : null;
+                return src ? { src, alt: "工單圖片" } : null;
+              })
+              .filter(Boolean) as Array<{ src: string; alt: string }>}
+          />
+          {r.images.some((img) => !img.imageData) && (
+            <div className="mt-3 flex flex-wrap gap-3">
+              {r.images
+                .filter((img) => !img.imageData)
+                .map((img) => (
+                  <div
+                    key={img.id}
+                    className="w-40 h-52 grid place-items-center rounded-lg border border-slate-200 text-xs text-slate-400 text-center px-2"
+                  >
+                    已歸檔至 Google Drive
+                  </div>
+                ))}
+            </div>
+          )}
         </div>
       )}
 
