@@ -5,8 +5,8 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { prisma } from "./prisma";
 import { requireUser } from "./session";
-import { canAdmin } from "./dal";
-import { ROLE, ROLE_LABEL } from "./constants";
+import { canAdmin, canReturnCase } from "./dal";
+import { ROLE, ROLE_LABEL, STATUS } from "./constants";
 import { normalizeDeptCode } from "./format";
 import { STANDARD_CAR_MODELS } from "./carModels";
 
@@ -296,6 +296,42 @@ export async function toggleMonth(formData: FormData) {
   const m = await prisma.monthWindow.findUnique({ where: { id } });
   if (m) await prisma.monthWindow.update({ where: { id }, data: { isOpen: !m.isOpen } });
   revalidatePath("/admin/months");
+}
+
+// ---------- 案件退回（已核准後強制取消，退回申請者修改重送） ----------
+
+export async function returnCase(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const user = await requireAdmin();
+  const orderNo = String(formData.get("orderNo") ?? "").trim().toUpperCase();
+  const comment = String(formData.get("comment") ?? "").trim();
+  if (!comment) return { fieldErrors: { comment: "退回原因必填" } };
+
+  const c = await prisma.case.findUnique({ where: { orderNo } });
+  if (!c) return { error: "查無此訂單編號的案件" };
+  if (!canReturnCase(user, c)) return { error: "僅能退回「已核准」狀態的案件" };
+
+  await prisma.$transaction([
+    prisma.case.update({
+      where: { id: c.id },
+      data: { status: STATUS.REJECTED },
+    }),
+    prisma.approvalLog.create({
+      data: {
+        caseId: c.id,
+        step: "STAFF",
+        action: "REJECT",
+        reviewerId: user.id,
+        comment: `[管理員強制退回] ${comment}`,
+      },
+    }),
+  ]);
+
+  revalidatePath(`/cases/${c.id}`);
+  revalidatePath("/admin/case-return");
+  return { ok: true, message: `已將訂單 ${orderNo} 退回申請者，可由送單人修改後重送。` };
 }
 
 // ---------- 目標台數 ----------

@@ -9,6 +9,7 @@ const tabs = [
   { href: "/admin/cars", label: "車種" },
   { href: "/admin/months", label: "月份開關" },
   { href: "/admin/targets", label: "目標台數" },
+  { href: "/admin/case-return", label: "案件退回" },
 ];
 
 export default async function AdminLayout({
