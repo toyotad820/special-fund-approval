@@ -1,23 +1,25 @@
 "use client";
 
 import { approveAccessory, rejectAccessory } from "@/lib/accessory-actions";
-import { useRef } from "react";
+import { useActionState, useRef } from "react";
 
 export default function ReviewForm({ requestId }: { requestId: string }) {
   const remarkRef = useRef<HTMLTextAreaElement>(null);
+  const [_state, approveAction] = useActionState(approveAccessory, {});
+  const [_state2, rejectAction] = useActionState(rejectAccessory, {});
 
-  const handleApprove = async () => {
+  const handleApproveClick = () => {
     const fd = new FormData();
     fd.set("id", requestId);
     fd.set("remark", remarkRef.current?.value ?? "");
-    await approveAccessory({} as any, fd);
+    approveAction(fd);
   };
 
-  const handleReject = async () => {
+  const handleRejectClick = () => {
     const fd = new FormData();
     fd.set("id", requestId);
     fd.set("remark", remarkRef.current?.value ?? "");
-    await rejectAccessory({} as any, fd);
+    rejectAction(fd);
   };
 
   return (
@@ -35,13 +37,15 @@ export default function ReviewForm({ requestId }: { requestId: string }) {
       </div>
       <div className="flex gap-3">
         <button
-          onClick={handleApprove}
+          type="button"
+          onClick={handleApproveClick}
           className="flex-1 rounded-lg bg-green-600 text-white py-2.5 font-medium hover:bg-green-700 transition-colors"
         >
           ✓ 核准
         </button>
         <button
-          onClick={handleReject}
+          type="button"
+          onClick={handleRejectClick}
           className="flex-1 rounded-lg bg-rose-600 text-white py-2.5 font-medium hover:bg-rose-700 transition-colors"
         >
           ✕ 駁回
