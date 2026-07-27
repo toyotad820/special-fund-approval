@@ -1,9 +1,17 @@
-import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { STATUS, STATUS_LABEL } from "@/lib/constants";
 import { money, dt } from "@/lib/format";
 import { StatusBadge } from "@/components/CaseList";
 import ReturnCaseForm from "@/components/admin/ReturnCaseForm";
+
+function Row({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex justify-between gap-4 py-2 border-b border-slate-100 last:border-0">
+      <span className="text-sm text-slate-400">{label}</span>
+      <span className="text-sm text-slate-800 text-right">{children}</span>
+    </div>
+  );
+}
 
 export default async function AdminCaseReturnPage({
   searchParams,
@@ -16,9 +24,19 @@ export default async function AdminCaseReturnPage({
   const c = orderNo
     ? await prisma.case.findUnique({
         where: { orderNo },
-        include: { submittedBy: true },
+        include: { submittedBy: true, category: true },
       })
     : null;
+
+  const amounts = c
+    ? ([
+        ["所課支援金", c.subsidyDeptCourse],
+        ["金牌金額", c.goldMedal],
+        ["銀牌金額", c.silverMedal],
+        ["折讓總額", c.discountTotal],
+        ["特案支援金額", c.specialSubsidy],
+      ] as const)
+    : [];
 
   return (
     <div className="space-y-6">
@@ -47,27 +65,32 @@ export default async function AdminCaseReturnPage({
       )}
 
       {c && (
-        <section className="bg-white rounded-2xl border border-slate-200 p-5 space-y-2">
-          <div className="flex items-center justify-between gap-2">
+        <section className="bg-white rounded-2xl border border-slate-200 p-5">
+          <div className="flex items-center justify-between gap-2 mb-2">
             <span className="font-mono font-semibold text-slate-800">{c.orderNo}</span>
             <StatusBadge status={c.status} />
           </div>
-          <div className="text-sm text-slate-600">領牌名稱：{c.plateName}</div>
-          <div className="text-sm text-slate-600">車名：{c.carModel}</div>
-          <div className="text-sm text-slate-600">
-            所別 / 課別：{c.storeCode} / {c.deptCode || "-"}
+          <Row label="月份">{c.month}</Row>
+          <Row label="所別 / 課別">
+            {c.storeCode} / {c.deptCode || "-"}
+          </Row>
+          <Row label="領牌名稱">{c.plateName}</Row>
+          <Row label="特案類別">{c.category?.name ?? "（尚未選擇）"}</Row>
+          <Row label="類別編號">{c.categoryNo}</Row>
+          <Row label="車名">{c.carModel}</Row>
+          {amounts.map(([label, val]) => (
+            <Row key={label} label={label}>
+              {money(val)}
+            </Row>
+          ))}
+          <Row label="送單人">{c.submittedBy.name}</Row>
+          <Row label="送出時間">{dt(c.submittedAt)}</Row>
+          <div className="pt-3">
+            <div className="text-sm text-slate-400 mb-1">特案內容說明</div>
+            <p className="text-sm text-slate-800 whitespace-pre-wrap">
+              {c.description}
+            </p>
           </div>
-          <div className="text-sm text-slate-600">送單人：{c.submittedBy.name}</div>
-          <div className="text-sm text-slate-600">
-            特案支援金額：{money(c.specialSubsidy)}
-          </div>
-          <div className="text-sm text-slate-600">送出時間：{dt(c.submittedAt)}</div>
-          <Link
-            href={`/cases/${c.id}`}
-            className="text-sm text-blue-600 hover:underline inline-block pt-1"
-          >
-            查看完整案件內容 →
-          </Link>
         </section>
       )}
 
