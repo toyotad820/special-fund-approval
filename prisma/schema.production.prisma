@@ -26,16 +26,19 @@ model User {
 
   submittedCases Case[]        @relation("submitter")
   approvals      ApprovalLog[]
+
+  submittedAccessoryRequests AccessoryRequest[] @relation("accSubmitter")
+  accessoryReviews           AccessoryLog[]     @relation("accReviewer")
 }
 
 // 案件（申請單）
 model Case {
-  id          String @id @default(cuid())
+  id          String  @id @default(cuid())
   month       String // 月份 YYYY-MM（自動帶入）
   storeCode   String // 所別（依送單人帶出）
   deptCode    String // 課別（依送單人帶出）
   plateName   String // 領牌名稱
-  orderNo     String @unique // 訂單編號：13碼、第一碼 D、全系統唯一
+  orderNo     String  @unique // 訂單編號：13碼、第一碼 D、全系統唯一
   categoryId  String? // 特案類別（草稿可留空）
   categoryNo  String // 類別編號（人工填入）
   carModel    String // 車名
@@ -119,4 +122,80 @@ model UnitTarget {
 
   @@unique([month, storeCode, deptCode])
   @@index([month])
+}
+
+// ============================================================
+// 配件變更申請系統（特仕車變更申請）— 獨立於特案支援金流程
+// 申請方（所長 SUOZHANG／副所長 KEZHANG）上傳 OPT 工單照片＋填變更前後配件，
+// 單層審核直接送部長（BUZHUGUAN），核准後蓋章寫入 Google Drive，
+// 最後由配件中心（PEIJIAN）做明細確認。
+// ============================================================
+
+// 配件變更申請單
+model AccessoryRequest {
+  id     String @id @default(cuid())
+  dataNo String @unique // 資料編號（OPT 訂單編號），全系統唯一
+  month  String // 月份 YYYY-MM（送出時帶入，供 Drive 依月歸檔）
+
+  // 以下欄位由 OCR 辨識填入、人工可覆核修改
+  storeCode    String // 所別
+  salesName    String // 業務姓名
+  customerName String // 客戶名稱
+  carModel     String // 車名
+  amountQty    String // 金額／數量（辨識填入一大格，自由文字）
+
+  // 人工填寫欄位
+  accessoryBefore   String // 變更前配件
+  accessoryAfter    String // 變更後配件
+  changeDescription String // 更換說明
+
+  // 送出時的警示旗標（金額數量>1 或說明含「不裝」「隨車」等字樣仍強行送出時，
+  // 供審核方頁面顯示紅色警告）
+  warningFlag Boolean @default(false)
+  warningText String? // 觸發的警示內容
+
+  // 流程狀態
+  status        String // DRAFT | PENDING_REVIEW | REJECTED | APPROVED | CONFIRMED | WITHDRAWN
+  submittedById String
+  submittedBy   User     @relation("accSubmitter", fields: [submittedById], references: [id])
+  submittedAt   DateTime @default(now())
+  stepEnteredAt DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  images AccessoryImage[]
+  logs   AccessoryLog[]
+
+  @@index([status])
+  @@index([storeCode])
+  @@index([month])
+}
+
+// 申請單附圖（可多張）：審核前存暫存區，核准後合成蓋章圖並寫入 Google Drive
+model AccessoryImage {
+  id                String           @id @default(cuid())
+  requestId         String
+  request           AccessoryRequest @relation(fields: [requestId], references: [id])
+  storageKey        String // 原始圖暫存 key（審核前）
+  stampedStorageKey String? // 蓋章後合成圖暫存 key
+  driveFileId       String? // 寫入 Google Drive 後的檔案 id
+  ocrRaw            String? // OCR 原始回傳（JSON 字串，供覆核追溯）
+  sortOrder         Int              @default(0)
+  createdAt         DateTime         @default(now())
+
+  @@index([requestId])
+}
+
+// 配件變更審核／異動紀錄（稽核軌跡）
+model AccessoryLog {
+  id         String           @id @default(cuid())
+  requestId  String
+  request    AccessoryRequest @relation(fields: [requestId], references: [id])
+  step       String // SUBMIT | RESUBMIT | WITHDRAW | BUZHUGUAN | PEIJIAN | STAFF
+  action     String // SUBMIT | RESUBMIT | WITHDRAW | APPROVE | REJECT | CONFIRM | RETURN
+  reviewerId String
+  reviewer   User             @relation("accReviewer", fields: [reviewerId], references: [id])
+  comment    String?
+  createdAt  DateTime         @default(now())
+
+  @@index([requestId])
 }
