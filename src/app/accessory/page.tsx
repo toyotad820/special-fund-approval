@@ -3,7 +3,6 @@ import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { ROLE, ACC_STATUS } from "@/lib/constants";
 import { canSubmitAccessory } from "@/lib/dal";
-import { dt } from "@/lib/format";
 import AccStatusBadge from "@/components/AccStatusBadge";
 import type { Prisma } from "@prisma/client";
 
@@ -28,7 +27,6 @@ export default async function AccessoryHome() {
   const rows = await prisma.accessoryRequest.findMany({
     where,
     orderBy: { submittedAt: "desc" },
-    include: { submittedBy: { select: { name: true } } },
     take: 100,
   });
 
@@ -53,10 +51,10 @@ export default async function AccessoryHome() {
               <tr>
                 <th className={TH}>資料編號</th>
                 <th className={TH}>所別</th>
+                <th className={TH}>業務姓名</th>
                 <th className={TH}>客戶</th>
                 <th className={TH}>車名</th>
-                <th className={TH}>送單人</th>
-                <th className={TH}>送出時間</th>
+                <th className={TH}>更換說明</th>
                 <th className={TH}>狀態</th>
               </tr>
             </thead>
@@ -72,10 +70,10 @@ export default async function AccessoryHome() {
                     </Link>
                   </td>
                   <td className={TD}>{r.storeCode}</td>
+                  <td className={TD}>{r.salesName}</td>
                   <td className={TD}>{r.customerName}</td>
                   <td className={TD}>{r.carModel}</td>
-                  <td className={TD}>{r.submittedBy.name}</td>
-                  <td className={TD}>{dt(r.submittedAt)}</td>
+                  <td className={`${TD} max-w-[220px] truncate`}>{r.changeDescription}</td>
                   <td className={TD}>
                     <AccStatusBadge status={r.status} />
                   </td>
@@ -83,7 +81,7 @@ export default async function AccessoryHome() {
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-3 py-8 text-center text-sm text-slate-400">
+                  <td colSpan={6} className="px-3 py-8 text-center text-sm text-slate-400">
                     目前沒有申請案件
                   </td>
                 </tr>
