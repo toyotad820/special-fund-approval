@@ -2,14 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { canReviewAccessory } from "@/lib/dal";
-import { ACC_STATUS, ACC_STATUS_LABEL } from "@/lib/constants";
+import { ROLE, ACC_STATUS } from "@/lib/constants";
 import { dt } from "@/lib/format";
 import AccStatusBadge from "@/components/AccStatusBadge";
 
 export default async function AccessoryReviewPage() {
   const user = await requireUser();
-  if (!canReviewAccessory(user)) notFound();
+  // 只有部長可以審核
+  if (user.role !== ROLE.BUZHUGUAN) notFound();
 
   const requests = await prisma.accessoryRequest.findMany({
     where: { status: ACC_STATUS.PENDING_REVIEW },
