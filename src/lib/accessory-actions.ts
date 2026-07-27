@@ -199,7 +199,6 @@ export async function approveAccessory(
   formData: FormData
 ): Promise<AccActionState> {
   const user = await requireUser();
-  if (!canReviewAccessory(user)) return { error: "您沒有配件審核權限" };
 
   const id = String(formData.get("id") ?? "");
   if (!id) return { error: "缺少案件 ID" };
@@ -211,7 +210,7 @@ export async function approveAccessory(
     });
 
     if (!r) return { error: "案件不存在" };
-    if (r.status !== ACC_STATUS.PENDING_REVIEW) return { error: "案件非待審核狀態" };
+    if (!canReviewAccessory(user, r)) return { error: "您沒有權限審核此案件" };
 
     // 蓋章第一張圖片（如果存在且有 base64）
     const firstImg = r.images[0];
