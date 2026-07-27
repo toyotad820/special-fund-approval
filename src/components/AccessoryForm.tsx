@@ -113,8 +113,8 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
       }
       const f = res.fields;
       // 用「換」字分割 remarks 到變更前/後
-      let before = prev.accessoryBefore;
-      let after = prev.accessoryAfter;
+      let before = fields.accessoryBefore;
+      let after = fields.accessoryAfter;
       if (f.remarks) {
         const parts = f.remarks.split("換");
         if (parts.length === 2) {
