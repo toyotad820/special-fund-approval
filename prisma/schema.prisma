@@ -137,11 +137,11 @@ model AccessoryRequest {
   month  String // 月份 YYYY-MM（送出時帶入，供 Drive 依月歸檔）
 
   // 以下欄位由 OCR 辨識填入、人工可覆核修改
-  storeCode    String // 所別
-  salesName    String // 業務姓名
-  customerName String // 客戶名稱
-  carModel     String // 車名
-  amountQty    String // 金額／數量（辨識填入一大格，自由文字）
+  storeCode        String // 所別
+  salesName        String // 業務姓名
+  customerName     String // 客戶名稱
+  carModel         String // 車名
+  accessoryNameQty String // 配件名稱／數量（OPT 工單「名稱/數量」欄，辨識填入一大格，自由文字）
 
   // 人工填寫欄位
   accessoryBefore   String // 變更前配件
