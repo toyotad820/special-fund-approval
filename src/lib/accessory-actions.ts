@@ -9,6 +9,7 @@ import {
   canConfirmAccessory,
   canWithdrawAccessory,
   canResubmitAccessory,
+  canDeleteAccessory,
 } from "./dal";
 import { ACC_STATUS, ACTION_LABEL } from "./constants";
 import { ocrExtractFields, type OcrResult } from "./ocr";
@@ -291,6 +292,26 @@ export async function withdrawAccessory(formData: FormData): Promise<void> {
   });
 
   redirect(`/accessory/${id}`);
+}
+
+// ---- 申請者刪除（草稿／已退件／已撤回）----
+export async function deleteAccessory(formData: FormData): Promise<void> {
+  const user = await requireUser();
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) throw new Error("缺少案件 ID");
+
+  const r = await prisma.accessoryRequest.findUnique({ where: { id } });
+  if (!r) throw new Error("案件不存在");
+  if (!canDeleteAccessory(user, r)) throw new Error("此案件無法刪除");
+
+  await prisma.$transaction([
+    prisma.accessoryLog.deleteMany({ where: { requestId: id } }),
+    prisma.accessoryImage.deleteMany({ where: { requestId: id } }),
+    prisma.accessoryRequest.delete({ where: { id } }),
+  ]);
+
+  redirect("/accessory");
 }
 
 // ---- 部長核准 ----

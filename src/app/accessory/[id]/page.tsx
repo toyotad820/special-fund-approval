@@ -6,6 +6,7 @@ import {
   canViewAccessory,
   canWithdrawAccessory,
   canResubmitAccessory,
+  canDeleteAccessory,
 } from "@/lib/dal";
 import { ACTION_LABEL } from "@/lib/constants";
 import { dt } from "@/lib/format";
@@ -48,6 +49,7 @@ export default async function AccessoryDetailPage({
 
   const canWithdraw = canWithdrawAccessory(user, r);
   const canResubmit = canResubmitAccessory(user, r);
+  const canDelete = canDeleteAccessory(user, r);
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
@@ -131,6 +133,7 @@ export default async function AccessoryDetailPage({
         requestId={r.id}
         canWithdraw={canWithdraw}
         canResubmit={canResubmit}
+        canDelete={canDelete}
       />
     </div>
   );
