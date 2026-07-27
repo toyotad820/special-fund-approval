@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/session";
 import { logout } from "@/lib/actions";
 import { SYSTEM, SYSTEM_LABEL } from "@/lib/constants";
+import { canAdmin } from "@/lib/dal";
 import PortalMark from "@/components/PortalMark";
 
 // 系統入口卡片設定：href 為 null 表示尚無功能（顯示開發中，不可點）
@@ -15,6 +16,7 @@ export default async function PortalPage() {
   const user = await requireUser();
   const mySystems = new Set(user.systems.split(",").map((s) => s.trim()).filter(Boolean));
   const cards = SYSTEM_CARDS.filter((c) => mySystems.has(c.key));
+  const isAdmin = canAdmin(user);
 
   return (
     <div className="flex-1 flex flex-col items-center p-4 sm:p-6">
