@@ -3,7 +3,7 @@ import sharp from "sharp";
 
 // 蓋章參數
 const STAMP_CONFIG = {
-  diameter: 76, // 約 2cm（96 DPI 下）
+  diameter: 152, // 約 4cm（96 DPI 下）
   position: { right: 40, bottom: 40 }, // 右下角內縮
   circleBorder: 3,
   textColor: "#dc2626", // 紅色
@@ -13,8 +13,8 @@ const STAMP_CONFIG = {
 // 生成蓋章（紅圈 + 文字）
 async function generateStampImage(approverName: string, date: string): Promise<Buffer> {
   const size = STAMP_CONFIG.diameter;
-  const textSize = 16;
-  const lineHeight = 22;
+  const textSize = 32;
+  const lineHeight = 44;
 
   // 建立蓋章 SVG
   const svg = `
@@ -24,15 +24,15 @@ async function generateStampImage(approverName: string, date: string): Promise<B
         fill="${STAMP_CONFIG.bgColor}" stroke="${STAMP_CONFIG.textColor}" stroke-width="${STAMP_CONFIG.circleBorder}"/>
 
       <!-- 上方文字：已審核 -->
-      <text x="${size / 2}" y="${size / 2 - 13}" font-size="${textSize}" font-weight="bold"
+      <text x="${size / 2}" y="${size / 2 - 26}" font-size="${textSize}" font-weight="bold"
         text-anchor="middle" fill="${STAMP_CONFIG.textColor}" font-family="serif">已審核</text>
 
       <!-- 中間文字：審核人名 -->
-      <text x="${size / 2}" y="${size / 2 + 5}" font-size="${textSize - 3}"
+      <text x="${size / 2}" y="${size / 2 + 10}" font-size="${textSize - 6}"
         text-anchor="middle" fill="${STAMP_CONFIG.textColor}" font-family="serif">${approverName}</text>
 
       <!-- 下方文字：日期 -->
-      <text x="${size / 2}" y="${size / 2 + 22}" font-size="${textSize - 3}"
+      <text x="${size / 2}" y="${size / 2 + 44}" font-size="${textSize - 6}"
         text-anchor="middle" fill="${STAMP_CONFIG.textColor}" font-family="serif">${date}</text>
     </svg>
   `;
