@@ -54,7 +54,7 @@ export default async function AccessoryHome() {
                 <th className={TH}>業務姓名</th>
                 <th className={TH}>客戶</th>
                 <th className={TH}>車名</th>
-                <th className={TH}>更換說明</th>
+                <th className={`${TH} w-full`}>更換說明</th>
                 <th className={TH}>狀態</th>
               </tr>
             </thead>
@@ -73,7 +73,7 @@ export default async function AccessoryHome() {
                   <td className={TD}>{r.salesName}</td>
                   <td className={TD}>{r.customerName}</td>
                   <td className={TD}>{r.carModel}</td>
-                  <td className={`${TD} max-w-[220px] truncate`}>{r.changeDescription}</td>
+                  <td className={`px-3 py-2 text-sm text-slate-800 w-full`}>{r.changeDescription}</td>
                   <td className={TD}>
                     <AccStatusBadge status={r.status} />
                   </td>
