@@ -77,7 +77,7 @@ function coerceFields(obj: unknown): OcrFields {
     salesName: str("salesName"),
     customerName: str("customerName"),
     carModel: str("carModel"),
-    accessoryNameQty: str("accessoryNameQty"),
+    remarks: str("remarks"),
   };
 }
 
