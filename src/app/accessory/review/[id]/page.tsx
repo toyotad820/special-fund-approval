@@ -5,10 +5,9 @@ import { prisma } from "@/lib/prisma";
 import { canReviewAccessory } from "@/lib/dal";
 import { ACTION_LABEL, ACC_STATUS } from "@/lib/constants";
 import { dt } from "@/lib/format";
-import { approveAccessory } from "@/lib/accessory-actions";
 import AccStatusBadge from "@/components/AccStatusBadge";
 import ImageLightbox from "@/components/ImageLightbox";
-import RejectForm from "@/components/RejectForm";
+import ReviewForm from "@/components/ReviewForm";
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -137,20 +136,7 @@ export default async function AccessoryReviewDetailPage({
       )}
 
       {/* 審核操作 */}
-      {r.status === ACC_STATUS.PENDING_REVIEW && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-5 flex gap-3">
-          <form action={approveAccessory} className="flex-1">
-            <input type="hidden" name="id" value={r.id} />
-            <button
-              type="submit"
-              className="w-full rounded-lg bg-green-600 text-white py-2.5 font-medium hover:bg-green-700 transition-colors"
-            >
-              ✓ 核准
-            </button>
-          </form>
-          <RejectForm requestId={r.id} />
-        </div>
-      )}
+      {r.status === ACC_STATUS.PENDING_REVIEW && <ReviewForm requestId={r.id} />}
     </div>
   );
 }

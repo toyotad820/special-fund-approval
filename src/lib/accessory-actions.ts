@@ -201,6 +201,7 @@ export async function approveAccessory(
   const user = await requireUser();
 
   const id = String(formData.get("id") ?? "");
+  const remark = String(formData.get("remark") ?? "").trim();
   if (!id) return { error: "缺少案件 ID" };
 
   try {
@@ -236,7 +237,12 @@ export async function approveAccessory(
             }
           : {}),
         logs: {
-          create: { step: "APPROVED", action: "APPROVE", reviewerId: user.id },
+          create: {
+            step: "APPROVED",
+            action: "APPROVE",
+            reviewerId: user.id,
+            ...(remark ? { comment: remark } : {}),
+          },
         },
       },
     });
@@ -258,18 +264,16 @@ export async function rejectAccessory(
   formData: FormData
 ): Promise<AccActionState> {
   const user = await requireUser();
-  if (!canReviewAccessory(user)) return { error: "您沒有配件審核權限" };
 
   const id = String(formData.get("id") ?? "");
-  const reason = String(formData.get("reason") ?? "").trim();
+  const remark = String(formData.get("remark") ?? "").trim();
 
   if (!id) return { error: "缺少案件 ID" };
-  if (!reason) return { fieldErrors: { reason: "必填" } };
 
   try {
     const r = await prisma.accessoryRequest.findUnique({ where: { id } });
     if (!r) return { error: "案件不存在" };
-    if (r.status !== ACC_STATUS.PENDING_REVIEW) return { error: "案件非待審核狀態" };
+    if (!canReviewAccessory(user, r)) return { error: "您沒有權限審核此案件" };
 
     // 更新案件狀態為駁回
     const updated = await prisma.accessoryRequest.update({
@@ -281,7 +285,7 @@ export async function rejectAccessory(
             step: "REJECTED",
             action: "REJECT",
             reviewerId: user.id,
-            comment: reason,
+            ...(remark ? { comment: remark } : {}),
           },
         },
       },
