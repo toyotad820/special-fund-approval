@@ -2,10 +2,11 @@
 
 import { prisma } from "./prisma";
 import { requireUser } from "./session";
-import { canSubmitAccessory } from "./dal";
-import { ACC_STATUS } from "./constants";
+import { canSubmitAccessory, canReviewAccessory } from "./dal";
+import { ACC_STATUS, ACTION_LABEL } from "./constants";
 import { ocrExtractFields, type OcrResult } from "./ocr";
 import { checkAccessoryBlocks } from "./accessory-validate";
+import { stampImage } from "./accessory-stamp";
 
 export type AccActionState = {
   error?: string;
@@ -191,5 +192,65 @@ export async function createAccessoryRequest(
       return { fieldErrors: { dataNo: "此資料編號已存在（全系統唯一）" }, values };
     }
     throw e;
+  }
+}
+
+// ---- 部長核准 ----
+export async function approveAccessory(
+  _prev: AccActionState,
+  formData: FormData
+): Promise<AccActionState> {
+  const user = await requireUser();
+  if (!canReviewAccessory(user)) return { error: "您沒有配件審核權限" };
+
+  const id = String(formData.get("id") ?? "");
+  if (!id) return { error: "缺少案件 ID" };
+
+  try {
+    const r = await prisma.accessoryRequest.findUnique({
+      where: { id },
+      include: { images: { orderBy: { sortOrder: "asc" } } },
+    });
+
+    if (!r) return { error: "案件不存在" };
+    if (r.status !== ACC_STATUS.PENDING_REVIEW) return { error: "案件非待審核狀態" };
+
+    // 蓋章第一張圖片（如果存在且有 base64）
+    const firstImg = r.images[0];
+    let stampedData: string | null = null;
+    if (firstImg?.imageData) {
+      const date = new Date().toLocaleDateString("zh-TW");
+      stampedData = await stampImage(firstImg.imageData, firstImg.mimeType, user.name, date);
+    }
+
+    // 更新案件狀態
+    const updated = await prisma.accessoryRequest.update({
+      where: { id },
+      data: {
+        status: ACC_STATUS.APPROVED,
+        ...(firstImg && stampedData
+          ? {
+              images: {
+                update: {
+                  where: { id: firstImg.id },
+                  data: { stampedData },
+                },
+              },
+            }
+          : {}),
+        logs: {
+          create: { step: "APPROVED", action: "APPROVE", reviewerId: user.id },
+        },
+      },
+    });
+
+    return {
+      ok: true,
+      requestId: updated.id,
+      message: "案件已核准。",
+    };
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    return { error: `核准失敗: ${msg}` };
   }
 }

@@ -3,8 +3,9 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { canReviewAccessory } from "@/lib/dal";
-import { ACTION_LABEL } from "@/lib/constants";
+import { ACTION_LABEL, ACC_STATUS } from "@/lib/constants";
 import { dt } from "@/lib/format";
+import { approveAccessory } from "@/lib/accessory-actions";
 import AccStatusBadge from "@/components/AccStatusBadge";
 import ImageLightbox from "@/components/ImageLightbox";
 
@@ -137,14 +138,22 @@ export default async function AccessoryReviewDetailPage({
       )}
 
       {/* 審核操作 */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-5 flex gap-3">
-        <button className="flex-1 rounded-lg bg-green-600 text-white py-2.5 font-medium hover:bg-green-700">
-          ✓ 核准
-        </button>
-        <button className="flex-1 rounded-lg bg-rose-600 text-white py-2.5 font-medium hover:bg-rose-700">
-          ✕ 駁回
-        </button>
-      </div>
+      {r.status === ACC_STATUS.PENDING_REVIEW && (
+        <div className="bg-white rounded-2xl border border-slate-200 p-5 flex gap-3">
+          <form action={approveAccessory} className="flex-1">
+            <input type="hidden" name="id" value={r.id} />
+            <button
+              type="submit"
+              className="w-full rounded-lg bg-green-600 text-white py-2.5 font-medium hover:bg-green-700 transition-colors"
+            >
+              ✓ 核准
+            </button>
+          </form>
+          <button className="flex-1 rounded-lg bg-rose-600 text-white py-2.5 font-medium hover:bg-rose-700 transition-colors">
+            ✕ 駁回
+          </button>
+        </div>
+      )}
     </div>
   );
 }
