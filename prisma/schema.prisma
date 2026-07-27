@@ -169,17 +169,19 @@ model AccessoryRequest {
   @@index([month])
 }
 
-// 申請單附圖（可多張）：審核前存暫存區，核准後合成蓋章圖並寫入 Google Drive
+// 申請單附圖（可多張）：審核前把圖片 base64 直接暫存 DB，
+// 核准後合成蓋章圖並寫入 Google Drive，寫入成功後清空 base64、只留 driveFileId。
 model AccessoryImage {
-  id                String           @id @default(cuid())
-  requestId         String
-  request           AccessoryRequest @relation(fields: [requestId], references: [id])
-  storageKey        String // 原始圖暫存 key（審核前）
-  stampedStorageKey String? // 蓋章後合成圖暫存 key
-  driveFileId       String? // 寫入 Google Drive 後的檔案 id
-  ocrRaw            String? // OCR 原始回傳（JSON 字串，供覆核追溯）
-  sortOrder         Int              @default(0)
-  createdAt         DateTime         @default(now())
+  id          String           @id @default(cuid())
+  requestId   String
+  request     AccessoryRequest @relation(fields: [requestId], references: [id])
+  mimeType    String // 影像 MIME（例如 image/jpeg）
+  imageData   String? // 原始圖 base64（審核前暫存；寫入 Drive 後清空）
+  stampedData String? // 蓋章後合成圖 base64（核准後暫存；寫入 Drive 後清空）
+  driveFileId String? // 寫入 Google Drive 後的檔案 id
+  ocrRaw      String? // OCR 原始回傳（JSON 字串，供覆核追溯）
+  sortOrder   Int              @default(0)
+  createdAt   DateTime         @default(now())
 
   @@index([requestId])
 }
