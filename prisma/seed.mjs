@@ -75,10 +75,11 @@ async function main() {
   // 人員
   const users = [
     { username: "boss", name: "王大明", role: "BUZHUGUAN", storeCode: "HQ", deptCode: null, systems: "fund,car-spec-change" },
-    { username: "staff1", name: "Staff 陳小美", role: "STAFF", storeCode: "HQ", deptCode: null, systems: "fund" },
+    { username: "staff1", name: "Staff 陳小美", role: "STAFF", storeCode: "HQ", deptCode: null, systems: "fund,car-spec-change" },
+    { username: "pj01", name: "配件中心 周專員", role: "PEIJIAN", storeCode: "HQ", deptCode: null, systems: "car-spec-change" },
 
-    { username: "s01", name: "D01 所長 林所長", role: "SUOZHANG", storeCode: "D01", deptCode: null, systems: "fund" },
-    { username: "k01a", name: "D01 一課 課長 張課長", role: "KEZHANG", storeCode: "D01", deptCode: "1", systems: "fund" },
+    { username: "s01", name: "D01 所長 林所長", role: "SUOZHANG", storeCode: "D01", deptCode: null, systems: "fund,car-spec-change" },
+    { username: "k01a", name: "D01 一課 課長 張課長", role: "KEZHANG", storeCode: "D01", deptCode: "1", systems: "fund,car-spec-change" },
     { username: "k01b", name: "D01 二課 課長 李課長", role: "KEZHANG", storeCode: "D01", deptCode: "2", systems: "fund" },
 
     { username: "s02", name: "D02 所長 吳所長", role: "SUOZHANG", storeCode: "D02", deptCode: null, systems: "fund" },

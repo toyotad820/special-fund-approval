@@ -11,36 +11,46 @@ export default function NavBar({
   userName,
   roleLabel,
   items,
+  homeHref = "/",
+  title = "特案支援金報備",
+  iconSrc = "/icon-fund.png",
+  showVersion = true,
 }: {
   userName: string;
   roleLabel: string;
   items: NavItem[];
+  homeHref?: string;
+  title?: string;
+  iconSrc?: string;
+  showVersion?: boolean;
 }) {
   const pathname = usePathname();
 
   const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
+    href === homeHref ? pathname === homeHref : pathname.startsWith(href);
 
   return (
     <header className="sticky top-0 z-20 bg-white/85 backdrop-blur-md border-b border-slate-200">
       <div className="max-w-5xl mx-auto px-4 py-2 flex items-stretch gap-3">
         {/* logo 用特案支援金報備自己的 icon，高度跟右邊兩排文字疊起來一樣高，不用 TOYOTA 品牌標 */}
-        <Link href="/" className="shrink-0 flex items-center">
+        <Link href={homeHref} className="shrink-0 flex items-center">
           {/* eslint-disable-next-line @next/next/no-img-element -- 固定高度貼齊右側兩排文字（動態撐滿在巢狀 flex 下會反過來被 img 原始像素尺寸撐爆，改用固定值） */}
-          <img src="/icon-fund.png" alt="特案支援金報備" className="h-14 w-auto rounded-lg" />
+          <img src={iconSrc} alt={title} className="h-14 w-auto rounded-lg" />
         </Link>
 
         <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
           {/* 第一排：系統名稱＋版本號　...　角色 */}
           <div className="flex items-center justify-between gap-3">
-            <Link href="/" className="flex items-center gap-2 min-w-0">
-              <span className="font-bold text-slate-800 text-sm truncate">特案支援金報備</span>
-              <span
-                title={`v${APP_VERSION} · ${CHANGELOG[0]?.note ?? ""}`}
-                className="text-[10px] font-mono text-slate-400 bg-slate-100 rounded-full px-1.5 py-0.5 whitespace-nowrap cursor-default shrink-0"
-              >
-                v{APP_VERSION}
-              </span>
+            <Link href={homeHref} className="flex items-center gap-2 min-w-0">
+              <span className="font-bold text-slate-800 text-sm truncate">{title}</span>
+              {showVersion && (
+                <span
+                  title={`v${APP_VERSION} · ${CHANGELOG[0]?.note ?? ""}`}
+                  className="text-[10px] font-mono text-slate-400 bg-slate-100 rounded-full px-1.5 py-0.5 whitespace-nowrap cursor-default shrink-0"
+                >
+                  v{APP_VERSION}
+                </span>
+              )}
             </Link>
             <div className="flex items-center gap-2.5 text-sm shrink-0">
               <span className="text-slate-600 truncate hidden sm:inline max-w-[8rem]">

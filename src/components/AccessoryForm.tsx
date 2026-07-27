@@ -1,0 +1,365 @@
+"use client";
+
+import { useActionState, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import {
+  createAccessoryRequest,
+  ocrAccessory,
+  type AccActionState,
+} from "@/lib/accessory-actions";
+import { checkAccessoryBlocks } from "@/lib/accessory-validate";
+
+type ImageItem = { data: string; mimeType: string; ocrRaw?: string; name: string };
+
+const EMPTY_FIELDS = {
+  dataNo: "",
+  storeCode: "",
+  salesName: "",
+  customerName: "",
+  carModel: "",
+  accessoryNameQty: "",
+  accessoryBefore: "",
+  accessoryAfter: "",
+  changeDescription: "",
+};
+type Fields = typeof EMPTY_FIELDS;
+
+// 前端壓縮：長邊縮到 1600px、輸出 JPEG，降低體積與 OCR 成本，並避開 server action body 上限
+function fileToCompressedBase64(
+  file: File
+): Promise<{ data: string; mimeType: string }> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const max = 1600;
+        const scale = Math.min(1, max / Math.max(img.width, img.height));
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return reject(new Error("canvas 不支援"));
+        ctx.drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        resolve({ data: dataUrl.split(",")[1], mimeType: "image/jpeg" });
+      };
+      img.onerror = () => reject(new Error("圖片載入失敗"));
+      img.src = reader.result as string;
+    };
+    reader.onerror = () => reject(new Error("讀檔失敗"));
+    reader.readAsDataURL(file);
+  });
+}
+
+export default function AccessoryForm() {
+  const router = useRouter();
+  const [state, formAction, pending] = useActionState<AccActionState, FormData>(
+    createAccessoryRequest,
+    {}
+  );
+  const formRef = useRef<HTMLFormElement>(null);
+  const intentRef = useRef<HTMLInputElement>(null);
+
+  const [images, setImages] = useState<ImageItem[]>([]);
+  const [fields, setFields] = useState<Fields>(EMPTY_FIELDS);
+  const [ocrDataNo, setOcrDataNo] = useState("");
+  const [ocrRunning, setOcrRunning] = useState(false);
+  const [ocrMsg, setOcrMsg] = useState<string | null>(null);
+
+  const set = (k: keyof Fields, v: string) =>
+    setFields((f) => ({ ...f, [k]: v }));
+
+  const onPick = async (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const added: ImageItem[] = [];
+    for (const file of Array.from(files)) {
+      try {
+        const { data, mimeType } = await fileToCompressedBase64(file);
+        added.push({ data, mimeType, name: file.name });
+      } catch {
+        /* 略過壞檔 */
+      }
+    }
+    setImages((prev) => [...prev, ...added]);
+  };
+
+  const removeImage = (i: number) =>
+    setImages((prev) => prev.filter((_, idx) => idx !== i));
+
+  const runOcr = async () => {
+    if (images.length === 0) {
+      setOcrMsg("請先上傳工單圖片");
+      return;
+    }
+    setOcrRunning(true);
+    setOcrMsg(null);
+    try {
+      const first = images[0];
+      const res = await ocrAccessory(first.data, first.mimeType);
+      if (!res.ok) {
+        setOcrDataNo("");
+        setOcrMsg(res.error || "辨識失敗，請重新上傳清晰的工單圖片");
+        return;
+      }
+      const f = res.fields;
+      setFields((prev) => ({
+        ...prev,
+        dataNo: f.dataNo || prev.dataNo,
+        storeCode: f.storeCode || prev.storeCode,
+        salesName: f.salesName || prev.salesName,
+        customerName: f.customerName || prev.customerName,
+        carModel: f.carModel || prev.carModel,
+        accessoryNameQty: f.accessoryNameQty || prev.accessoryNameQty,
+      }));
+      setOcrDataNo(f.dataNo);
+      setImages((prev) =>
+        prev.map((img, idx) => (idx === 0 ? { ...img, ocrRaw: res.raw } : img))
+      );
+      setOcrMsg("辨識完成，請核對欄位後送出。");
+    } finally {
+      setOcrRunning(false);
+    }
+  };
+
+  // 即時擋送檢查
+  const blocks = useMemo(
+    () =>
+      checkAccessoryBlocks(
+        {
+          dataNo: fields.dataNo,
+          accessoryNameQty: fields.accessoryNameQty,
+          accessoryBefore: fields.accessoryBefore,
+          accessoryAfter: fields.accessoryAfter,
+          changeDescription: fields.changeDescription,
+        },
+        ocrDataNo
+      ),
+    [fields, ocrDataNo]
+  );
+
+  const requiredMissing = Object.values(fields).some((v) => !v.trim());
+  const canSubmit =
+    !pending && images.length > 0 && !requiredMissing && blocks.length === 0;
+
+  // 送出成功 → 導回列表
+  if (state.ok && state.requestId) {
+    router.push("/accessory");
+  }
+
+  const submit = (intent: "draft" | "submit") => {
+    if (intentRef.current) intentRef.current.value = intent;
+    formRef.current?.requestSubmit();
+  };
+
+  const inputCls =
+    "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500";
+  const err = (k: string) => state.fieldErrors?.[k];
+
+  return (
+    <form ref={formRef} action={formAction} className="space-y-5">
+      <input ref={intentRef} type="hidden" name="intent" defaultValue="submit" />
+      <input type="hidden" name="ocrDataNo" value={ocrDataNo} />
+      <input type="hidden" name="imagesJson" value={JSON.stringify(images)} />
+
+      {/* 圖片上傳 */}
+      <section className="bg-white rounded-2xl border border-slate-200 p-5 space-y-3">
+        <h2 className="text-sm font-semibold text-slate-700">
+          OPT 工單圖片 <span className="text-rose-500">*</span>
+        </h2>
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          onChange={(e) => onPick(e.target.files)}
+          className="block text-sm text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-50 file:px-3 file:py-1.5 file:text-blue-700 hover:file:bg-blue-100"
+        />
+        {err("imagesJson") && (
+          <p className="text-xs text-rose-600">{err("imagesJson")}</p>
+        )}
+        {images.length > 0 && (
+          <div className="flex flex-wrap gap-3">
+            {images.map((img, i) => (
+              <div key={i} className="relative">
+                {/* eslint-disable-next-line @next/next/no-img-element -- 本機預覽 base64 縮圖 */}
+                <img
+                  src={`data:${img.mimeType};base64,${img.data}`}
+                  alt={img.name}
+                  className="w-24 h-32 object-cover rounded-lg border border-slate-200"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeImage(i)}
+                  className="absolute -top-2 -right-2 w-6 h-6 grid place-items-center rounded-full bg-white border border-slate-300 text-slate-500 shadow-sm hover:text-rose-600"
+                  aria-label="移除"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={runOcr}
+            disabled={ocrRunning || images.length === 0}
+            className="rounded-lg bg-slate-800 text-white px-4 py-2 text-sm font-medium hover:bg-slate-900 disabled:opacity-50"
+          >
+            {ocrRunning ? "辨識中…" : "辨識圖片"}
+          </button>
+          {ocrMsg && <span className="text-xs text-slate-500">{ocrMsg}</span>}
+        </div>
+      </section>
+
+      {/* 辨識填入欄位（可人工修改） */}
+      <section className="bg-white rounded-2xl border border-slate-200 p-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Field label="資料編號" required error={err("dataNo")}>
+          <input
+            name="dataNo"
+            value={fields.dataNo}
+            onChange={(e) => set("dataNo", e.target.value.toUpperCase())}
+            className={inputCls}
+          />
+        </Field>
+        <Field label="所別" required error={err("storeCode")}>
+          <input
+            name="storeCode"
+            value={fields.storeCode}
+            onChange={(e) => set("storeCode", e.target.value.toUpperCase())}
+            className={inputCls}
+          />
+        </Field>
+        <Field label="業務姓名" required error={err("salesName")}>
+          <input
+            name="salesName"
+            value={fields.salesName}
+            onChange={(e) => set("salesName", e.target.value)}
+            className={inputCls}
+          />
+        </Field>
+        <Field label="客戶名稱" required error={err("customerName")}>
+          <input
+            name="customerName"
+            value={fields.customerName}
+            onChange={(e) => set("customerName", e.target.value)}
+            className={inputCls}
+          />
+        </Field>
+        <Field label="車名" required error={err("carModel")}>
+          <input
+            name="carModel"
+            value={fields.carModel}
+            onChange={(e) => set("carModel", e.target.value)}
+            className={inputCls}
+          />
+        </Field>
+        <div className="sm:col-span-2">
+          <Field label="配件名稱／數量" required error={err("accessoryNameQty")}>
+            <textarea
+              name="accessoryNameQty"
+              rows={5}
+              value={fields.accessoryNameQty}
+              onChange={(e) => set("accessoryNameQty", e.target.value)}
+              className={inputCls}
+            />
+          </Field>
+        </div>
+      </section>
+
+      {/* 人工填寫欄位 */}
+      <section className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
+        <Field label="變更前配件" required error={err("accessoryBefore")}>
+          <textarea
+            name="accessoryBefore"
+            rows={2}
+            value={fields.accessoryBefore}
+            onChange={(e) => set("accessoryBefore", e.target.value)}
+            className={inputCls}
+          />
+        </Field>
+        <Field label="變更後配件" required error={err("accessoryAfter")}>
+          <textarea
+            name="accessoryAfter"
+            rows={2}
+            value={fields.accessoryAfter}
+            onChange={(e) => set("accessoryAfter", e.target.value)}
+            className={inputCls}
+          />
+        </Field>
+        <Field label="更換說明" required error={err("changeDescription")}>
+          <textarea
+            name="changeDescription"
+            rows={3}
+            value={fields.changeDescription}
+            onChange={(e) => set("changeDescription", e.target.value)}
+            className={inputCls}
+          />
+        </Field>
+      </section>
+
+      {/* 錯誤 / 擋送提示 */}
+      {state.error && (
+        <p className="text-sm text-rose-600 bg-rose-50 rounded-lg px-3 py-2">
+          {state.error}
+        </p>
+      )}
+      {(blocks.length > 0 || (state.blocks?.length ?? 0) > 0) && (
+        <div className="rounded-lg bg-rose-50 border border-rose-200 px-4 py-3">
+          <p className="text-sm font-semibold text-rose-700 mb-1">
+            以下問題需先修正才能送出：
+          </p>
+          <ul className="list-disc list-inside text-sm text-rose-600 space-y-0.5">
+            {(blocks.length > 0 ? blocks : state.blocks ?? []).map((b, i) => (
+              <li key={i}>{b}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* 動作 */}
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={() => submit("submit")}
+          disabled={!canSubmit}
+          className="flex-1 rounded-lg bg-blue-600 text-white py-2.5 font-medium hover:bg-blue-700 disabled:opacity-50"
+        >
+          {pending ? "送出中…" : "送出申請"}
+        </button>
+        <button
+          type="button"
+          onClick={() => submit("draft")}
+          disabled={pending || !fields.dataNo.trim()}
+          className="rounded-lg border border-slate-300 text-slate-600 px-4 py-2.5 text-sm hover:bg-slate-50 disabled:opacity-50"
+        >
+          存草稿
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function Field({
+  label,
+  required,
+  error,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <label className="block text-sm text-slate-600 mb-1">
+        {label} {required && <span className="text-rose-500">*</span>}
+      </label>
+      {children}
+      {error && <p className="text-xs text-rose-600 mt-1">{error}</p>}
+    </div>
+  );
+}

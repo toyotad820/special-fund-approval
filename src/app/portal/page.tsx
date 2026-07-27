@@ -8,7 +8,7 @@ import PortalMark from "@/components/PortalMark";
 // icon 圖檔已經是圓角方形＋深藍底，直接當整塊 icon 用，不用另外包 div 上色/裁圓角
 const SYSTEM_CARDS: { key: string; href: string | null; iconSrc: string }[] = [
   { key: SYSTEM.FUND, href: "/", iconSrc: "/icon-fund.png" },
-  { key: SYSTEM.CAR_SPEC_CHANGE, href: null, iconSrc: "/icon-car-spec-change.png" },
+  { key: SYSTEM.CAR_SPEC_CHANGE, href: "/accessory", iconSrc: "/icon-car-spec-change.png" },
 ];
 
 export default async function PortalPage() {
