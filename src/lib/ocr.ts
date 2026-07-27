@@ -9,7 +9,7 @@ import "server-only";
 //
 // 環境變數：
 //   GEMINI_API_KEY  必填，未設定時回傳空欄位（ok:false），不阻斷開發流程
-//   GEMINI_MODEL    選填，預設 gemini-2.0-flash
+//   GEMINI_MODEL    選填，預設 gemini-flash-latest
 // ============================================================
 
 export type OcrFields = {
@@ -97,7 +97,7 @@ export async function ocrExtractFields(image: {
     };
   }
 
-  const model = process.env.GEMINI_MODEL || "gemini-2.0-flash";
+  const model = process.env.GEMINI_MODEL || "gemini-flash-latest";
   const base64 =
     typeof image.data === "string" ? image.data : image.data.toString("base64");
 
