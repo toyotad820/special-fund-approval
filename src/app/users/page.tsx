@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { createUser } from "@/lib/admin-actions";
-import { ROLE_LABEL, SYSTEM_LABEL } from "@/lib/constants";
+import { ROLE_LABEL, SYSTEM } from "@/lib/constants";
 import { listStoreCodes } from "@/lib/dal";
+import SystemToggle from "@/components/admin/SystemToggle";
 import UserForm from "@/components/admin/UserForm";
 import CsvImportForm from "@/components/admin/CsvImportForm";
 import DeleteUserButton from "@/components/admin/DeleteUserButton";
@@ -56,7 +57,8 @@ export default async function UsersPage({
                 <th className={th}>姓名</th>
                 <th className={th}>角色</th>
                 <th className={th}>所別/課別</th>
-                <th className={th}>可用系統</th>
+                <th className={`${th} text-center`}>特案申請</th>
+                <th className={`${th} text-center`}>配件變更</th>
                 <th className={th}>狀態</th>
                 <th className={th}></th>
               </tr>
@@ -71,21 +73,19 @@ export default async function UsersPage({
                     {u.storeCode}
                     {u.deptCode ? ` / ${u.deptCode}` : ""}
                   </td>
-                  <td className={td}>
-                    <div className="flex flex-wrap gap-1">
-                      {u.systems
-                        .split(",")
-                        .map((s) => s.trim())
-                        .filter(Boolean)
-                        .map((s) => (
-                          <span
-                            key={s}
-                            className="inline-block rounded bg-slate-100 text-slate-600 text-xs px-1.5 py-0.5"
-                          >
-                            {SYSTEM_LABEL[s] ?? s}
-                          </span>
-                        ))}
-                    </div>
+                  <td className={`${td} text-center`}>
+                    <SystemToggle
+                      userId={u.id}
+                      system={SYSTEM.FUND}
+                      initialChecked={u.systems.includes(SYSTEM.FUND)}
+                    />
+                  </td>
+                  <td className={`${td} text-center`}>
+                    <SystemToggle
+                      userId={u.id}
+                      system={SYSTEM.CAR_SPEC_CHANGE}
+                      initialChecked={u.systems.includes(SYSTEM.CAR_SPEC_CHANGE)}
+                    />
                   </td>
                   <td className={td}>
                     {u.active ? (

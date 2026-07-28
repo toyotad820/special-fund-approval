@@ -124,6 +124,31 @@ export async function updateUser(
   redirect("/users");
 }
 
+// 清單內直接切換某人員的單一系統權限（打勾即改）
+export async function toggleUserSystem(
+  userId: string,
+  system: string,
+  enabled: boolean
+): Promise<void> {
+  await requireAdmin();
+
+  const u = await prisma.user.findUnique({ where: { id: userId } });
+  if (!u) throw new Error("人員不存在");
+
+  const set = new Set(
+    u.systems.split(",").map((s) => s.trim()).filter(Boolean)
+  );
+  if (enabled) set.add(system);
+  else set.delete(system);
+
+  await prisma.user.update({
+    where: { id: userId },
+    data: { systems: [...set].join(",") },
+  });
+
+  revalidatePath("/users");
+}
+
 // 刪除人員（有案件/審核紀錄者不可刪，改用停用；也不可刪自己）
 export async function deleteUser(formData: FormData) {
   const me = await requireAdmin();
