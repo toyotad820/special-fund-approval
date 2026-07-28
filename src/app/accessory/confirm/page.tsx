@@ -11,6 +11,7 @@ const COLUMNS: SortCol[] = [
   { key: "salesName", label: "業務姓名" },
   { key: "customerName", label: "客戶名稱" },
   { key: "carModel", label: "車名" },
+  { key: "changeDescription", label: "更換說明", grow: true },
   { key: "submittedAt", label: "核准時間", kind: "date" },
 ];
 
@@ -53,6 +54,7 @@ export default async function AccessoryConfirmPage() {
             salesName: r.salesName,
             customerName: r.customerName,
             carModel: r.carModel,
+            changeDescription: r.changeDescription,
             submittedAt: r.submittedAt ? r.submittedAt.toISOString() : null,
           })
         )}

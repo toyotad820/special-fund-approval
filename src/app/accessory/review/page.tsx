@@ -8,8 +8,10 @@ import SortableTable, { type SortCol, type SortRow } from "@/components/Sortable
 const COLUMNS: SortCol[] = [
   { key: "dataNo", label: "資料編號", kind: "link", mono: true },
   { key: "storeCode", label: "所別" },
+  { key: "salesName", label: "業務姓名" },
   { key: "customerName", label: "客戶名稱" },
   { key: "carModel", label: "車名" },
+  { key: "changeDescription", label: "更換說明", grow: true },
   { key: "submittedBy", label: "送出人" },
   { key: "submittedAt", label: "送出時間", kind: "date" },
 ];
@@ -41,8 +43,10 @@ export default async function AccessoryReviewPage() {
             href: `/accessory/review/${r.id}`,
             dataNo: r.dataNo,
             storeCode: r.storeCode,
+            salesName: r.salesName,
             customerName: r.customerName,
             carModel: r.carModel,
+            changeDescription: r.changeDescription,
             submittedBy: r.submittedBy.name,
             submittedAt: r.submittedAt ? r.submittedAt.toISOString() : null,
           })
