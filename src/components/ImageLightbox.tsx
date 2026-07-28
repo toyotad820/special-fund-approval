@@ -80,14 +80,14 @@ export default function ImageLightbox({
 
       {selected && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-2 sm:p-3"
           onClick={close}
         >
           <div
-            className="relative max-w-4xl w-full max-h-[90vh] flex flex-col"
+            className="relative w-full max-w-[97vw] max-h-[97vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="overflow-hidden mx-auto max-h-[80vh] rounded-lg">
+            <div className="overflow-hidden mx-auto flex-1 min-h-0 flex items-center justify-center rounded-lg">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={selected.src}
@@ -101,7 +101,7 @@ export default function ImageLightbox({
                 style={{
                   transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
                 }}
-                className={`max-w-full max-h-[80vh] object-contain mx-auto select-none ${
+                className={`max-w-full max-h-full object-contain select-none ${
                   zoom > 1 ? (drag.active ? "cursor-grabbing" : "cursor-grab") : "cursor-zoom-in"
                 }`}
               />
