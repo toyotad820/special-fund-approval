@@ -15,6 +15,7 @@ export default function NavBar({
   title = "特案支援金報備",
   iconSrc = "/icon-fund.png",
   showVersion = true,
+  version = APP_VERSION,
 }: {
   userName: string;
   roleLabel: string;
@@ -23,6 +24,7 @@ export default function NavBar({
   title?: string;
   iconSrc?: string;
   showVersion?: boolean;
+  version?: string;
 }) {
   const pathname = usePathname();
 
@@ -45,10 +47,10 @@ export default function NavBar({
               <span className="font-bold text-slate-800 text-sm truncate">{title}</span>
               {showVersion && (
                 <span
-                  title={`v${APP_VERSION} · ${CHANGELOG[0]?.note ?? ""}`}
+                  title={version === APP_VERSION ? `v${version} · ${CHANGELOG[0]?.note ?? ""}` : `v${version}`}
                   className="text-[10px] font-mono text-slate-400 bg-slate-100 rounded-full px-1.5 py-0.5 whitespace-nowrap cursor-default shrink-0"
                 >
-                  v{APP_VERSION}
+                  v{version}
                 </span>
               )}
             </Link>

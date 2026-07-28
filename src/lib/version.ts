@@ -10,6 +10,9 @@ export const APP_VERSION = "1.8.0";
 // 從 2.0.0 開始（代表新的多系統入口架構）。
 export const PORTAL_VERSION = "2.0.0";
 
+// 配件變更申請系統自己的版號（獨立計）。
+export const ACCESSORY_VERSION = "1.0.0";
+
 export const CHANGELOG: { version: string; date: string; note: string }[] = [
   {
     version: "1.8.0",

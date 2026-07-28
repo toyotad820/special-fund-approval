@@ -3,8 +3,18 @@ import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { ROLE, ACC_STATUS } from "@/lib/constants";
 import { canSubmitAccessory } from "@/lib/dal";
-import AccStatusBadge from "@/components/AccStatusBadge";
+import SortableTable, { type SortCol, type SortRow } from "@/components/SortableTable";
 import type { Prisma } from "@prisma/client";
+
+const COLUMNS: SortCol[] = [
+  { key: "dataNo", label: "資料編號", kind: "link", mono: true },
+  { key: "storeCode", label: "所別" },
+  { key: "salesName", label: "業務姓名" },
+  { key: "customerName", label: "客戶" },
+  { key: "carModel", label: "車名" },
+  { key: "changeDescription", label: "更換說明", grow: true },
+  { key: "status", label: "狀態", kind: "status" },
+];
 
 export default async function AccessoryHome() {
   const user = await requireUser();
@@ -44,55 +54,22 @@ export default async function AccessoryHome() {
         )}
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px]">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className={TH}>資料編號</th>
-                <th className={TH}>所別</th>
-                <th className={TH}>業務姓名</th>
-                <th className={TH}>客戶</th>
-                <th className={TH}>車名</th>
-                <th className={`${TH} w-full`}>更換說明</th>
-                <th className={TH}>狀態</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr key={r.id} className="border-t border-slate-100 hover:bg-slate-50">
-                  <td className={TD}>
-                    <Link
-                      href={`/accessory/${r.id}`}
-                      className="font-mono text-blue-600 hover:underline"
-                    >
-                      {r.dataNo}
-                    </Link>
-                  </td>
-                  <td className={TD}>{r.storeCode}</td>
-                  <td className={TD}>{r.salesName}</td>
-                  <td className={TD}>{r.customerName}</td>
-                  <td className={TD}>{r.carModel}</td>
-                  <td className={`px-3 py-2 text-sm text-slate-800 w-full`}>{r.changeDescription}</td>
-                  <td className={TD}>
-                    <AccStatusBadge status={r.status} />
-                  </td>
-                </tr>
-              ))}
-              {rows.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="px-3 py-8 text-center text-sm text-slate-400">
-                    目前沒有申請案件
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <SortableTable
+        columns={COLUMNS}
+        rows={rows.map(
+          (r): SortRow => ({
+            href: `/accessory/${r.id}`,
+            dataNo: r.dataNo,
+            storeCode: r.storeCode,
+            salesName: r.salesName,
+            customerName: r.customerName,
+            carModel: r.carModel,
+            changeDescription: r.changeDescription,
+            status: r.status,
+          })
+        )}
+        emptyText="目前沒有申請案件"
+      />
     </div>
   );
 }
-
-const TH = "text-left text-xs font-semibold text-slate-500 px-3 py-2 whitespace-nowrap";
-const TD = "px-3 py-2 text-sm text-slate-800 whitespace-nowrap";

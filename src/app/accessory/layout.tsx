@@ -1,6 +1,7 @@
 import { requireUser } from "@/lib/session";
 import { canSubmitAccessory } from "@/lib/dal";
 import { ROLE, ROLE_LABEL, SYSTEM } from "@/lib/constants";
+import { ACCESSORY_VERSION } from "@/lib/version";
 import { redirect } from "next/navigation";
 import NavBar, { type NavItem } from "@/components/NavBar";
 
@@ -39,7 +40,7 @@ export default async function AccessoryLayout({
         homeHref="/accessory"
         title="配件變更申請"
         iconSrc="/icon-car-spec-change.png"
-        showVersion={false}
+        version={ACCESSORY_VERSION}
       />
       <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6">
         {children}

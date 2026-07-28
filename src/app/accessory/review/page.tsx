@@ -3,8 +3,16 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { ROLE, ACC_STATUS } from "@/lib/constants";
-import { dt } from "@/lib/format";
-import AccStatusBadge from "@/components/AccStatusBadge";
+import SortableTable, { type SortCol, type SortRow } from "@/components/SortableTable";
+
+const COLUMNS: SortCol[] = [
+  { key: "dataNo", label: "資料編號", kind: "link", mono: true },
+  { key: "storeCode", label: "所別" },
+  { key: "customerName", label: "客戶名稱" },
+  { key: "carModel", label: "車名" },
+  { key: "submittedBy", label: "送出人" },
+  { key: "submittedAt", label: "送出時間", kind: "date" },
+];
 
 export default async function AccessoryReviewPage() {
   const user = await requireUser();
@@ -26,46 +34,22 @@ export default async function AccessoryReviewPage() {
         </Link>
       </div>
 
-      {requests.length === 0 ? (
-        <p className="text-sm text-slate-400">目前沒有待審核案件。</p>
-      ) : (
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 bg-slate-50">
-                <th className="px-4 py-3 text-left font-semibold text-slate-700">資料編號</th>
-                <th className="px-4 py-3 text-left font-semibold text-slate-700">所別</th>
-                <th className="px-4 py-3 text-left font-semibold text-slate-700">客戶名稱</th>
-                <th className="px-4 py-3 text-left font-semibold text-slate-700">車名</th>
-                <th className="px-4 py-3 text-left font-semibold text-slate-700">送出人</th>
-                <th className="px-4 py-3 text-left font-semibold text-slate-700">送出時間</th>
-              </tr>
-            </thead>
-            <tbody>
-              {requests.map((r) => (
-                <tr
-                  key={r.id}
-                  className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
-                >
-                  <td className="px-4 py-3">
-                    <Link
-                      href={`/accessory/review/${r.id}`}
-                      className="font-mono font-semibold text-blue-600 hover:underline"
-                    >
-                      {r.dataNo}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">{r.storeCode}</td>
-                  <td className="px-4 py-3 text-slate-600">{r.customerName}</td>
-                  <td className="px-4 py-3 text-slate-600">{r.carModel}</td>
-                  <td className="px-4 py-3 text-slate-600">{r.submittedBy.name}</td>
-                  <td className="px-4 py-3 text-slate-600">{dt(r.submittedAt)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <SortableTable
+        columns={COLUMNS}
+        rows={requests.map(
+          (r): SortRow => ({
+            href: `/accessory/review/${r.id}`,
+            dataNo: r.dataNo,
+            storeCode: r.storeCode,
+            customerName: r.customerName,
+            carModel: r.carModel,
+            submittedBy: r.submittedBy.name,
+            submittedAt: r.submittedAt ? r.submittedAt.toISOString() : null,
+          })
+        )}
+        emptyText="目前沒有待審核案件"
+        minWidth={720}
+      />
     </div>
   );
 }
