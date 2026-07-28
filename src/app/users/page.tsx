@@ -4,6 +4,7 @@ import { createUser } from "@/lib/admin-actions";
 import { ROLE_LABEL, SYSTEM } from "@/lib/constants";
 import { listStoreCodes } from "@/lib/dal";
 import SystemToggle from "@/components/admin/SystemToggle";
+import ActiveToggle from "@/components/admin/ActiveToggle";
 import UserForm from "@/components/admin/UserForm";
 import CsvImportForm from "@/components/admin/CsvImportForm";
 import DeleteUserButton from "@/components/admin/DeleteUserButton";
@@ -59,7 +60,7 @@ export default async function UsersPage({
                 <th className={th}>所別/課別</th>
                 <th className={`${th} text-center`}>特案申請</th>
                 <th className={`${th} text-center`}>配件變更</th>
-                <th className={th}>狀態</th>
+                <th className={`${th} text-center`}>啟用</th>
                 <th className={th}></th>
               </tr>
             </thead>
@@ -87,12 +88,8 @@ export default async function UsersPage({
                       initialChecked={u.systems.includes(SYSTEM.CAR_SPEC_CHANGE)}
                     />
                   </td>
-                  <td className={td}>
-                    {u.active ? (
-                      <span className="text-emerald-600">啟用</span>
-                    ) : (
-                      <span className="text-slate-400">停用</span>
-                    )}
+                  <td className={`${td} text-center`}>
+                    <ActiveToggle userId={u.id} initialActive={u.active} />
                   </td>
                   <td className={td}>
                     <div className="flex items-center gap-3">

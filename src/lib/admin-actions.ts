@@ -149,6 +149,19 @@ export async function toggleUserSystem(
   revalidatePath("/users");
 }
 
+// 清單內直接切換啟用/停用（打勾即改）
+export async function toggleUserActive(
+  userId: string,
+  active: boolean
+): Promise<void> {
+  await requireAdmin();
+  await prisma.user.update({
+    where: { id: userId },
+    data: { active },
+  });
+  revalidatePath("/users");
+}
+
 // 刪除人員（有案件/審核紀錄者不可刪，改用停用；也不可刪自己）
 export async function deleteUser(formData: FormData) {
   const me = await requireAdmin();
