@@ -152,8 +152,8 @@ export async function createAccessoryRequest(
   if (!dataNo) fieldErrors.dataNo = "必填";
   if (Object.keys(fieldErrors).length > 0) return { fieldErrors, values };
 
-  // ---- 擋送規則（命中任一即不許送出）----
-  const blocks = checkAccessoryBlocks(
+  // ---- 警示規則（命中只標紅字警告，仍可送出）----
+  const warnings = checkAccessoryBlocks(
     {
       dataNo,
       accessoryBefore: values.accessoryBefore,
@@ -162,7 +162,6 @@ export async function createAccessoryRequest(
     },
     ocrDataNo
   );
-  if (blocks.length > 0) return { blocks, values };
 
   // ---- 建立申請單 ----
   try {
@@ -178,6 +177,8 @@ export async function createAccessoryRequest(
         accessoryBefore: values.accessoryBefore.trim(),
         accessoryAfter: values.accessoryAfter.trim(),
         changeDescription: values.changeDescription.trim(),
+        warningFlag: warnings.length > 0,
+        warningText: warnings.length > 0 ? warnings.join("；") : null,
         status: ACC_STATUS.PENDING_REVIEW,
         submittedById: user.id,
         images: {

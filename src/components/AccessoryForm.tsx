@@ -143,8 +143,8 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
     }
   };
 
-  // 即時擋送檢查
-  const blocks = useMemo(
+  // 即時警示檢查（只顯示紅字警告，不阻擋送出）
+  const warnings = useMemo(
     () =>
       checkAccessoryBlocks(
         {
@@ -158,9 +158,8 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
     [fields, ocrDataNo]
   );
 
-  // 只檢查資料編號（允許其他欄位暫時留空用於測試）
-  const canSubmit =
-    !pending && !!fields.dataNo.trim() && blocks.length === 0;
+  // 只檢查資料編號（警示不阻擋送出）
+  const canSubmit = !pending && !!fields.dataNo.trim();
 
   // 送出成功 → 導回列表（編輯模式回該案件明細）
   if (state.ok && state.requestId) {
@@ -308,24 +307,6 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
 
       {/* 人工填寫欄位 */}
       <section className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
-        <Field label="變更前配件" required error={err("accessoryBefore")}>
-          <textarea
-            name="accessoryBefore"
-            rows={2}
-            value={fields.accessoryBefore}
-            onChange={(e) => set("accessoryBefore", e.target.value)}
-            className={inputCls}
-          />
-        </Field>
-        <Field label="變更後配件" required error={err("accessoryAfter")}>
-          <textarea
-            name="accessoryAfter"
-            rows={2}
-            value={fields.accessoryAfter}
-            onChange={(e) => set("accessoryAfter", e.target.value)}
-            className={inputCls}
-          />
-        </Field>
         <Field label="更換說明" required error={err("changeDescription")}>
           <textarea
             name="changeDescription"
@@ -343,13 +324,13 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
           {state.error}
         </p>
       )}
-      {(blocks.length > 0 || (state.blocks?.length ?? 0) > 0) && (
+      {(warnings.length > 0 || (state.blocks?.length ?? 0) > 0) && (
         <div className="rounded-lg bg-rose-50 border border-rose-200 px-4 py-3">
           <p className="text-sm font-semibold text-rose-700 mb-1">
-            以下問題需先修正才能送出：
+            ⚠ 警告（仍可送出，審核方會看到此標記）：
           </p>
           <ul className="list-disc list-inside text-sm text-rose-600 space-y-0.5">
-            {(blocks.length > 0 ? blocks : state.blocks ?? []).map((b, i) => (
+            {(warnings.length > 0 ? warnings : state.blocks ?? []).map((b, i) => (
               <li key={i}>{b}</li>
             ))}
           </ul>

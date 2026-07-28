@@ -1,5 +1,5 @@
-// 配件變更申請「擋送」規則（前後端共用，純函式、無 server-only）
-// 命中任一條件即不允許送出，必須先修正（不走「警告後強制送出」）。
+// 配件變更申請「警示」規則（前後端共用，純函式）
+// 命中即顯示紅字警告，但**仍可送出**（不再阻擋）。
 
 export type AccessoryCheckValues = {
   dataNo: string;
@@ -8,28 +8,26 @@ export type AccessoryCheckValues = {
   changeDescription: string;
 };
 
-// 觸發擋送的關鍵字（配件不可為「不裝／隨車／不安裝」類項目）
-export const BLOCK_KEYWORDS = ["不裝", "不安裝", "隨車"] as const;
-
-// 回傳所有命中的擋送原因；空陣列＝可送出。
-// ocrDataNo：辨識到的工單訂單編號，用於與輸入的資料編號比對；空字串代表尚未成功辨識。
+// 回傳所有命中的警示原因；空陣列＝無警示。
+// 規則：說明含「不裝／不安裝／隨車」等字樣。
+//   例外：「不裝升級」「不裝換」屬正常情境，不視為命中。
 export function checkAccessoryBlocks(
   v: AccessoryCheckValues,
-  ocrDataNo: string
+  _ocrDataNo: string
 ): string[] {
   const reasons: string[] = [];
 
-  // OCR 辨識相關的檢查已移除（允許手動填寫）
+  const text = [v.accessoryBefore, v.accessoryAfter, v.changeDescription].join("\n");
 
-  // 3. 說明／配件欄含「不裝／隨車／不安裝」等字樣
-  const haystack = [
-    v.accessoryBefore,
-    v.accessoryAfter,
-    v.changeDescription,
-  ].join("\n");
-  const hit = BLOCK_KEYWORDS.filter((k) => haystack.includes(k));
+  // 「不裝」排除「不裝升級」「不裝換」後仍出現才算命中
+  const cleaned = text.replace(/不裝升級|不裝換/g, "");
+  const hit: string[] = [];
+  if (cleaned.includes("不裝")) hit.push("不裝");
+  if (text.includes("不安裝")) hit.push("不安裝");
+  if (text.includes("隨車")) hit.push("隨車");
+
   if (hit.length > 0) {
-    reasons.push(`配件／說明不可含「${hit.join("、")}」等字樣`);
+    reasons.push(`說明含「${hit.join("、")}」，不符配件變更定義`);
   }
 
   return reasons;
