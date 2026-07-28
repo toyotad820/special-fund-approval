@@ -144,18 +144,6 @@ export default function UserForm({
         </div>
       </fieldset>
 
-      {isEdit && (
-        <label className="flex items-center gap-2 text-sm text-slate-600">
-          <input
-            type="checkbox"
-            name="active"
-            defaultChecked={initial?.active}
-            className="rounded"
-          />
-          啟用中（取消勾選＝停用，無法登入）
-        </label>
-      )}
-
       <button
         type="submit"
         disabled={pending}

@@ -94,7 +94,6 @@ export async function updateUser(
   const role = normalizeRole(String(formData.get("role") ?? ""));
   const storeCode = String(formData.get("storeCode") ?? "").trim();
   const deptCode = normalizeDeptCode(String(formData.get("deptCode") ?? "").trim());
-  const active = formData.get("active") === "on";
   const newPassword = String(formData.get("password") ?? "").trim();
   const systems = String(formData.get("systems") ?? "fund").trim() || "fund";
 
@@ -113,7 +112,6 @@ export async function updateUser(
       storeCode,
       deptCode: deptCode || null,
       systems,
-      active,
       ...(newPassword ? { passwordHash: await bcrypt.hash(newPassword, 10) } : {}),
     },
   });
