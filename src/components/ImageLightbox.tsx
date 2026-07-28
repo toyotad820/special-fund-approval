@@ -40,7 +40,7 @@ export default function ImageLightbox({
     reset();
   };
   const setZoomClamped = (z: number) => {
-    const nz = Math.min(4, Math.max(1, +z.toFixed(1)));
+    const nz = Math.min(4, Math.max(1, +z.toFixed(2)));
     setZoom(nz);
     if (nz === 1) setOffset({ x: 0, y: 0 });
   };
@@ -67,7 +67,7 @@ export default function ImageLightbox({
   };
   const onClick = () => {
     if (drag.moved) return; // 拖曳結束不觸發縮放切換
-    setZoomClamped(zoom > 1 ? 1 : 1.5);
+    setZoomClamped(zoom > 1 ? 1 : 1.25);
   };
 
   const onMouseDown = (e: React.MouseEvent) => startDrag(e.clientX, e.clientY);
@@ -134,7 +134,7 @@ export default function ImageLightbox({
             </div>
             <div className="flex items-center justify-center gap-2 mt-2">
               <button
-                onClick={() => setZoomClamped(zoom - 0.5)}
+                onClick={() => setZoomClamped(zoom - 0.25)}
                 className="w-8 h-8 grid place-items-center rounded-lg bg-white/10 hover:bg-white/20 text-white text-lg"
                 aria-label="縮小"
               >
@@ -144,7 +144,7 @@ export default function ImageLightbox({
                 {Math.round(zoom * 100)}%
               </span>
               <button
-                onClick={() => setZoomClamped(zoom + 0.5)}
+                onClick={() => setZoomClamped(zoom + 0.25)}
                 className="w-8 h-8 grid place-items-center rounded-lg bg-white/10 hover:bg-white/20 text-white text-lg"
                 aria-label="放大"
               >

@@ -90,6 +90,7 @@ export default function SortableTable({
                   <th
                     key={c.key}
                     onClick={() => onSort(c.key)}
+                    style={c.width ? { maxWidth: c.width, width: c.width } : undefined}
                     className={`text-xs font-semibold px-3 py-2.5 whitespace-nowrap cursor-pointer select-none hover:bg-slate-100 transition-colors ${alignCls(c.align)} ${c.grow ? "w-full" : ""} ${active ? "text-blue-600" : "text-slate-500"}`}
                   >
                     <span className="inline-flex items-center gap-1">
@@ -108,11 +109,12 @@ export default function SortableTable({
               <tr key={i} className="border-t border-slate-100 hover:bg-slate-50 transition-colors">
                 {columns.map((c) => {
                   const v = r[c.key];
-                  const base = `px-3 py-2 text-sm whitespace-nowrap ${alignCls(c.align)} ${c.mono ? "font-mono" : ""} ${c.grow ? "w-full whitespace-normal" : ""}`;
+                  const style = c.width ? { maxWidth: c.width, width: c.width } : undefined;
+                  const base = `px-3 py-2 text-sm ${alignCls(c.align)} ${c.mono ? "font-mono" : ""} ${c.width ? "truncate" : "whitespace-nowrap"} ${c.grow ? "w-full whitespace-normal" : ""}`;
                   if (c.kind === "link") {
                     return (
-                      <td key={c.key} className={base}>
-                        <Link href={r.href || "#"} className="font-mono text-blue-600 hover:underline font-semibold">
+                      <td key={c.key} className={base} style={style}>
+                        <Link href={r.href || "#"} className={`${c.mono ? "font-mono " : ""}text-blue-600 hover:underline font-semibold`}>
                           {v}
                         </Link>
                       </td>
@@ -120,20 +122,20 @@ export default function SortableTable({
                   }
                   if (c.kind === "status") {
                     return (
-                      <td key={c.key} className={base}>
+                      <td key={c.key} className={base} style={style}>
                         <AccStatusBadge status={String(v ?? "")} />
                       </td>
                     );
                   }
                   if (c.kind === "date") {
                     return (
-                      <td key={c.key} className={`${base} text-slate-600`}>
+                      <td key={c.key} className={`${base} text-slate-600`} style={style} title={fmtDate(v)}>
                         {fmtDate(v)}
                       </td>
                     );
                   }
                   return (
-                    <td key={c.key} className={`${base} text-slate-800`}>
+                    <td key={c.key} className={`${base} text-slate-800`} style={style} title={c.width ? String(v ?? "") : undefined}>
                       {v}
                     </td>
                   );

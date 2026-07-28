@@ -20,7 +20,7 @@ export default async function AccessoryLayout({
 
   const items: NavItem[] = [];
   if (mySystems.length > 1) items.push({ href: "/portal", label: "系統選單" });
-  items.push({ href: "/accessory", label: "案件明細" });
+  // 動作項目排第二（新增申請／待審核／待確認）
   if (canSubmitAccessory(user)) {
     items.push({ href: "/accessory/new", label: "新增申請" });
   }
@@ -30,6 +30,8 @@ export default async function AccessoryLayout({
   if (user.role === ROLE.PEIJIAN) {
     items.push({ href: "/accessory/confirm", label: "待確認" });
   }
+  // 案件明細排第三（最後）
+  items.push({ href: "/accessory", label: "案件明細" });
 
   return (
     <div className="flex-1 flex flex-col">
