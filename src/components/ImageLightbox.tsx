@@ -9,28 +9,54 @@ export default function ImageLightbox({
 }) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [zoom, setZoom] = useState(1);
-  const [origin, setOrigin] = useState("center center");
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  // 拖曳狀態（不進 state，避免每次移動重繪整棵樹）
+  const drag = useState(() => ({ active: false, moved: false, sx: 0, sy: 0, ox: 0, oy: 0 }))[0];
 
   if (images.length === 0) return null;
 
   const selected = selectedIndex !== null ? images[selectedIndex] : null;
 
+  const reset = () => {
+    setZoom(1);
+    setOffset({ x: 0, y: 0 });
+  };
   const open = (i: number) => {
     setSelectedIndex(i);
-    setZoom(1);
-    setOrigin("center center");
+    reset();
   };
   const close = () => {
     setSelectedIndex(null);
-    setZoom(1);
+    reset();
   };
-  const toggleZoom = () => setZoom((z) => (z > 1 ? 1 : 2.5));
-  const onMove = (e: React.MouseEvent<HTMLImageElement>) => {
+  const setZoomClamped = (z: number) => {
+    const nz = Math.min(4, Math.max(1, +z.toFixed(1)));
+    setZoom(nz);
+    if (nz === 1) setOffset({ x: 0, y: 0 });
+  };
+
+  const onDown = (e: React.MouseEvent) => {
     if (zoom === 1) return;
-    const r = e.currentTarget.getBoundingClientRect();
-    const x = ((e.clientX - r.left) / r.width) * 100;
-    const y = ((e.clientY - r.top) / r.height) * 100;
-    setOrigin(`${x}% ${y}%`);
+    drag.active = true;
+    drag.moved = false;
+    drag.sx = e.clientX;
+    drag.sy = e.clientY;
+    drag.ox = offset.x;
+    drag.oy = offset.y;
+  };
+  const onMove = (e: React.MouseEvent) => {
+    if (!drag.active) return;
+    const dx = e.clientX - drag.sx;
+    const dy = e.clientY - drag.sy;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) drag.moved = true;
+    setOffset({ x: drag.ox + dx, y: drag.oy + dy });
+  };
+  const onUp = () => {
+    drag.active = false;
+  };
+  const onClick = () => {
+    if (drag.moved) return; // 拖曳結束不觸發縮放切換
+    setZoomClamped(zoom > 1 ? 1 : 2.5);
   };
 
   return (
@@ -66,18 +92,23 @@ export default function ImageLightbox({
               <img
                 src={selected.src}
                 alt={selected.alt || "放大圖"}
-                onClick={toggleZoom}
+                draggable={false}
+                onClick={onClick}
+                onMouseDown={onDown}
                 onMouseMove={onMove}
-                onMouseLeave={() => setOrigin("center center")}
-                style={{ transform: `scale(${zoom})`, transformOrigin: origin }}
-                className={`max-w-full max-h-[80vh] object-contain mx-auto transition-transform duration-100 ${
-                  zoom > 1 ? "cursor-zoom-out" : "cursor-zoom-in"
+                onMouseUp={onUp}
+                onMouseLeave={onUp}
+                style={{
+                  transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
+                }}
+                className={`max-w-full max-h-[80vh] object-contain mx-auto select-none ${
+                  zoom > 1 ? (drag.active ? "cursor-grabbing" : "cursor-grab") : "cursor-zoom-in"
                 }`}
               />
             </div>
             <div className="flex items-center justify-center gap-2 mt-2">
               <button
-                onClick={() => setZoom((z) => Math.max(1, +(z - 0.5).toFixed(1)))}
+                onClick={() => setZoomClamped(zoom - 0.5)}
                 className="w-8 h-8 grid place-items-center rounded-lg bg-white/10 hover:bg-white/20 text-white text-lg"
                 aria-label="縮小"
               >
@@ -87,7 +118,7 @@ export default function ImageLightbox({
                 {Math.round(zoom * 100)}%
               </span>
               <button
-                onClick={() => setZoom((z) => Math.min(4, +(z + 0.5).toFixed(1)))}
+                onClick={() => setZoomClamped(zoom + 0.5)}
                 className="w-8 h-8 grid place-items-center rounded-lg bg-white/10 hover:bg-white/20 text-white text-lg"
                 aria-label="放大"
               >
