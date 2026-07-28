@@ -9,11 +9,21 @@ import AccStatusBadge from "@/components/AccStatusBadge";
 import ImageLightbox from "@/components/ImageLightbox";
 import ConfirmForm from "@/components/ConfirmForm";
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+function Row({
+  label,
+  children,
+  align = "right",
+}: {
+  label: string;
+  children: React.ReactNode;
+  align?: "left" | "right";
+}) {
   return (
     <div className="flex justify-between gap-4 py-2 border-b border-slate-100 last:border-0">
       <span className="text-sm text-slate-400 shrink-0">{label}</span>
-      <span className="text-sm text-slate-800 text-right whitespace-pre-wrap">
+      <span
+        className={`text-sm text-slate-800 whitespace-pre-wrap ${align === "left" ? "text-left" : "text-right"}`}
+      >
         {children}
       </span>
     </div>
@@ -65,7 +75,7 @@ export default async function AccessoryConfirmDetailPage({
         <h2 className="text-sm font-semibold text-slate-700">變更詳情</h2>
         <Row label="變更前配件">{r.accessoryBefore}</Row>
         <Row label="變更後配件">{r.accessoryAfter}</Row>
-        <Row label="更換說明">{r.changeDescription}</Row>
+        <Row label="更換說明" align="left">{r.changeDescription}</Row>
       </div>
 
       {/* 工單圖片（優先顯示蓋章版） */}
