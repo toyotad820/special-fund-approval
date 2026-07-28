@@ -45,28 +45,40 @@ export default function ImageLightbox({
     if (nz === 1) setOffset({ x: 0, y: 0 });
   };
 
-  const onDown = (e: React.MouseEvent) => {
+  // 通用拖曳（滑鼠與觸控共用）
+  const startDrag = (x: number, y: number) => {
     if (zoom === 1) return;
     drag.active = true;
     drag.moved = false;
-    drag.sx = e.clientX;
-    drag.sy = e.clientY;
+    drag.sx = x;
+    drag.sy = y;
     drag.ox = offset.x;
     drag.oy = offset.y;
   };
-  const onMove = (e: React.MouseEvent) => {
+  const moveDrag = (x: number, y: number) => {
     if (!drag.active) return;
-    const dx = e.clientX - drag.sx;
-    const dy = e.clientY - drag.sy;
+    const dx = x - drag.sx;
+    const dy = y - drag.sy;
     if (Math.abs(dx) > 3 || Math.abs(dy) > 3) drag.moved = true;
     setOffset({ x: drag.ox + dx, y: drag.oy + dy });
   };
-  const onUp = () => {
+  const endDrag = () => {
     drag.active = false;
   };
   const onClick = () => {
     if (drag.moved) return; // 拖曳結束不觸發縮放切換
-    setZoomClamped(zoom > 1 ? 1 : 2.5);
+    setZoomClamped(zoom > 1 ? 1 : 1.5);
+  };
+
+  const onMouseDown = (e: React.MouseEvent) => startDrag(e.clientX, e.clientY);
+  const onMouseMove = (e: React.MouseEvent) => moveDrag(e.clientX, e.clientY);
+  const onTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    if (t) startDrag(t.clientX, t.clientY);
+  };
+  const onTouchMove = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    if (t) moveDrag(t.clientX, t.clientY);
   };
 
   return (
@@ -104,12 +116,16 @@ export default function ImageLightbox({
                 alt={selected.alt || "放大圖"}
                 draggable={false}
                 onClick={onClick}
-                onMouseDown={onDown}
-                onMouseMove={onMove}
-                onMouseUp={onUp}
-                onMouseLeave={onUp}
+                onMouseDown={onMouseDown}
+                onMouseMove={onMouseMove}
+                onMouseUp={endDrag}
+                onMouseLeave={endDrag}
+                onTouchStart={onTouchStart}
+                onTouchMove={onTouchMove}
+                onTouchEnd={endDrag}
                 style={{
                   transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
+                  touchAction: zoom > 1 ? "none" : "auto",
                 }}
                 className={`max-w-full max-h-full object-contain select-none ${
                   zoom > 1 ? (drag.active ? "cursor-grabbing" : "cursor-grab") : "cursor-zoom-in"
