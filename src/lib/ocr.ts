@@ -127,7 +127,8 @@ export async function ocrExtractFields(image: {
 
       if (!res.ok) {
         const text = await res.text();
-        if (res.status === 429 && attempt < 2) {
+        // 429 配額／500、503 高需求 皆為暫時性，退避重試
+        if ((res.status === 429 || res.status === 500 || res.status === 503) && attempt < 2) {
           const delay = Math.pow(2, attempt) * 1000;
           await new Promise((resolve) => setTimeout(resolve, delay));
           continue;
