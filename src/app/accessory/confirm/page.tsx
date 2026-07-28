@@ -10,8 +10,17 @@ export default async function AccessoryConfirmPage() {
   // 只有配件中心可以確認
   if (user.role !== ROLE.PEIJIAN) notFound();
 
+  // 負責所別過濾（空=全部）
+  const stores = (user.assignedStores ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
   const requests = await prisma.accessoryRequest.findMany({
-    where: { status: ACC_STATUS.APPROVED },
+    where: {
+      status: ACC_STATUS.APPROVED,
+      ...(stores.length > 0 ? { storeCode: { in: stores } } : {}),
+    },
     include: { submittedBy: true },
     orderBy: { submittedAt: "desc" },
   });

@@ -12,6 +12,7 @@ type Initial = {
   storeCode?: string;
   deptCode?: string | null;
   systems?: string;
+  assignedStores?: string;
   active?: boolean;
 };
 
@@ -21,14 +22,22 @@ export default function UserForm({
   submitAction,
   initial,
   isEdit = false,
+  storeList = [],
 }: {
   submitAction: (prev: ActionState, fd: FormData) => Promise<ActionState>;
   initial?: Initial;
   isEdit?: boolean;
+  storeList?: string[];
 }) {
   const [state, formAction, pending] = useActionState(submitAction, {});
   const [systems, setSystems] = useState<string[]>(
     initial?.systems ? initial.systems.split(",").filter(Boolean) : ["fund"]
+  );
+  const [role, setRole] = useState<string>(initial?.role ?? "");
+  const [assignedStores, setAssignedStores] = useState<string[]>(
+    initial?.assignedStores
+      ? initial.assignedStores.split(",").map((s) => s.trim()).filter(Boolean)
+      : []
   );
   const fe = state.fieldErrors ?? {};
   const err = (n: string) =>
@@ -38,6 +47,7 @@ export default function UserForm({
 
   const handleFormAction = (fd: FormData) => {
     fd.set("systems", systems.join(","));
+    fd.set("assignedStores", assignedStores.join(","));
     return formAction(fd);
   };
 
@@ -77,7 +87,12 @@ export default function UserForm({
           <label className="block text-sm font-medium text-slate-600 mb-1">
             角色 <span className="text-rose-500">*</span>
           </label>
-          <select name="role" defaultValue={initial?.role ?? ""} className={cls}>
+          <select
+            name="role"
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            className={cls}
+          >
             <option value="">請選擇</option>
             {ROLES.map((r) => (
               <option key={r} value={r}>
@@ -143,6 +158,39 @@ export default function UserForm({
           ))}
         </div>
       </fieldset>
+
+      {role === "PEIJIAN" && (
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-medium text-slate-600">
+            負責所別（配件中心）
+          </legend>
+          <p className="text-xs text-slate-400">
+            不勾選＝負責全部所別；勾選後只看到/確認所選所別的案件。
+          </p>
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
+            {storeList.map((sc) => (
+              <label
+                key={sc}
+                className="flex items-center gap-1.5 text-sm text-slate-600"
+              >
+                <input
+                  type="checkbox"
+                  checked={assignedStores.includes(sc)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setAssignedStores([...assignedStores, sc]);
+                    } else {
+                      setAssignedStores(assignedStores.filter((s) => s !== sc));
+                    }
+                  }}
+                  className="rounded"
+                />
+                {sc}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
 
       <button
         type="submit"

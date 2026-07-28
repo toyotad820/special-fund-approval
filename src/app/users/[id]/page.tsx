@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { updateUser } from "@/lib/admin-actions";
+import { listStoreCodes } from "@/lib/dal";
 import UserForm from "@/components/admin/UserForm";
 
 export default async function EditUserPage({
@@ -12,6 +13,7 @@ export default async function EditUserPage({
   const { id } = await params;
   const user = await prisma.user.findUnique({ where: { id } });
   if (!user) notFound();
+  const storeList = await listStoreCodes();
 
   return (
     <div className="space-y-4">
@@ -25,6 +27,7 @@ export default async function EditUserPage({
         <UserForm
           submitAction={updateUser}
           isEdit
+          storeList={storeList}
           initial={{
             id: user.id,
             username: user.username,
@@ -34,6 +37,7 @@ export default async function EditUserPage({
             deptCode: user.deptCode,
             active: user.active,
             systems: user.systems,
+            assignedStores: user.assignedStores,
           }}
         />
       </div>

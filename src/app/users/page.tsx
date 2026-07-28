@@ -2,6 +2,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { createUser } from "@/lib/admin-actions";
 import { ROLE_LABEL, SYSTEM_LABEL } from "@/lib/constants";
+import { listStoreCodes } from "@/lib/dal";
 import UserForm from "@/components/admin/UserForm";
 import CsvImportForm from "@/components/admin/CsvImportForm";
 import DeleteUserButton from "@/components/admin/DeleteUserButton";
@@ -20,6 +21,7 @@ export default async function UsersPage({
   const users = await prisma.user.findMany({
     orderBy: [{ storeCode: "asc" }, { role: "asc" }, { username: "asc" }],
   });
+  const storeList = await listStoreCodes();
 
   const th = "text-left text-xs font-semibold text-slate-500 px-3 py-2";
   const td = "px-3 py-2 text-sm text-slate-800";
@@ -39,7 +41,7 @@ export default async function UsersPage({
 
       <section className="bg-white rounded-2xl border border-slate-200 p-5">
         <h2 className="text-sm font-semibold text-slate-700 mb-3">新增人員</h2>
-        <UserForm submitAction={createUser} />
+        <UserForm submitAction={createUser} storeList={storeList} />
       </section>
 
       <section className="bg-white rounded-2xl border border-slate-200 overflow-hidden">

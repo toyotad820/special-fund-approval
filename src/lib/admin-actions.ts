@@ -54,6 +54,7 @@ export async function createUser(
   const deptCode = normalizeDeptCode(String(formData.get("deptCode") ?? "").trim());
   const password = String(formData.get("password") ?? "").trim() || "1234";
   const systems = String(formData.get("systems") ?? "fund").trim() || "fund";
+  const assignedStores = String(formData.get("assignedStores") ?? "").trim();
 
   const fieldErrors: Record<string, string> = {};
   if (!username) fieldErrors.username = "必填";
@@ -75,6 +76,7 @@ export async function createUser(
       storeCode,
       deptCode: deptCode || null,
       systems,
+      assignedStores: role === ROLE.PEIJIAN ? assignedStores : "",
       passwordHash: await bcrypt.hash(password, 10),
     },
   });
@@ -96,6 +98,7 @@ export async function updateUser(
   const deptCode = normalizeDeptCode(String(formData.get("deptCode") ?? "").trim());
   const newPassword = String(formData.get("password") ?? "").trim();
   const systems = String(formData.get("systems") ?? "fund").trim() || "fund";
+  const assignedStores = String(formData.get("assignedStores") ?? "").trim();
 
   const fieldErrors: Record<string, string> = {};
   if (!name) fieldErrors.name = "必填";
@@ -112,6 +115,7 @@ export async function updateUser(
       storeCode,
       deptCode: deptCode || null,
       systems,
+      assignedStores: role === ROLE.PEIJIAN ? assignedStores : "",
       ...(newPassword ? { passwordHash: await bcrypt.hash(newPassword, 10) } : {}),
     },
   });

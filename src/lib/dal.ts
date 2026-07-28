@@ -27,6 +27,18 @@ export async function getDeptCodesForStore(storeCode: string): Promise<string[]>
   });
 }
 
+// 系統現有的所別清單（distinct storeCode），供配件中心「負責所別」勾選
+export async function listStoreCodes(): Promise<string[]> {
+  const rows = await prisma.user.findMany({
+    select: { storeCode: true },
+    distinct: ["storeCode"],
+  });
+  return rows
+    .map((r) => r.storeCode.trim())
+    .filter(Boolean)
+    .sort((a, b) => a.localeCompare(b));
+}
+
 export function canSubmit(user: User): boolean {
   return user.role === ROLE.KEZHANG || user.role === ROLE.SUOZHANG;
 }
@@ -144,9 +156,21 @@ export function canReviewAccessory(user: User, r: AccLike): boolean {
   return user.role === ROLE.BUZHUGUAN && r.status === ACC_STATUS.PENDING_REVIEW;
 }
 
+// 配件中心負責的所別集合（空 Set = 負責全部）
+export function assignedStoreSet(user: User): Set<string> {
+  return new Set(
+    (user.assignedStores ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+  );
+}
+
 // 配件中心能否對已核准案件確認或退回重審
 export function canConfirmAccessory(user: User, r: AccLike): boolean {
-  return user.role === ROLE.PEIJIAN && r.status === ACC_STATUS.APPROVED;
+  if (user.role !== ROLE.PEIJIAN || r.status !== ACC_STATUS.APPROVED) return false;
+  const stores = assignedStoreSet(user);
+  return stores.size === 0 || stores.has(r.storeCode);
 }
 
 // 送單人能否撤回（尚未審核前）
