@@ -84,8 +84,13 @@ export default async function PortalPage() {
             })}
             {isAdmin && (
               <Link href="/users" className="group flex flex-col items-center">
-                <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl shadow-sm bg-slate-700 grid place-items-center text-white text-2xl sm:text-3xl transition-transform group-hover:scale-[1.04]">
-                  👤
+                <div className="relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- 固定小尺寸 icon，不需要 next/image 最佳化 */}
+                  <img
+                    src="/icon-user-management.png"
+                    alt="人員管理"
+                    className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl shadow-sm transition-transform group-hover:scale-[1.04]"
+                  />
                 </div>
                 <span className="mt-2 text-xs sm:text-sm text-slate-700 text-center leading-tight">
                   人員管理
