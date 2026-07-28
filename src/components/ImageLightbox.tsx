@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function ImageLightbox({
   images,
@@ -12,6 +12,16 @@ export default function ImageLightbox({
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   // 拖曳狀態（不進 state，避免每次移動重繪整棵樹）
   const drag = useState(() => ({ active: false, moved: false, sx: 0, sy: 0, ox: 0, oy: 0 }))[0];
+
+  // ESC 關閉放大檢視
+  useEffect(() => {
+    if (selectedIndex === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelectedIndex(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedIndex]);
 
   if (images.length === 0) return null;
 
@@ -144,7 +154,7 @@ export default function ImageLightbox({
             </div>
             <button
               onClick={close}
-              className="absolute -top-8 -right-8 w-8 h-8 grid place-items-center rounded-full text-white hover:bg-white/20 transition-colors"
+              className="absolute top-2 right-2 z-10 w-10 h-10 grid place-items-center rounded-full bg-black/50 text-white text-lg hover:bg-black/70 transition-colors"
               aria-label="關閉"
             >
               ✕
