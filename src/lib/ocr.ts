@@ -3,28 +3,26 @@ import "server-only";
 // ============================================================
 // 圖片辨識介面層（OPT 委託安裝工單 → 結構化欄位）
 //
-// 目前實作：Google Gemini（REST，免額外 SDK）。
-// 換模型時只需改本檔內部實作，呼叫端（server actions / 表單）維持不變：
-//   ocrExtractFields(image) → OcrResult
+// 實作：Google Cloud Vision API（DOCUMENT_TEXT_DETECTION）
+//   Vision 只回純文字，欄位由本地啟發式解析抽取。
 //
 // 環境變數：
-//   GEMINI_API_KEY  必填，未設定時回傳空欄位（ok:false），不阻斷開發流程
-//   GEMINI_MODEL    選填，預設 gemini-flash-latest
+//   GOOGLE_VISION_API_KEY  必填，未設定回空欄位（ok:false）
 // ============================================================
 
 export type OcrFields = {
-  dataNo: string; // 資料編號（訂單編號，Dxx 開頭 13 碼）
+  dataNo: string; // 資料編號（Dxx 開頭 13 碼）
   storeCode: string; // 所別（Dxx）
-  salesName: string; // 業務姓名
+  salesName: string; // 業代編號＋姓名
   customerName: string; // 客戶名稱
   carModel: string; // 車名
-  remarks: string; // 備註/簽決欄位（用「換」字分割變更前/後）
+  remarks: string; // 備註（用「換」字分割變更前/後）
 };
 
 export type OcrResult = {
   fields: OcrFields;
-  raw: string; // 模型原始回傳，供稽核追溯（存 AccessoryImage.ocrRaw）
-  ok: boolean; // 是否成功辨識（false=未設定金鑰或呼叫失敗，欄位為空）
+  raw: string; // Vision 原始全文，供稽核＋人工核對
+  ok: boolean;
   error?: string;
 };
 
@@ -37,140 +35,100 @@ const EMPTY_FIELDS: OcrFields = {
   remarks: "",
 };
 
-const PROMPT = `你是 TOYOTA 經銷商「OPT 委託安裝工單」的資料擷取助手。請從這張工單圖片擷取以下欄位，逐項回傳；找不到的欄位回傳空字串，不要臆測：
+// 從 Vision 全文解析結構化欄位
+function parseOcrText(fullText: string): OcrFields {
+  const lines = fullText
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const joined = lines.join(" ");
 
-- dataNo：訂單編號（Dxx 開頭、共 13 碼英數字，例如 D111507010401）
-- storeCode：所別代碼（訂單編號前 3 碼，例如 D11）
-- salesName：業代編號＋姓名，保留前面的業代編號一起回傳（例如「B4569 陳建勳」）
-- customerName：客戶名稱
-- carModel：車名（例如 Y CROSS、CAMRY、C CROSS）
-- remarks：工單下方「簽決簽審意見」或備註欄的內容，逐字回傳不要省略
+  // 資料編號：D + 12 碼英數
+  const dataNoMatch = joined.match(/D[0-9A-Z]{12}/i);
+  const dataNo = dataNoMatch ? dataNoMatch[0].toUpperCase() : "";
+  const storeCode = dataNo ? dataNo.substring(0, 3) : "";
 
-只回傳 JSON，不要多餘說明。`;
+  // 業代：字母+數字編號 後接中文姓名（例：B4569 陳建勳）
+  const salesMatch = joined.match(/[A-Z]\d{3,5}\s*[一-鿿]{2,4}/i);
+  const salesName = salesMatch ? salesMatch[0].replace(/\s+/g, " ").trim() : "";
 
-const RESPONSE_SCHEMA = {
-  type: "object",
-  properties: {
-    dataNo: { type: "string" },
-    storeCode: { type: "string" },
-    salesName: { type: "string" },
-    customerName: { type: "string" },
-    carModel: { type: "string" },
-    remarks: { type: "string" },
-  },
-  required: [
-    "dataNo",
-    "storeCode",
-    "salesName",
-    "customerName",
-    "carModel",
-  ],
-} as const;
+  // 客戶名稱：找「客戶」附近的中文
+  const customerMatch = joined.match(/客戶[名稱]*[：:\s]+([一-鿿]{2,10})/);
+  const customerName = customerMatch ? customerMatch[1].trim() : "";
 
-function coerceFields(obj: unknown): OcrFields {
-  const o = (obj ?? {}) as Record<string, unknown>;
-  const str = (k: keyof OcrFields) =>
-    typeof o[k] === "string" ? (o[k] as string).trim() : "";
-  return {
-    dataNo: str("dataNo").toUpperCase(),
-    storeCode: str("storeCode").toUpperCase(),
-    salesName: str("salesName"),
-    customerName: str("customerName"),
-    carModel: str("carModel"),
-    remarks: str("remarks"),
-  };
+  // 車名：找「車名/車型」附近
+  const carMatch = joined.match(/車[名型][：:\s]+([A-Z一-鿿0-9\s]{2,15}?)(?=\s{2,}|客戶|業代|$)/i);
+  const carModel = carMatch ? carMatch[1].trim() : "";
+
+  return { dataNo, storeCode, salesName, customerName, carModel, remarks: "" };
 }
 
-// image.data 可為 Buffer 或 base64 字串
 export async function ocrExtractFields(image: {
   data: Buffer | string;
   mimeType: string;
 }): Promise<OcrResult> {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.GOOGLE_VISION_API_KEY;
   if (!apiKey) {
     return {
       fields: { ...EMPTY_FIELDS },
       raw: "",
       ok: false,
-      error: "未設定 GEMINI_API_KEY，略過辨識（欄位請人工填寫）",
+      error: "未設定 GOOGLE_VISION_API_KEY，略過辨識（欄位請人工填寫）",
     };
   }
 
-  const model = process.env.GEMINI_MODEL || "gemini-flash-latest";
   const base64 =
     typeof image.data === "string" ? image.data : image.data.toString("base64");
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-  const requestBody = JSON.stringify({
-    contents: [
+  const url = `https://vision.googleapis.com/v1/images:annotate?key=${apiKey}`;
+  const body = JSON.stringify({
+    requests: [
       {
-        parts: [
-          { text: PROMPT },
-          { inline_data: { mime_type: image.mimeType, data: base64 } },
-        ],
+        image: { content: base64 },
+        features: [{ type: "DOCUMENT_TEXT_DETECTION" }],
+        imageContext: { languageHints: ["zh-Hant", "en"] },
       },
     ],
-    generationConfig: {
-      responseMimeType: "application/json",
-      responseSchema: RESPONSE_SCHEMA,
-      temperature: 0,
-    },
   });
 
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: requestBody,
-      });
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body,
+    });
 
-      if (!res.ok) {
-        const text = await res.text();
-        if (res.status === 429 && attempt < 2) {
-          const delay = Math.pow(2, attempt) * 1000;
-          await new Promise((resolve) => setTimeout(resolve, delay));
-          continue;
-        }
-        return {
-          fields: { ...EMPTY_FIELDS },
-          raw: text,
-          ok: false,
-          error: `Gemini 回應 ${res.status}`,
-        };
-      }
-
-      const json = await res.json();
-      const text: string =
-        json?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-      if (!text) {
-        return {
-          fields: { ...EMPTY_FIELDS },
-          raw: JSON.stringify(json),
-          ok: false,
-          error: "Gemini 未回傳內容",
-        };
-      }
-
-      const parsed = JSON.parse(text);
-      return { fields: coerceFields(parsed), raw: text, ok: true };
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      if (attempt === 2) {
-        return {
-          fields: { ...EMPTY_FIELDS },
-          raw: "",
-          ok: false,
-          error: `辨識失敗：${msg}`,
-        };
-      }
+    if (!res.ok) {
+      const text = await res.text();
+      return {
+        fields: { ...EMPTY_FIELDS },
+        raw: text,
+        ok: false,
+        error: `Vision 回應 ${res.status}`,
+      };
     }
-  }
 
-  return {
-    fields: { ...EMPTY_FIELDS },
-    raw: "",
-    ok: false,
-    error: "辨識失敗：重試次數超限",
-  };
+    const json = await res.json();
+    const fullText: string =
+      json?.responses?.[0]?.fullTextAnnotation?.text ?? "";
+
+    if (!fullText) {
+      return {
+        fields: { ...EMPTY_FIELDS },
+        raw: JSON.stringify(json),
+        ok: false,
+        error: "Vision 未辨識到文字",
+      };
+    }
+
+    return { fields: parseOcrText(fullText), raw: fullText, ok: true };
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return {
+      fields: { ...EMPTY_FIELDS },
+      raw: "",
+      ok: false,
+      error: `辨識失敗：${msg}`,
+    };
+  }
 }
