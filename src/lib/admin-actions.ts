@@ -79,8 +79,8 @@ export async function createUser(
     },
   });
 
-  revalidatePath("/admin/users");
-  redirect("/admin/users");
+  revalidatePath("/users");
+  redirect("/users");
 }
 
 export async function updateUser(
@@ -118,27 +118,27 @@ export async function updateUser(
     },
   });
 
-  revalidatePath("/admin/users");
-  redirect("/admin/users");
+  revalidatePath("/users");
+  redirect("/users");
 }
 
 // 刪除人員（有案件/審核紀錄者不可刪，改用停用；也不可刪自己）
 export async function deleteUser(formData: FormData) {
   const me = await requireAdmin();
   const id = String(formData.get("id") ?? "");
-  if (!id) redirect("/admin/users");
-  if (id === me.id) redirect("/admin/users?err=self");
+  if (!id) redirect("/users");
+  if (id === me.id) redirect("/users?err=self");
 
   const [caseCount, logCount] = await Promise.all([
     prisma.case.count({ where: { submittedById: id } }),
     prisma.approvalLog.count({ where: { reviewerId: id } }),
   ]);
   if (caseCount > 0 || logCount > 0) {
-    redirect("/admin/users?err=inuse");
+    redirect("/users?err=inuse");
   }
 
   await prisma.user.delete({ where: { id } });
-  redirect("/admin/users");
+  redirect("/users");
 }
 
 // CSV 匯入人員：欄位 username,name,role,storeCode,deptCode,password
