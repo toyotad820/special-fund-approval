@@ -55,6 +55,7 @@ export async function createUser(
   const password = String(formData.get("password") ?? "").trim() || "1234";
   const systems = String(formData.get("systems") ?? "fund").trim() || "fund";
   const assignedStores = String(formData.get("assignedStores") ?? "").trim();
+  const driveFolderId = String(formData.get("driveFolderId") ?? "").trim();
 
   const fieldErrors: Record<string, string> = {};
   if (!username) fieldErrors.username = "必填";
@@ -77,6 +78,7 @@ export async function createUser(
       deptCode: deptCode || null,
       systems,
       assignedStores: role === ROLE.PEIJIAN ? assignedStores : "",
+      driveFolderId: role === ROLE.PEIJIAN ? driveFolderId || null : null,
       passwordHash: await bcrypt.hash(password, 10),
     },
   });
@@ -99,6 +101,7 @@ export async function updateUser(
   const newPassword = String(formData.get("password") ?? "").trim();
   const systems = String(formData.get("systems") ?? "fund").trim() || "fund";
   const assignedStores = String(formData.get("assignedStores") ?? "").trim();
+  const driveFolderId = String(formData.get("driveFolderId") ?? "").trim();
 
   const fieldErrors: Record<string, string> = {};
   if (!name) fieldErrors.name = "必填";
@@ -116,6 +119,7 @@ export async function updateUser(
       deptCode: deptCode || null,
       systems,
       assignedStores: role === ROLE.PEIJIAN ? assignedStores : "",
+      driveFolderId: role === ROLE.PEIJIAN ? driveFolderId || null : null,
       ...(newPassword ? { passwordHash: await bcrypt.hash(newPassword, 10) } : {}),
     },
   });

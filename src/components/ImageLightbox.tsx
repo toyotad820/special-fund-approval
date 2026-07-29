@@ -10,6 +10,7 @@ export default function ImageLightbox({
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [canZoom, setCanZoom] = useState(false); // 標記是否已放大過（用於判斷點擊行為）
   // 拖曳狀態（不進 state，避免每次移動重繪整棵樹）
   const drag = useState(() => ({ active: false, moved: false, sx: 0, sy: 0, ox: 0, oy: 0 }))[0];
 
@@ -30,6 +31,7 @@ export default function ImageLightbox({
   const reset = () => {
     setZoom(1);
     setOffset({ x: 0, y: 0 });
+    setCanZoom(false);
   };
   const open = (i: number) => {
     setSelectedIndex(i);
@@ -39,10 +41,15 @@ export default function ImageLightbox({
     setSelectedIndex(null);
     reset();
   };
-  const setZoomClamped = (z: number) => {
-    const nz = Math.min(1.25, Math.max(1, +z.toFixed(2)));
-    setZoom(nz);
-    if (nz === 1) setOffset({ x: 0, y: 0 });
+  const toggleZoom = () => {
+    if (!canZoom) {
+      // 第一次點擊：放大到 1.25
+      setZoom(1.25);
+      setCanZoom(true);
+    } else {
+      // 第二次點擊：關閉
+      close();
+    }
   };
 
   // 通用拖曳（滑鼠與觸控共用）— 允許任何狀態開始拖，檢測拖動後才更新位移
@@ -69,7 +76,7 @@ export default function ImageLightbox({
   };
   const onClick = () => {
     if (drag.moved) return; // 拖曳結束不觸發縮放切換
-    setZoomClamped(zoom > 1 ? 1 : 1.25);
+    toggleZoom();
   };
 
   const onMouseDown = (e: React.MouseEvent) => startDrag(e.clientX, e.clientY);
@@ -104,11 +111,11 @@ export default function ImageLightbox({
 
       {selected && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-2 sm:p-3"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-1 sm:p-2"
           onClick={close}
         >
           <div
-            className="relative w-full max-w-[97vw] max-h-[97vh] flex flex-col"
+            className="relative w-[98vw] h-[98vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="overflow-hidden mx-auto flex-1 min-h-0 flex items-center justify-center rounded-lg">

@@ -439,6 +439,11 @@ export async function confirmAccessory(formData: FormData): Promise<void> {
   if (!r) throw new Error("案件不存在");
   if (!canConfirmAccessory(user, r)) throw new Error("您沒有權限確認此案件");
 
+  // 檢查用戶是否設定了 Google Drive 資料夾 ID
+  if (!user.driveFolderId) {
+    console.warn(`[drive] 用戶 ${user.name} 未設定 driveFolderId，跳過上傳`);
+  }
+
   await prisma.accessoryRequest.update({
     where: { id },
     data: {
@@ -454,10 +459,10 @@ export async function confirmAccessory(formData: FormData): Promise<void> {
     },
   });
 
-  // 歸檔至 Google Drive — 按月份分資料夾。失敗不阻斷結案。
-  if (isDriveEnabled()) {
+  // 歸檔至 Google Drive — 用戶指定資料夾，按月份分資料夾。失敗不阻斷結案。
+  if (isDriveEnabled() && user.driveFolderId) {
     try {
-      const monthFolderId = await getOrCreateMonthFolder(r.month);
+      const monthFolderId = await getOrCreateMonthFolder(r.month, user.driveFolderId);
       for (const img of r.images) {
         // 只上傳尚未歸檔的圖片（無 driveFileId）
         if (!img.driveFileId) {

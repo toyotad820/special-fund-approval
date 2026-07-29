@@ -22,6 +22,7 @@ model User {
   deptCode     String? // 課別（部主管/staff 可為空）
   systems      String   @default("fund") // 可用系統，逗號分隔（見 src/lib/constants.ts 的 SYSTEM）
   assignedStores String @default("") // 配件中心負責所別，逗號分隔；空=全部
+  driveFolderId  String? // Google Drive 資料夾 ID（配件中心人員用，用於自動歸檔確認後的圖片）
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
 

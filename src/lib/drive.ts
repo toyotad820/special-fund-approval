@@ -38,8 +38,8 @@ function getDriveClient() {
 }
 
 // 取得或建立月份資料夾（YYYY-MM 格式），回傳資料夾 ID
-export async function getOrCreateMonthFolder(month: string): Promise<string> {
-  const parentId = process.env.DRIVE_ACCESSORY_FOLDER_ID;
+export async function getOrCreateMonthFolder(month: string, parentFolderId?: string): Promise<string> {
+  const parentId = parentFolderId || process.env.DRIVE_ACCESSORY_FOLDER_ID;
   if (!parentId) throw new Error("未設定 DRIVE_ACCESSORY_FOLDER_ID");
 
   const drive = getDriveClient();
