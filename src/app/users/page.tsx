@@ -30,6 +30,7 @@ export default async function UsersPage({
 
   return (
     <div className="space-y-6">
+      <h2 className="text-sm font-semibold text-slate-700">人員清單</h2>
       {err && ERR_MSG[err] && (
         <p className="text-sm text-rose-600 bg-rose-50 border border-rose-200 rounded-lg px-4 py-3">
           {ERR_MSG[err]}
