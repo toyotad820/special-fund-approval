@@ -69,7 +69,6 @@ export default async function AccessoryDetailPage({
 
       <div className="bg-white rounded-2xl border border-slate-200 p-5">
         <div className="flex items-center justify-between gap-2 mb-3">
-          <span className="font-mono font-semibold text-slate-800">{r.dataNo}</span>
           <AccStatusBadge status={r.status} />
         </div>
         <Row label="所別">{r.storeCode}</Row>

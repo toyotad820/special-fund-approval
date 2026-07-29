@@ -40,7 +40,7 @@ export default function ImageLightbox({
     reset();
   };
   const setZoomClamped = (z: number) => {
-    const nz = Math.min(4, Math.max(1, +z.toFixed(2)));
+    const nz = Math.min(1.25, Math.max(1, +z.toFixed(2)));
     setZoom(nz);
     if (nz === 1) setOffset({ x: 0, y: 0 });
   };
@@ -132,26 +132,7 @@ export default function ImageLightbox({
                 }`}
               />
             </div>
-            <div className="flex items-center justify-center gap-2 mt-2">
-              <button
-                onClick={() => setZoomClamped(zoom - 0.25)}
-                className="w-8 h-8 grid place-items-center rounded-lg bg-white/10 hover:bg-white/20 text-white text-lg"
-                aria-label="縮小"
-              >
-                −
-              </button>
-              <span className="text-white text-xs w-12 text-center">
-                {Math.round(zoom * 100)}%
-              </span>
-              <button
-                onClick={() => setZoomClamped(zoom + 0.25)}
-                className="w-8 h-8 grid place-items-center rounded-lg bg-white/10 hover:bg-white/20 text-white text-lg"
-                aria-label="放大"
-              >
-                ＋
-              </button>
-            </div>
-            <div className="flex items-center justify-between gap-3 mt-3">
+            <div className="flex items-center justify-between gap-3 mt-2">
               <button
                 onClick={() => open(selectedIndex! > 0 ? selectedIndex! - 1 : images.length - 1)}
                 className="px-3 py-1 rounded-lg bg-white/10 hover:bg-white/20 text-white text-sm"
