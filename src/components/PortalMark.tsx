@@ -8,7 +8,7 @@ export default function PortalMark({
   size?: "sm" | "md" | "lg";
   showTitle?: boolean;
 }) {
-  const logoHeight = size === "sm" ? 24 : size === "lg" ? 72 : 36;
+  const logoHeight = size === "sm" ? 30 : size === "lg" ? 72 : 44;
   const titleSize = size === "sm" ? "text-sm" : size === "lg" ? "text-xl" : "text-lg";
 
   return (
