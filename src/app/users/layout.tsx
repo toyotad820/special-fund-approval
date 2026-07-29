@@ -15,7 +15,7 @@ export default async function UsersLayout({
 
   const items: NavItem[] = [
     { href: "/portal", label: "系統選單" },
-    { href: "/users", label: "後臺管理" },
+    { href: "/users", label: "系統管理" },
   ];
 
   return (
@@ -25,13 +25,13 @@ export default async function UsersLayout({
         roleLabel={ROLE_LABEL[user.role]}
         items={items}
         homeHref="/users"
-        title="後臺管理"
-        iconSrc="/後臺管理.png"
+        title="系統管理"
+        iconSrc="/icon-system-admin.png"
         showVersion={false}
       />
       <main className="flex-1 w-full mx-auto p-4 sm:p-6">
         <div className="max-w-5xl mx-auto space-y-4">
-          <h1 className="text-lg font-bold text-slate-800">後臺管理</h1>
+          <h1 className="text-lg font-bold text-slate-800">系統管理</h1>
           <nav className="flex gap-1 flex-wrap border-b border-slate-200">
             <Link
               href="/users"

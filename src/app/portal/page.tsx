@@ -87,13 +87,13 @@ export default async function PortalPage() {
                 <div className="relative">
                   {/* eslint-disable-next-line @next/next/no-img-element -- 固定小尺寸 icon，不需要 next/image 最佳化 */}
                   <img
-                    src="/icon-user-management.png"
-                    alt="人員管理"
+                    src="/icon-system-admin.png"
+                    alt="系統管理"
                     className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl shadow-sm transition-transform group-hover:scale-[1.04]"
                   />
                 </div>
                 <span className="mt-2 text-xs sm:text-sm text-slate-700 text-center leading-tight">
-                  人員管理
+                  系統管理
                 </span>
               </Link>
             )}
