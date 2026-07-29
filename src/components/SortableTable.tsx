@@ -11,6 +11,7 @@ export type SortCol = {
   align?: "left" | "right" | "center";
   grow?: boolean; // 佔滿剩餘寬度（如更換說明）
   mono?: boolean;
+  width?: string; // 限寬（如 "6rem"），超過以 truncate 省略
 };
 
 export type SortRow = Record<string, string | number | null> & { href?: string };
