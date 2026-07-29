@@ -45,9 +45,8 @@ export default function ImageLightbox({
     if (nz === 1) setOffset({ x: 0, y: 0 });
   };
 
-  // 通用拖曳（滑鼠與觸控共用）
+  // 通用拖曳（滑鼠與觸控共用）— 允許任何狀態開始拖，檢測拖動後才更新位移
   const startDrag = (x: number, y: number) => {
-    if (zoom === 1) return;
     drag.active = true;
     drag.moved = false;
     drag.sx = x;
@@ -59,8 +58,11 @@ export default function ImageLightbox({
     if (!drag.active) return;
     const dx = x - drag.sx;
     const dy = y - drag.sy;
-    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) drag.moved = true;
-    setOffset({ x: drag.ox + dx, y: drag.oy + dy });
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+      drag.moved = true;
+      // 只在放大時才更新位移
+      if (zoom > 1) setOffset({ x: drag.ox + dx, y: drag.oy + dy });
+    }
   };
   const endDrag = () => {
     drag.active = false;

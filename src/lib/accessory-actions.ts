@@ -15,7 +15,7 @@ import { ACC_STATUS, ACTION_LABEL } from "./constants";
 import { ocrExtractFields, type OcrResult } from "./ocr";
 import { checkAccessoryBlocks } from "./accessory-validate";
 import { stampImage } from "./accessory-stamp";
-import { uploadToDrive, isDriveEnabled } from "./drive";
+import { uploadToDrive, isDriveEnabled, getOrCreateMonthFolder } from "./drive";
 
 export type AccActionState = {
   error?: string;
@@ -432,7 +432,10 @@ export async function confirmAccessory(formData: FormData): Promise<void> {
   const remark = String(formData.get("remark") ?? "").trim();
   if (!id) throw new Error("缺少案件 ID");
 
-  const r = await prisma.accessoryRequest.findUnique({ where: { id } });
+  const r = await prisma.accessoryRequest.findUnique({
+    where: { id },
+    include: { images: { orderBy: { sortOrder: "asc" } } },
+  });
   if (!r) throw new Error("案件不存在");
   if (!canConfirmAccessory(user, r)) throw new Error("您沒有權限確認此案件");
 
@@ -450,6 +453,36 @@ export async function confirmAccessory(formData: FormData): Promise<void> {
       },
     },
   });
+
+  // 歸檔至 Google Drive — 按月份分資料夾。失敗不阻斷結案。
+  if (isDriveEnabled()) {
+    try {
+      const monthFolderId = await getOrCreateMonthFolder(r.month);
+      for (const img of r.images) {
+        // 只上傳尚未歸檔的圖片（無 driveFileId）
+        if (!img.driveFileId) {
+          const base64 = img.stampedData || img.imageData;
+          if (!base64) continue;
+          try {
+            const fileId = await uploadToDrive(
+              `${r.dataNo}${r.images.length > 1 ? `_${img.sortOrder + 1}` : ""}.jpg`,
+              img.mimeType,
+              Buffer.from(base64, "base64"),
+              monthFolderId
+            );
+            await prisma.accessoryImage.update({
+              where: { id: img.id },
+              data: { driveFileId: fileId },
+            });
+          } catch (e) {
+            console.error(`[drive] 上傳失敗 ${r.dataNo}:`, e instanceof Error ? e.message : e);
+          }
+        }
+      }
+    } catch (e) {
+      console.error("[drive] 月份資料夾建立失敗:", e instanceof Error ? e.message : e);
+    }
+  }
 
   // 結案後清空已歸檔 Drive 的 base64（省 DB 空間；未歸檔者保留）
   await prisma.accessoryImage.updateMany({
