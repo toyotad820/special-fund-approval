@@ -73,9 +73,12 @@ export default function ImageLightbox({
   };
   const endDrag = () => {
     drag.active = false;
+    // 不在此重置 drag.moved，讓 onClick 判斷
   };
   const onClick = () => {
-    if (drag.moved) return; // 拖曳結束不觸發縮放切換
+    const moved = drag.moved;
+    drag.moved = false; // 重置以供下次點擊使用
+    if (moved) return; // 拖曳結束不觸發縮放切換
     toggleZoom();
   };
 

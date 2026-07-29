@@ -13,7 +13,6 @@ type Initial = {
   deptCode?: string | null;
   systems?: string;
   assignedStores?: string;
-  driveFolderId?: string;
   active?: boolean;
 };
 
@@ -161,54 +160,36 @@ export default function UserForm({
       </fieldset>
 
       {role === "PEIJIAN" && (
-        <>
-          <fieldset className="space-y-2">
-            <legend className="text-sm font-medium text-slate-600">
-              負責所別（配件中心）
-            </legend>
-            <p className="text-xs text-slate-400">
-              不勾選＝負責全部所別；勾選後只看到/確認所選所別的案件。
-            </p>
-            <div className="flex flex-wrap gap-x-4 gap-y-2">
-              {storeList.map((sc) => (
-                <label
-                  key={sc}
-                  className="flex items-center gap-1.5 text-sm text-slate-600"
-                >
-                  <input
-                    type="checkbox"
-                    checked={assignedStores.includes(sc)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        setAssignedStores([...assignedStores, sc]);
-                      } else {
-                        setAssignedStores(assignedStores.filter((s) => s !== sc));
-                      }
-                    }}
-                    className="rounded"
-                  />
-                  {sc}
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-600 mb-1">
-              Google Drive 資料夾 ID（自動歸檔確認後的圖片）
-            </label>
-            <input
-              name="driveFolderId"
-              defaultValue={initial?.driveFolderId ?? ""}
-              placeholder="如 1a2b3c4d5e6f7g"
-              className={cls}
-            />
-            <p className="text-xs text-slate-400 mt-1">
-              留空時不上傳。填入 Google Drive 資料夾 ID，配件中心確認時圖片將自動按月份上傳至此資料夾。
-            </p>
-            {err("driveFolderId")}
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-medium text-slate-600">
+            負責所別（配件中心）
+          </legend>
+          <p className="text-xs text-slate-400">
+            不勾選＝負責全部所別；勾選後只看到/確認所選所別的案件。
+          </p>
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
+            {storeList.map((sc) => (
+              <label
+                key={sc}
+                className="flex items-center gap-1.5 text-sm text-slate-600"
+              >
+                <input
+                  type="checkbox"
+                  checked={assignedStores.includes(sc)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      setAssignedStores([...assignedStores, sc]);
+                    } else {
+                      setAssignedStores(assignedStores.filter((s) => s !== sc));
+                    }
+                  }}
+                  className="rounded"
+                />
+                {sc}
+              </label>
+            ))}
           </div>
-        </>
+        </fieldset>
       )}
 
       <button
