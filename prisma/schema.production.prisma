@@ -146,6 +146,7 @@ model AccessoryRequest {
   accessoryNameQty String // 配件名稱／數量（OPT 工單「名稱/數量」欄，辨識填入一大格，自由文字）
 
   // 人工填寫欄位
+  deptCode          String? // 課別（課長自動帶出，所長可選。對應送單人的課別；課長為實際課別，所長為空視為「所層級」）
   accessoryBefore   String // 變更前配件
   accessoryAfter    String // 變更後配件
   changeDescription String // 更換說明
