@@ -6,9 +6,10 @@ import { ROLE, ACC_STATUS } from "@/lib/constants";
 import SortableTable, { type SortCol, type SortRow } from "@/components/SortableTable";
 
 const COLUMNS: SortCol[] = [
+  { key: "status", label: "狀態", kind: "status" },
   { key: "storeCode", label: "所別" },
   { key: "salesName", label: "業務姓名" },
-  { key: "customerName", label: "客戶名稱", width: "6rem" },
+  { key: "customerName", label: "客戶", kind: "link", width: "6rem" },
   { key: "carModel", label: "車名" },
   { key: "changeDescription", label: "更換說明", grow: true },
   { key: "submittedAt", label: "核准時間", kind: "date" },
@@ -49,6 +50,7 @@ export default async function AccessoryConfirmPage() {
           (r): SortRow => ({
             href: `/accessory/confirm/${r.id}`,
             dataNo: r.dataNo,
+            status: r.status,
             storeCode: r.storeCode,
             salesName: r.salesName,
             customerName: r.customerName,
