@@ -103,11 +103,21 @@ export default async function CaseDetailPage({
         <Row label="特案類別">{c.category?.name ?? "（尚未選擇）"}</Row>
         <Row label="類別編號">{c.categoryNo}</Row>
         <Row label="車名">{c.carModel}</Row>
-        {amounts.map(([label, val]) => (
-          <Row key={label} label={label}>
-            {money(val)}
-          </Row>
-        ))}
+
+        {/* 四項金額框 */}
+        <div className="border-2 border-slate-300 rounded-lg p-3 my-2">
+          {amounts.slice(0, 4).map(([label, val]) => (
+            <Row key={label} label={label}>
+              {money(val)}
+            </Row>
+          ))}
+        </div>
+
+        {/* 特案支援金額（藍色） */}
+        <Row label={amounts[4][0]}>
+          <span className="text-blue-600 font-medium">{money(amounts[4][1])}</span>
+        </Row>
+
         <Row label="送單人">{c.submittedBy.name}</Row>
         <Row label="送出時間">{dt(c.submittedAt)}</Row>
         <div className="pt-3">

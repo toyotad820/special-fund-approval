@@ -64,6 +64,7 @@ const TEXT_FIELDS = [
   "salesName",
   "customerName",
   "carModel",
+  "deptCode",
   "accessoryBefore",
   "accessoryAfter",
   "changeDescription",
@@ -118,6 +119,7 @@ export async function createAccessoryRequest(
           salesName: values.salesName.trim(),
           customerName: values.customerName.trim(),
           carModel: values.carModel.trim(),
+          deptCode: values.deptCode.trim() || null,
           accessoryNameQty: "",
           accessoryBefore: values.accessoryBefore.trim(),
           accessoryAfter: values.accessoryAfter.trim(),
@@ -148,8 +150,8 @@ export async function createAccessoryRequest(
 
   // ---- 正式送出：最小必填驗證 ----
   const fieldErrors: Record<string, string> = {};
-  // 只要求資料編號（允許其他欄位手動填寫或留空用於測試）
   if (!dataNo) fieldErrors.dataNo = "必填";
+  if (!values.deptCode.trim()) fieldErrors.deptCode = "必填";
   if (Object.keys(fieldErrors).length > 0) return { fieldErrors, values };
 
   // ---- 警示規則（命中只標紅字警告，仍可送出）----
@@ -173,6 +175,7 @@ export async function createAccessoryRequest(
         salesName: values.salesName.trim(),
         customerName: values.customerName.trim(),
         carModel: values.carModel.trim(),
+        deptCode: values.deptCode.trim() || null,
         accessoryNameQty: "",
         accessoryBefore: values.accessoryBefore.trim(),
         accessoryAfter: values.accessoryAfter.trim(),
@@ -221,11 +224,12 @@ export async function editAccessoryRequest(
   const values = extractValues(formData);
   const images = parseImages(formData);
   const dataNo = values.dataNo.trim().toUpperCase();
-
-  if (!dataNo)
-    return { fieldErrors: { dataNo: "資料編號必填" }, values };
-
   const isSubmit = intent === "submit";
+
+  const fieldErrors: Record<string, string> = {};
+  if (!dataNo) fieldErrors.dataNo = "資料編號必填";
+  if (isSubmit && !values.deptCode.trim()) fieldErrors.deptCode = "必填";
+  if (Object.keys(fieldErrors).length > 0) return { fieldErrors, values };
 
   try {
     await prisma.$transaction([
@@ -238,6 +242,7 @@ export async function editAccessoryRequest(
           salesName: values.salesName.trim(),
           customerName: values.customerName.trim(),
           carModel: values.carModel.trim(),
+          deptCode: values.deptCode.trim() || null,
           accessoryBefore: values.accessoryBefore.trim(),
           accessoryAfter: values.accessoryAfter.trim(),
           changeDescription: values.changeDescription.trim(),

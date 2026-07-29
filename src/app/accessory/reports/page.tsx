@@ -106,13 +106,20 @@ export default async function AccessoryReportsPage({
           </button>
         </form>
       </div>
-      <p className="text-xs text-slate-400">
-        需要下載明細？前往「
-        <Link href="/accessory/reports/export" className="text-blue-600 hover:underline">
-          申請明細下載
+      <div className="flex items-center gap-2">
+        <Link
+          href={`/accessory/reports?level=${level}&month=${month}`}
+          className="rounded-lg bg-slate-700 text-white px-4 py-2 text-sm font-medium hover:bg-slate-800"
+        >
+          總覽
         </Link>
-        」頁，可選月份區間與所別。
-      </p>
+        <Link
+          href="/accessory/reports/export"
+          className="rounded-lg border border-slate-300 text-slate-600 px-4 py-2 text-sm hover:bg-slate-50"
+        >
+          明細下載
+        </Link>
+      </div>
 
       <div className="grid sm:grid-cols-2 gap-3">
         <div className="bg-white rounded-xl border border-slate-200 p-4">

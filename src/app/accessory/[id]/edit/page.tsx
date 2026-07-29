@@ -20,6 +20,19 @@ export default async function EditAccessoryPage({
 
   if (!r || !canResubmitAccessory(user, r)) notFound();
 
+  const isKezhang = user.role === "KEZHANG";
+  const deptOptions = !isKezhang
+    ? (
+        await prisma.unitTarget.findMany({
+          where: { deptCode: { not: "0" } },
+          select: { deptCode: true },
+          distinct: ["deptCode"],
+        })
+      )
+        .map((t) => ({ code: t.deptCode, label: `${t.deptCode}課` }))
+        .sort((a, b) => a.code.localeCompare(b.code))
+    : [];
+
   const initial: AccessoryInitial = {
     id: r.id,
     fields: {
@@ -28,6 +41,7 @@ export default async function EditAccessoryPage({
       salesName: r.salesName,
       customerName: r.customerName,
       carModel: r.carModel,
+      deptCode: r.deptCode || "",
       accessoryBefore: r.accessoryBefore,
       accessoryAfter: r.accessoryAfter,
       changeDescription: r.changeDescription,
@@ -40,6 +54,9 @@ export default async function EditAccessoryPage({
         ocrRaw: img.ocrRaw ?? undefined,
         name: `工單圖片 ${i + 1}`,
       })),
+    userRole: user.role,
+    userDeptCode: user.deptCode,
+    deptOptions,
   };
 
   return (

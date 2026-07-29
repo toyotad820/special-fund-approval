@@ -18,6 +18,7 @@ const EMPTY_FIELDS = {
   salesName: "",
   customerName: "",
   carModel: "",
+  deptCode: "",
   accessoryBefore: "",
   accessoryAfter: "",
   changeDescription: "",
@@ -28,6 +29,9 @@ export type AccessoryInitial = {
   id: string;
   fields: Fields;
   images: ImageItem[];
+  userRole?: string;
+  userDeptCode?: string | null;
+  deptOptions?: { code: string; label: string }[];
 };
 
 // 前端壓縮：長邊縮到 1600px、輸出 JPEG，降低體積與 OCR 成本，並避開 server action body 上限
@@ -69,6 +73,12 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
   );
   const formRef = useRef<HTMLFormElement>(null);
   const intentRef = useRef<HTMLInputElement>(null);
+
+  const userRole = initial?.userRole;
+  const userDeptCode = initial?.userDeptCode;
+  const deptOptions = initial?.deptOptions ?? [];
+  const isKezhang = userRole === "KEZHANG";
+  const isDeptCodeReadonly = isKezhang && userDeptCode;
 
   const [images, setImages] = useState<ImageItem[]>(initial?.images ?? []);
   const [fields, setFields] = useState<Fields>(initial?.fields ?? EMPTY_FIELDS);
@@ -278,6 +288,30 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
             onChange={(e) => set("storeCode", e.target.value.toUpperCase())}
             className={inputCls}
           />
+        </Field>
+        <Field label="課別" required={!isKezhang} error={err("deptCode")}>
+          {isDeptCodeReadonly ? (
+            <input
+              type="text"
+              value={fields.deptCode}
+              disabled
+              className={`${inputCls} bg-slate-100 cursor-not-allowed`}
+            />
+          ) : (
+            <select
+              name="deptCode"
+              value={fields.deptCode}
+              onChange={(e) => set("deptCode", e.target.value)}
+              className={inputCls}
+            >
+              <option value="">-- 選擇課別 --</option>
+              {deptOptions.map((opt) => (
+                <option key={opt.code} value={opt.code}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          )}
         </Field>
         <Field label="業務姓名" required error={err("salesName")}>
           <input
