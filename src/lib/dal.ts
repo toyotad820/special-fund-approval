@@ -188,8 +188,9 @@ export function canResubmitAccessory(user: User, r: AccLike): boolean {
   );
 }
 
-// 送單人能否刪除（自己的草稿、已退件或已撤回）
+// 送單人能否刪除（自己的草稿、已退件或已撤回）；Staff 例外可刪任何狀態的案件（後台清資料用）
 export function canDeleteAccessory(user: User, r: AccLike): boolean {
+  if (user.role === ROLE.STAFF) return true;
   return (
     r.submittedById === user.id &&
     (r.status === ACC_STATUS.DRAFT ||
