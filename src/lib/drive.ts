@@ -1,6 +1,7 @@
 import "server-only";
 import { google } from "googleapis";
 import { JWT } from "google-auth-library";
+import { Readable } from "stream";
 
 // ============================================================
 // Google Drive 歸檔（Service Account — 永不過期）
@@ -100,7 +101,7 @@ export async function uploadToDrive(
     },
     media: {
       mimeType,
-      body: data,
+      body: Readable.from(data),
     },
     fields: "id",
     supportsAllDrives: true,
