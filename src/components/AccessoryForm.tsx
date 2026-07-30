@@ -195,7 +195,17 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
 
   const inputCls =
     "w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500";
-  const err = (k: string) => state.fieldErrors?.[k];
+  // 欄位值已被使用者改過（不等於觸發此錯誤當下送出的值）就不再顯示舊錯誤，
+  // 否則例如資料編號重複警告，換成新編號後仍會殘留舊訊息
+  const err = (k: string) => {
+    const message = state.fieldErrors?.[k];
+    if (!message) return undefined;
+    const fieldsAsRecord = fields as Record<string, string>;
+    if (state.values && k in fieldsAsRecord && state.values[k] !== fieldsAsRecord[k]) {
+      return undefined;
+    }
+    return message;
+  };
 
   return (
     <form ref={formRef} action={formAction} className="space-y-5">
