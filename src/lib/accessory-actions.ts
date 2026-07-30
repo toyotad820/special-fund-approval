@@ -15,7 +15,7 @@ import { ACC_STATUS, ACTION_LABEL } from "./constants";
 import { ocrExtractFields, type OcrResult } from "./ocr";
 import { checkAccessoryBlocks } from "./accessory-validate";
 import { stampImage } from "./accessory-stamp";
-import { uploadToDrive, isDriveEnabled, getOrCreateMonthFolder } from "./drive";
+import { uploadToDrive, isDriveEnabled, getOrCreateMonthFolder } from "./dropbox";
 
 export type AccActionState = {
   error?: string;
@@ -437,14 +437,7 @@ export async function confirmAccessory(formData: FormData): Promise<void> {
     },
   });
 
-  // 歸檔至 Google Drive — 用戶帳號為資料夾名稱，按月份分資料夾。失敗不阻斷結案。
-  console.log("[confirm] isDriveEnabled:", isDriveEnabled());
-  console.log("[confirm] ENV check:", {
-    CLIENT_ID: !!process.env.GOOGLE_OAUTH_CLIENT_ID,
-    CLIENT_SECRET: !!process.env.GOOGLE_OAUTH_CLIENT_SECRET,
-    REFRESH_TOKEN: !!process.env.GOOGLE_OAUTH_REFRESH_TOKEN,
-    FOLDER_ID: !!process.env.DRIVE_ACCESSORY_FOLDER_ID,
-  });
+  // 歸檔至 Dropbox — 用戶帳號為資料夾名稱，按月份分資料夾。失敗不阻斷結案。
   if (isDriveEnabled()) {
     try {
       // 先取得或建立用戶帳號資料夾，再建月份子資料夾
