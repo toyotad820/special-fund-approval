@@ -367,24 +367,26 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
             className={inputCls}
           />
         </Field>
-        <Field label="變更前配件" error={err("accessoryBefore")}>
-          <textarea
-            name="accessoryBefore"
-            rows={2}
-            value={fields.accessoryBefore}
-            onChange={(e) => set("accessoryBefore", e.target.value)}
-            className={inputCls}
-          />
-        </Field>
-        <Field label="變更後配件" error={err("accessoryAfter")}>
-          <textarea
-            name="accessoryAfter"
-            rows={2}
-            value={fields.accessoryAfter}
-            onChange={(e) => set("accessoryAfter", e.target.value)}
-            className={inputCls}
-          />
-        </Field>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="變更前配件" error={err("accessoryBefore")}>
+            <textarea
+              name="accessoryBefore"
+              rows={2}
+              value={fields.accessoryBefore}
+              onChange={(e) => set("accessoryBefore", e.target.value)}
+              className={inputCls}
+            />
+          </Field>
+          <Field label="變更後配件" error={err("accessoryAfter")}>
+            <textarea
+              name="accessoryAfter"
+              rows={2}
+              value={fields.accessoryAfter}
+              onChange={(e) => set("accessoryAfter", e.target.value)}
+              className={inputCls}
+            />
+          </Field>
+        </div>
         <Field label="更換說明" required error={err("changeDescription")}>
           <textarea
             name="changeDescription"
