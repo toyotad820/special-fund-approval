@@ -31,9 +31,15 @@ function centeredPathData(
 }
 
 // 蓋章參數
-const STAMP_CONFIG = {
+const STAMP_CONFIG: {
+  diameter: number;
+  position: "center" | { right: number; bottom: number };
+  circleBorder: number;
+  textColor: string;
+  bgColor: string;
+} = {
   diameter: 152, // 約 4cm（96 DPI 下）
-  position: { right: 40, bottom: 40 }, // 右下角內縮
+  position: "center", // 中間
   circleBorder: 3,
   textColor: "#dc2626", // 紅色
   bgColor: "#fef2f2", // 淡紅色背景
@@ -81,10 +87,16 @@ export async function stampImage(
 
     const stampBuffer = await generateStampImage(approverName, date);
 
-    const stampPos = {
-      left: metadata.width - STAMP_CONFIG.diameter - STAMP_CONFIG.position.right,
-      top: metadata.height - STAMP_CONFIG.diameter - STAMP_CONFIG.position.bottom,
-    };
+    const stampPos =
+      STAMP_CONFIG.position === "center"
+        ? {
+            left: (metadata.width - STAMP_CONFIG.diameter) / 2,
+            top: (metadata.height - STAMP_CONFIG.diameter) / 2,
+          }
+        : {
+            left: metadata.width - STAMP_CONFIG.diameter - STAMP_CONFIG.position.right,
+            top: metadata.height - STAMP_CONFIG.diameter - STAMP_CONFIG.position.bottom,
+          };
 
     const stampedBuffer = await image
       .composite([{ input: stampBuffer, left: stampPos.left, top: stampPos.top }])

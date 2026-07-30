@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { ROLE, ACC_STATUS } from "@/lib/constants";
@@ -17,6 +18,11 @@ const COLUMNS: SortCol[] = [
 
 export default async function AccessoryHome() {
   const user = await requireUser();
+
+  // 根據角色導向
+  if (user.role === ROLE.BUZHUGUAN) redirect("/accessory/review");
+  if (user.role === ROLE.PEIJIAN) redirect("/accessory/confirm");
+  if (user.role === ROLE.SUOZHANG || user.role === ROLE.KEZHANG) redirect("/accessory/new");
 
   // 可見範圍：本人一律可見；申請方另可見本所非草稿；部長/配件中心/Staff 可見全部非草稿
   let where: Prisma.AccessoryRequestWhereInput;
