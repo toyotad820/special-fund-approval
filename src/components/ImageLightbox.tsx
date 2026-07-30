@@ -11,8 +11,21 @@ export default function ImageLightbox({
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [canZoom, setCanZoom] = useState(false); // 標記是否已放大過（用於判斷點擊行為）
+  const [isDesktop, setIsDesktop] = useState(false);
   // 拖曳狀態（不進 state，避免每次移動重繪整棵樹）
   const drag = useState(() => ({ active: false, moved: false, touch: false, sx: 0, sy: 0, ox: 0, oy: 0 }))[0];
+
+  // 電腦版預設放大倍率（直式工單在寬螢幕兩側留白、顯得太小），配合拖曳看全圖
+  const DESKTOP_ZOOM = 1.5;
+
+  // 判斷是否電腦版（≥768px）
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const update = () => setIsDesktop(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
 
   // ESC 關閉放大檢視
   useEffect(() => {
@@ -36,6 +49,11 @@ export default function ImageLightbox({
   const open = (i: number) => {
     setSelectedIndex(i);
     reset();
+    // 電腦版開圖即放大
+    if (isDesktop) {
+      setZoom(DESKTOP_ZOOM);
+      setCanZoom(true);
+    }
   };
   const close = () => {
     setSelectedIndex(null);
