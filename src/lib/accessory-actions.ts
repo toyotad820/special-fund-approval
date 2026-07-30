@@ -370,25 +370,8 @@ export async function approveAccessory(formData: FormData): Promise<void> {
     },
   });
 
-  // 歸檔至 Google Drive（第一張用蓋章圖，其餘用原圖）。失敗不阻斷核准。
-  if (isDriveEnabled()) {
-    for (let i = 0; i < r.images.length; i++) {
-      const img = r.images[i];
-      const base64 = i === 0 && stampedData ? stampedData : img.imageData;
-      if (!base64) continue;
-      const fileName =
-        r.images.length > 1 ? `${r.dataNo}_${i + 1}.jpg` : `${r.dataNo}.jpg`;
-      try {
-        const fileId = await uploadToDrive(fileName, img.mimeType, Buffer.from(base64, "base64"));
-        await prisma.accessoryImage.update({
-          where: { id: img.id },
-          data: { driveFileId: fileId },
-        });
-      } catch (e) {
-        console.error(`[drive] 上傳失敗 ${fileName}:`, e instanceof Error ? e.message : e);
-      }
-    }
-  }
+  // 注意：Drive 歸檔統一在「確認結案」時執行（帳號/月份資料夾結構），
+  // 核准階段只蓋章存 DB，不上傳，以免提前設 driveFileId 導致確認時跳過上傳。
 
   redirect("/accessory/review");
 }
