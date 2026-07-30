@@ -90,8 +90,8 @@ export async function stampImage(
     const stampPos =
       STAMP_CONFIG.position === "center"
         ? {
-            left: (metadata.width - STAMP_CONFIG.diameter) / 2,
-            top: (metadata.height - STAMP_CONFIG.diameter) / 2,
+            left: Math.round((metadata.width - STAMP_CONFIG.diameter) / 2),
+            top: Math.round((metadata.height - STAMP_CONFIG.diameter) / 2),
           }
         : {
             left: metadata.width - STAMP_CONFIG.diameter - STAMP_CONFIG.position.right,
