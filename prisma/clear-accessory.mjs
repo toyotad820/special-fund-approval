@@ -3,8 +3,39 @@
 //   本機 SQLite：  node prisma/clear-accessory.mjs
 //   正式 Postgres：DATABASE_URL="<prod-url>" node prisma/clear-accessory.mjs
 import pkg from "@prisma/client";
+import fs from "fs";
 
 const { PrismaClient } = pkg;
+
+// 若目前 DATABASE_URL 不是 postgres，嘗試從 .env.vercel / .env.production 讀取，
+// 免去手動貼上連線字串（也避免密碼被截圖）。
+function loadPgUrl() {
+  // 檔案優先：避免 shell 殘留的 $env:DATABASE_URL 干擾（PowerShell 同 session 會保留）
+  for (const f of [".env.vercel", ".env.production"]) {
+    if (!fs.existsSync(f)) continue;
+    const line = fs
+      .readFileSync(f, "utf8")
+      .split(/\r?\n/)
+      .find((l) => l.startsWith("DATABASE_URL="));
+    if (line) {
+      const val = line.slice("DATABASE_URL=".length).trim().replace(/^["']|["']$/g, "");
+      if (val.startsWith("postgres")) {
+        process.env.DATABASE_URL = val;
+        console.log(`已從 ${f} 載入正式 DATABASE_URL。`);
+        return;
+      }
+    }
+  }
+}
+loadPgUrl();
+
+if (!(process.env.DATABASE_URL || "").startsWith("postgres")) {
+  console.error(
+    "找不到 postgres DATABASE_URL。請先執行：npx vercel env pull --environment=production .env.vercel"
+  );
+  process.exit(1);
+}
+
 const prisma = new PrismaClient();
 
 async function main() {

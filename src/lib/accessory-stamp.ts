@@ -1,44 +1,33 @@
 import "server-only";
 import sharp from "sharp";
-import fs from "fs";
-import os from "os";
-import path from "path";
+import opentype from "opentype.js";
+import { STAMP_FONT_B64 } from "./stamp-font";
 
-// Vercel serverless 無內建 CJK 字型，librsvg 渲染 <text> 會空白（只剩圓圈）。
-// 於執行期產生一份 fontconfig 設定指向 repo 內的 Noto Sans TC，並以 FONTCONFIG_FILE 注入。
-// 必須在第一次呼叫 sharp/librsvg 前設定，故放在 module 載入時執行。
-const FONT_FAMILY = "Noto Sans TC";
-let fontReady = false;
-function ensureFontconfig() {
-  if (fontReady) return;
-  try {
-    const fontDir = path.join(process.cwd(), "public", "fonts");
-    const cacheDir = path.join(os.tmpdir(), "fontconfig-cache");
-    fs.mkdirSync(cacheDir, { recursive: true });
-    const conf = `<?xml version="1.0"?>
-<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
-<fontconfig>
-  <dir>${fontDir}</dir>
-  <cachedir>${cacheDir}</cachedir>
-</fontconfig>`;
-    const confPath = path.join(os.tmpdir(), "acc-fonts.conf");
-    fs.writeFileSync(confPath, conf);
-    process.env.FONTCONFIG_FILE = confPath;
-  } catch (e) {
-    console.error("[stamp] fontconfig 設定失敗:", e instanceof Error ? e.message : e);
+// Vercel serverless 無內建 CJK 字型，librsvg 渲染 <text> 會空白（只剩圓圈、無文字）。
+// 解法：用 opentype.js 把文字轉成向量 <path>，librsvg 畫 path 完全不需字型系統/fontconfig/Pango。
+// 字型以 base64 內嵌成程式碼模組（stamp-font.ts），保證被打包進 lambda。
+let _font: opentype.Font | null = null;
+function getFont(): opentype.Font {
+  if (!_font) {
+    const buf = Buffer.from(STAMP_FONT_B64, "base64");
+    _font = opentype.parse(
+      buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength)
+    );
   }
-  fontReady = true;
+  return _font;
 }
-ensureFontconfig();
 
-// XML/SVG 文字逸出（審核人姓名可能含特殊字元）
-function esc(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&apos;");
+// 產生一行文字的置中向量路徑 d（以 cx 為水平中心、baselineY 為基線）
+function centeredPathData(
+  text: string,
+  fontSize: number,
+  cx: number,
+  baselineY: number
+): string {
+  const font = getFont();
+  const width = font.getAdvanceWidth(text, fontSize);
+  const x = cx - width / 2;
+  return font.getPath(text, x, baselineY, fontSize).toPathData(2);
 }
 
 // 蓋章參數
@@ -50,30 +39,24 @@ const STAMP_CONFIG = {
   bgColor: "#fef2f2", // 淡紅色背景
 };
 
-// 生成蓋章（紅圈 + 文字）
+// 生成蓋章（紅圈 + 向量文字路徑）
 async function generateStampImage(approverName: string, date: string): Promise<Buffer> {
   const size = STAMP_CONFIG.diameter;
+  const cx = size / 2;
   const textSize = 32;
-  const lineHeight = 44;
 
-  // 建立蓋章 SVG
+  // 三行文字轉向量路徑（基線 Y 沿用原本相對中心的位置）
+  const titlePath = centeredPathData("已審核", textSize, cx, size / 2 - 26);
+  const namePath = centeredPathData(approverName || "", textSize - 6, cx, size / 2 + 10);
+  const datePath = centeredPathData(date || "", textSize - 6, cx, size / 2 + 44);
+
   const svg = `
     <svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">
-      <!-- 背景圓形 -->
-      <circle cx="${size / 2}" cy="${size / 2}" r="${(size - STAMP_CONFIG.circleBorder * 2) / 2}"
+      <circle cx="${cx}" cy="${cx}" r="${(size - STAMP_CONFIG.circleBorder * 2) / 2}"
         fill="${STAMP_CONFIG.bgColor}" stroke="${STAMP_CONFIG.textColor}" stroke-width="${STAMP_CONFIG.circleBorder}"/>
-
-      <!-- 上方文字：已審核 -->
-      <text x="${size / 2}" y="${size / 2 - 26}" font-size="${textSize}" font-weight="bold"
-        text-anchor="middle" fill="${STAMP_CONFIG.textColor}" font-family="${FONT_FAMILY}">已審核</text>
-
-      <!-- 中間文字：審核人名 -->
-      <text x="${size / 2}" y="${size / 2 + 10}" font-size="${textSize - 6}"
-        text-anchor="middle" fill="${STAMP_CONFIG.textColor}" font-family="${FONT_FAMILY}">${esc(approverName)}</text>
-
-      <!-- 下方文字：日期 -->
-      <text x="${size / 2}" y="${size / 2 + 44}" font-size="${textSize - 6}"
-        text-anchor="middle" fill="${STAMP_CONFIG.textColor}" font-family="${FONT_FAMILY}">${esc(date)}</text>
+      <path d="${titlePath}" fill="${STAMP_CONFIG.textColor}"/>
+      <path d="${namePath}" fill="${STAMP_CONFIG.textColor}"/>
+      <path d="${datePath}" fill="${STAMP_CONFIG.textColor}"/>
     </svg>
   `;
 
@@ -88,7 +71,6 @@ export async function stampImage(
   date: string
 ): Promise<string> {
   try {
-    // 解碼圖片
     const imageBuffer = Buffer.from(imageBase64, "base64");
     const image = sharp(imageBuffer);
     const metadata = await image.metadata();
@@ -97,21 +79,17 @@ export async function stampImage(
       throw new Error("無法取得圖片尺寸");
     }
 
-    // 生成蓋章
     const stampBuffer = await generateStampImage(approverName, date);
 
-    // 計算蓋章位置（右下角）
     const stampPos = {
       left: metadata.width - STAMP_CONFIG.diameter - STAMP_CONFIG.position.right,
       top: metadata.height - STAMP_CONFIG.diameter - STAMP_CONFIG.position.bottom,
     };
 
-    // 合成圖片
     const stampedBuffer = await image
       .composite([{ input: stampBuffer, left: stampPos.left, top: stampPos.top }])
       .toBuffer();
 
-    // 回傳 base64
     return stampedBuffer.toString("base64");
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
