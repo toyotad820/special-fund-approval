@@ -21,14 +21,14 @@ export default function ReviewForm({ requestId }: { requestId: string }) {
         <button
           type="submit"
           formAction={approveAccessory}
-          className="flex-1 rounded-lg bg-green-600 text-white py-2.5 font-medium hover:bg-green-700 transition-colors"
+          className="flex-1 rounded-lg bg-green-600 text-white py-4 text-base font-medium hover:bg-green-700 transition-colors"
         >
           ✓ 核准
         </button>
         <button
           type="submit"
           formAction={rejectAccessory}
-          className="flex-1 rounded-lg bg-rose-600 text-white py-2.5 font-medium hover:bg-rose-700 transition-colors"
+          className="flex-1 rounded-lg bg-rose-600 text-white py-4 text-base font-medium hover:bg-rose-700 transition-colors"
         >
           ✕ 駁回
         </button>

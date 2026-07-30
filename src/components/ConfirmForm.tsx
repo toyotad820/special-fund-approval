@@ -21,14 +21,14 @@ export default function ConfirmForm({ requestId }: { requestId: string }) {
         <button
           type="submit"
           formAction={confirmAccessory}
-          className="flex-1 rounded-lg bg-emerald-600 text-white py-2.5 font-medium hover:bg-emerald-700 transition-colors"
+          className="flex-1 rounded-lg bg-emerald-600 text-white py-4 text-base font-medium hover:bg-emerald-700 transition-colors"
         >
           ✓ 確認結案
         </button>
         <button
           type="submit"
           formAction={returnAccessory}
-          className="flex-1 rounded-lg bg-amber-600 text-white py-2.5 font-medium hover:bg-amber-700 transition-colors"
+          className="flex-1 rounded-lg bg-amber-600 text-white py-4 text-base font-medium hover:bg-amber-700 transition-colors"
         >
           ↩ 退回重審
         </button>
