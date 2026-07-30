@@ -18,6 +18,7 @@ export type OcrFields = {
   salesName: string; // 業務姓名
   customerName: string; // 客戶名稱
   carModel: string; // 車名
+  accessoryNameQty: string; // 配件名稱／數量（工單表格逐項配件，換行分隔）
   remarks: string; // 備註/簽決欄位（用「換」字分割變更前/後）
 };
 
@@ -34,6 +35,7 @@ const EMPTY_FIELDS: OcrFields = {
   salesName: "",
   customerName: "",
   carModel: "",
+  accessoryNameQty: "",
   remarks: "",
 };
 
@@ -44,6 +46,7 @@ const PROMPT = `你是 TOYOTA 經銷商「OPT 委託安裝工單」的資料擷�
 - salesName：業代編號＋姓名，保留前面的業代編號一起回傳（例如「B4569 陳建勳」）
 - customerName：客戶名稱
 - carModel：車名（例如 Y CROSS、CAMRY、C CROSS）
+- accessoryNameQty：工單表格中每一項配件的「名稱」與「數量」，逐項列出、每項一行，格式為「名稱 x數量」（例如「LED後座觸控閱讀燈 x1」）。只列有配件名稱的列，忽略純「專案代碼」「精裝碼」「差額」等無配件名稱的列
 - remarks：工單下方「簽決簽審意見」或備註欄的內容，逐字回傳不要省略
 
 只回傳 JSON，不要多餘說明。`;
@@ -56,6 +59,7 @@ const RESPONSE_SCHEMA = {
     salesName: { type: "string" },
     customerName: { type: "string" },
     carModel: { type: "string" },
+    accessoryNameQty: { type: "string" },
     remarks: { type: "string" },
   },
   required: [
@@ -77,6 +81,7 @@ function coerceFields(obj: unknown): OcrFields {
     salesName: str("salesName"),
     customerName: str("customerName"),
     carModel: str("carModel"),
+    accessoryNameQty: str("accessoryNameQty"),
     remarks: str("remarks"),
   };
 }

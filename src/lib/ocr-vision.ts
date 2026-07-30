@@ -18,6 +18,7 @@ const EMPTY_FIELDS: OcrFields = {
   salesName: "",
   customerName: "",
   carModel: "",
+  accessoryNameQty: "",
   remarks: "",
 };
 
@@ -52,6 +53,7 @@ function parseVisionText(text: string): OcrFields {
     salesName: grab("業代編號"),
     customerName: grab("客戶名稱"),
     carModel: grab("車名"),
+    accessoryNameQty: "",
     remarks: grab("備註"),
   };
 }

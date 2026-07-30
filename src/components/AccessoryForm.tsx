@@ -146,6 +146,7 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
         salesName: f.salesName || prev.salesName,
         customerName: f.customerName || prev.customerName,
         carModel: f.carModel || prev.carModel,
+        accessoryNameQty: f.accessoryNameQty || prev.accessoryNameQty,
         accessoryBefore: before,
         accessoryAfter: after,
         changeDescription: f.remarks || prev.changeDescription,
