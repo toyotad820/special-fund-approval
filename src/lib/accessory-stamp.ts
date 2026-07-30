@@ -39,7 +39,7 @@ const STAMP_CONFIG: {
   bgColor: string;
 } = {
   diameter: 152, // 約 4cm（96 DPI 下）
-  position: "center", // 中間
+  position: { right: 57, bottom: 57 }, // 右下角，離邊界約 1.5cm（96 DPI 下 1cm≈38px）
   circleBorder: 3,
   textColor: "#dc2626", // 紅色
   bgColor: "#fef2f2", // 淡紅色背景
