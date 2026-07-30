@@ -293,8 +293,9 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
           {isDeptCodeReadonly ? (
             <input
               type="text"
+              name="deptCode"
               value={fields.deptCode}
-              disabled
+              readOnly
               className={`${inputCls} bg-slate-100 cursor-not-allowed`}
             />
           ) : (

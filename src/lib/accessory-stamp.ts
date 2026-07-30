@@ -1,5 +1,45 @@
 import "server-only";
 import sharp from "sharp";
+import fs from "fs";
+import os from "os";
+import path from "path";
+
+// Vercel serverless 無內建 CJK 字型，librsvg 渲染 <text> 會空白（只剩圓圈）。
+// 於執行期產生一份 fontconfig 設定指向 repo 內的 Noto Sans TC，並以 FONTCONFIG_FILE 注入。
+// 必須在第一次呼叫 sharp/librsvg 前設定，故放在 module 載入時執行。
+const FONT_FAMILY = "Noto Sans TC";
+let fontReady = false;
+function ensureFontconfig() {
+  if (fontReady) return;
+  try {
+    const fontDir = path.join(process.cwd(), "public", "fonts");
+    const cacheDir = path.join(os.tmpdir(), "fontconfig-cache");
+    fs.mkdirSync(cacheDir, { recursive: true });
+    const conf = `<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+<fontconfig>
+  <dir>${fontDir}</dir>
+  <cachedir>${cacheDir}</cachedir>
+</fontconfig>`;
+    const confPath = path.join(os.tmpdir(), "acc-fonts.conf");
+    fs.writeFileSync(confPath, conf);
+    process.env.FONTCONFIG_FILE = confPath;
+  } catch (e) {
+    console.error("[stamp] fontconfig 設定失敗:", e instanceof Error ? e.message : e);
+  }
+  fontReady = true;
+}
+ensureFontconfig();
+
+// XML/SVG 文字逸出（審核人姓名可能含特殊字元）
+function esc(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&apos;");
+}
 
 // 蓋章參數
 const STAMP_CONFIG = {
@@ -25,15 +65,15 @@ async function generateStampImage(approverName: string, date: string): Promise<B
 
       <!-- 上方文字：已審核 -->
       <text x="${size / 2}" y="${size / 2 - 26}" font-size="${textSize}" font-weight="bold"
-        text-anchor="middle" fill="${STAMP_CONFIG.textColor}" font-family="serif">已審核</text>
+        text-anchor="middle" fill="${STAMP_CONFIG.textColor}" font-family="${FONT_FAMILY}">已審核</text>
 
       <!-- 中間文字：審核人名 -->
       <text x="${size / 2}" y="${size / 2 + 10}" font-size="${textSize - 6}"
-        text-anchor="middle" fill="${STAMP_CONFIG.textColor}" font-family="serif">${approverName}</text>
+        text-anchor="middle" fill="${STAMP_CONFIG.textColor}" font-family="${FONT_FAMILY}">${esc(approverName)}</text>
 
       <!-- 下方文字：日期 -->
       <text x="${size / 2}" y="${size / 2 + 44}" font-size="${textSize - 6}"
-        text-anchor="middle" fill="${STAMP_CONFIG.textColor}" font-family="serif">${date}</text>
+        text-anchor="middle" fill="${STAMP_CONFIG.textColor}" font-family="${FONT_FAMILY}">${esc(date)}</text>
     </svg>
   `;
 

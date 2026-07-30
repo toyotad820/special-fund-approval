@@ -12,7 +12,7 @@ export default function ImageLightbox({
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [canZoom, setCanZoom] = useState(false); // 標記是否已放大過（用於判斷點擊行為）
   // 拖曳狀態（不進 state，避免每次移動重繪整棵樹）
-  const drag = useState(() => ({ active: false, moved: false, sx: 0, sy: 0, ox: 0, oy: 0 }))[0];
+  const drag = useState(() => ({ active: false, moved: false, touch: false, sx: 0, sy: 0, ox: 0, oy: 0 }))[0];
 
   // ESC 關閉放大檢視
   useEffect(() => {
@@ -67,8 +67,9 @@ export default function ImageLightbox({
     const dy = y - drag.sy;
     if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
       drag.moved = true;
-      // 只在放大時才更新位移
-      if (zoom > 1) setOffset({ x: drag.ox + dx, y: drag.oy + dy });
+      // 桌機：任何狀態皆可拖曳移動；手機：維持原行為（僅放大時可移動）
+      const canPan = drag.touch ? zoom > 1 : true;
+      if (canPan) setOffset({ x: drag.ox + dx, y: drag.oy + dy });
     }
   };
   const endDrag = () => {
@@ -79,14 +80,21 @@ export default function ImageLightbox({
     const moved = drag.moved;
     drag.moved = false; // 重置以供下次點擊使用
     if (moved) return; // 拖曳結束不觸發縮放切換
-    toggleZoom();
+    // 桌機：取消 click 放大功能（僅拖曳移動）；手機：維持點擊縮放/關閉
+    if (drag.touch) toggleZoom();
   };
 
-  const onMouseDown = (e: React.MouseEvent) => startDrag(e.clientX, e.clientY);
+  const onMouseDown = (e: React.MouseEvent) => {
+    drag.touch = false;
+    startDrag(e.clientX, e.clientY);
+  };
   const onMouseMove = (e: React.MouseEvent) => moveDrag(e.clientX, e.clientY);
   const onTouchStart = (e: React.TouchEvent) => {
     const t = e.touches[0];
-    if (t) startDrag(t.clientX, t.clientY);
+    if (t) {
+      drag.touch = true;
+      startDrag(t.clientX, t.clientY);
+    }
   };
   const onTouchMove = (e: React.TouchEvent) => {
     const t = e.touches[0];
@@ -140,7 +148,7 @@ export default function ImageLightbox({
                   touchAction: zoom > 1 ? "none" : "auto",
                 }}
                 className={`max-w-full max-h-full object-contain select-none ${
-                  zoom > 1 ? (drag.active ? "cursor-grabbing" : "cursor-grab") : "cursor-zoom-in"
+                  drag.active ? "cursor-grabbing" : "cursor-grab"
                 }`}
               />
             </div>
