@@ -31,7 +31,7 @@ export default async function AccessoryLayout({
     items.push({ href: "/accessory/confirm", label: "待確認" });
   }
   // 案件明細排第三
-  items.push({ href: "/accessory", label: "案件明細" });
+  items.push({ href: "/accessory/list", label: "案件明細" });
   // 報表（部長／配件中心／Staff）
   if (
     user.role === ROLE.BUZHUGUAN ||

@@ -63,7 +63,7 @@ export default async function AccessoryDetailPage({
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
-      <Link href="/accessory" className="text-sm text-blue-600 hover:underline">
+      <Link href="/accessory/list" className="text-sm text-blue-600 hover:underline">
         ← 回案件明細
       </Link>
 
