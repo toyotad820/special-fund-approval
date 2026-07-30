@@ -105,7 +105,7 @@ export default async function AccessoryDetailPage({
                     key={img.id}
                     className="w-40 h-52 grid place-items-center rounded-lg border border-slate-200 text-xs text-slate-400 text-center px-2"
                   >
-                    已歸檔至 Google Drive
+                    已歸檔至 Dropbox
                   </div>
                 ))}
             </div>
