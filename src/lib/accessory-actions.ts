@@ -13,6 +13,7 @@ import {
 } from "./dal";
 import { ACC_STATUS, ACTION_LABEL } from "./constants";
 import { ocrExtractFields, type OcrResult } from "./ocr";
+import { ocrExtractFieldsVision } from "./ocr-vision";
 import { checkAccessoryBlocks } from "./accessory-validate";
 import { stampImage } from "./accessory-stamp";
 import { uploadToDrive, isDriveEnabled, getOrCreateMonthFolder } from "./dropbox";
@@ -54,6 +55,30 @@ export async function ocrAccessory(
     };
   }
   return ocrExtractFields({ data: base64, mimeType });
+}
+
+// 圖片辨識測試：Google Cloud Vision 版（與上方 Gemini 版並存，供比較測試用）
+export async function ocrAccessoryVision(
+  base64: string,
+  mimeType: string
+): Promise<OcrResult & { elapsedMs?: number }> {
+  const user = await requireUser();
+  if (!canSubmitAccessory(user)) {
+    return {
+      fields: {
+        dataNo: "",
+        storeCode: "",
+        salesName: "",
+        customerName: "",
+        carModel: "",
+        remarks: "",
+      },
+      raw: "",
+      ok: false,
+      error: "您沒有配件變更申請權限",
+    };
+  }
+  return ocrExtractFieldsVision({ data: base64, mimeType });
 }
 
 type ImageInput = { data: string; mimeType: string; ocrRaw?: string };

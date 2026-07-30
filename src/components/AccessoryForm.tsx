@@ -6,6 +6,7 @@ import {
   createAccessoryRequest,
   editAccessoryRequest,
   ocrAccessory,
+  ocrAccessoryVision,
   type AccActionState,
 } from "@/lib/accessory-actions";
 import { checkAccessoryBlocks } from "@/lib/accessory-validate";
@@ -106,7 +107,7 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
   const removeImage = (i: number) =>
     setImages((prev) => prev.filter((_, idx) => idx !== i));
 
-  const runOcr = async () => {
+  const runOcr = async (provider: "gemini" | "vision" = "gemini") => {
     if (images.length === 0) {
       setOcrMsg("請先上傳工單圖片");
       return;
@@ -115,10 +116,15 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
     setOcrMsg(null);
     try {
       const first = images[0];
-      const res = await ocrAccessory(first.data, first.mimeType);
+      const t0 = Date.now();
+      const res =
+        provider === "vision"
+          ? await ocrAccessoryVision(first.data, first.mimeType)
+          : await ocrAccessory(first.data, first.mimeType);
+      const elapsed = Date.now() - t0;
       if (!res.ok) {
         setOcrDataNo("");
-        setOcrMsg(res.error || "辨識失敗，請重新上傳清晰的工單圖片");
+        setOcrMsg(`[${provider}] ${res.error || "辨識失敗，請重新上傳清晰的工單圖片"}（${elapsed}ms）`);
         return;
       }
       const f = res.fields;
@@ -147,7 +153,7 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
       setImages((prev) =>
         prev.map((img, idx) => (idx === 0 ? { ...img, ocrRaw: res.raw } : img))
       );
-      setOcrMsg("辨識完成，請核對欄位後送出。");
+      setOcrMsg(`[${provider}] 辨識完成（${elapsed}ms），請核對欄位後送出。`);
     } finally {
       setOcrRunning(false);
     }
@@ -232,11 +238,19 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={runOcr}
+            onClick={() => runOcr("gemini")}
             disabled={ocrRunning || images.length === 0}
             className="rounded-lg bg-slate-800 text-white px-4 py-2 text-sm font-medium hover:bg-slate-900 disabled:opacity-50"
           >
             辨識圖片
+          </button>
+          <button
+            type="button"
+            onClick={() => runOcr("vision")}
+            disabled={ocrRunning || images.length === 0}
+            className="rounded-lg border border-slate-300 text-slate-700 px-4 py-2 text-sm font-medium hover:bg-slate-50 disabled:opacity-50"
+          >
+            辨識圖片（Vision測試）
           </button>
           {ocrMsg && <span className="text-xs text-slate-500">{ocrMsg}</span>}
         </div>
