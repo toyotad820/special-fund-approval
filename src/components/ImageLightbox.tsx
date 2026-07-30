@@ -16,7 +16,7 @@ export default function ImageLightbox({
   const drag = useState(() => ({ active: false, moved: false, touch: false, sx: 0, sy: 0, ox: 0, oy: 0 }))[0];
 
   // 電腦版預設放大倍率（直式工單在寬螢幕兩側留白、顯得太小），配合拖曳看全圖
-  const DESKTOP_ZOOM = 1.5;
+  const DESKTOP_ZOOM = 1.2;
 
   // 判斷是否電腦版（≥768px）
   useEffect(() => {
