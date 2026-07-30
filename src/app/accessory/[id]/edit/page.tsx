@@ -42,6 +42,7 @@ export default async function EditAccessoryPage({
       customerName: r.customerName,
       carModel: r.carModel,
       deptCode: r.deptCode || "",
+      accessoryNameQty: r.accessoryNameQty,
       accessoryBefore: r.accessoryBefore,
       accessoryAfter: r.accessoryAfter,
       changeDescription: r.changeDescription,

@@ -42,6 +42,7 @@ export default async function NewAccessoryPage() {
             customerName: "",
             carModel: "",
             deptCode: isKezhang ? user.deptCode || "" : "",
+            accessoryNameQty: "",
             accessoryBefore: "",
             accessoryAfter: "",
             changeDescription: "",

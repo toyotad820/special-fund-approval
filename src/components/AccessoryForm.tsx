@@ -20,6 +20,7 @@ const EMPTY_FIELDS = {
   customerName: "",
   carModel: "",
   deptCode: "",
+  accessoryNameQty: "",
   accessoryBefore: "",
   accessoryAfter: "",
   changeDescription: "",
@@ -356,6 +357,33 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
 
       {/* 人工填寫欄位 */}
       <section className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
+        <Field label="配件名稱／數量" error={err("accessoryNameQty")}>
+          <textarea
+            name="accessoryNameQty"
+            rows={3}
+            value={fields.accessoryNameQty}
+            onChange={(e) => set("accessoryNameQty", e.target.value)}
+            className={inputCls}
+          />
+        </Field>
+        <Field label="變更前配件" error={err("accessoryBefore")}>
+          <textarea
+            name="accessoryBefore"
+            rows={2}
+            value={fields.accessoryBefore}
+            onChange={(e) => set("accessoryBefore", e.target.value)}
+            className={inputCls}
+          />
+        </Field>
+        <Field label="變更後配件" error={err("accessoryAfter")}>
+          <textarea
+            name="accessoryAfter"
+            rows={2}
+            value={fields.accessoryAfter}
+            onChange={(e) => set("accessoryAfter", e.target.value)}
+            className={inputCls}
+          />
+        </Field>
         <Field label="更換說明" required error={err("changeDescription")}>
           <textarea
             name="changeDescription"
