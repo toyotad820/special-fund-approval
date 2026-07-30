@@ -1,16 +1,16 @@
 import "server-only";
 import sharp from "sharp";
-import opentype from "opentype.js";
+import { parse as parseFont, type Font } from "opentype.js";
 import { STAMP_FONT_B64 } from "./stamp-font";
 
 // Vercel serverless 無內建 CJK 字型，librsvg 渲染 <text> 會空白（只剩圓圈、無文字）。
 // 解法：用 opentype.js 把文字轉成向量 <path>，librsvg 畫 path 完全不需字型系統/fontconfig/Pango。
 // 字型以 base64 內嵌成程式碼模組（stamp-font.ts），保證被打包進 lambda。
-let _font: opentype.Font | null = null;
-function getFont(): opentype.Font {
+let _font: Font | null = null;
+function getFont(): Font {
   if (!_font) {
     const buf = Buffer.from(STAMP_FONT_B64, "base64");
-    _font = opentype.parse(
+    _font = parseFont(
       buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength)
     );
   }
