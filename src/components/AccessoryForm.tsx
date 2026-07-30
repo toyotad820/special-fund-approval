@@ -129,14 +129,18 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
         return;
       }
       const f = res.fields;
-      // 用「換」字分割 remarks 到變更前/後
+      // 用「更換/替換/換/改」等字眼分割 remarks 到變更前/後（較長字眼優先比對，避免切錯字）
       let before = fields.accessoryBefore;
       let after = fields.accessoryAfter;
       if (f.remarks) {
-        const parts = f.remarks.split("換");
-        if (parts.length === 2) {
-          before = parts[0].trim();
-          after = parts[1].trim();
+        const SPLIT_KEYWORDS = ["不裝升級", "更換", "替換", "換", "改"];
+        for (const kw of SPLIT_KEYWORDS) {
+          const idx = f.remarks.indexOf(kw);
+          if (idx > -1) {
+            before = f.remarks.slice(0, idx).trim();
+            after = f.remarks.slice(idx + kw.length).trim();
+            break;
+          }
         }
       }
       setFields((prev) => ({
@@ -240,19 +244,11 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => runOcr("gemini")}
+            onClick={() => runOcr("vision")}
             disabled={ocrRunning || images.length === 0}
             className="rounded-lg bg-slate-800 text-white px-4 py-2 text-sm font-medium hover:bg-slate-900 disabled:opacity-50"
           >
             辨識圖片
-          </button>
-          <button
-            type="button"
-            onClick={() => runOcr("vision")}
-            disabled={ocrRunning || images.length === 0}
-            className="rounded-lg border border-slate-300 text-slate-700 px-4 py-2 text-sm font-medium hover:bg-slate-50 disabled:opacity-50"
-          >
-            辨識圖片（Vision測試）
           </button>
           {ocrMsg && <span className="text-xs text-slate-500">{ocrMsg}</span>}
         </div>
