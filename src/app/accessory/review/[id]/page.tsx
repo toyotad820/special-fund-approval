@@ -19,10 +19,10 @@ function Row({
   align?: "left" | "right";
 }) {
   return (
-    <div className="flex justify-between gap-4 py-2 border-b border-slate-100 last:border-0">
-      <span className="text-sm text-slate-400 shrink-0">{label}</span>
+    <div className="flex gap-4 py-2 border-b border-slate-100 last:border-0">
+      <span className="text-sm text-slate-400 w-24 shrink-0">{label}</span>
       <span
-        className={`text-sm text-slate-800 whitespace-pre-wrap ${align === "left" ? "text-left" : "text-right"}`}
+        className={`text-sm text-slate-800 whitespace-pre-wrap flex-1 ${align === "left" ? "text-left" : "text-right"}`}
       >
         {children}
       </span>
