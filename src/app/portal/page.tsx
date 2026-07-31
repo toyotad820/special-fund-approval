@@ -1,21 +1,33 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/session";
 import { logout } from "@/lib/actions";
-import { SYSTEM, SYSTEM_LABEL } from "@/lib/constants";
+import { SYSTEM, SYSTEM_LABEL, ROLE } from "@/lib/constants";
 import { canAdmin } from "@/lib/dal";
 import PortalMark from "@/components/PortalMark";
+
+// 特案支援金報備系統入口：依角色直接導到工作頁（課長/所長→案件審核，部長→待審案件），
+// 其餘（Staff）沒有專屬作業頁，維持進儀表板
+function fundHref(role: string): string {
+  if (role === ROLE.KEZHANG || role === ROLE.SUOZHANG) return "/cases-review";
+  if (role === ROLE.BUZHUGUAN) return "/queue";
+  return "/";
+}
 
 // 系統入口卡片設定：href 為 null 表示尚無功能（顯示開發中，不可點）
 // icon 圖檔已經是圓角方形＋深藍底，直接當整塊 icon 用，不用另外包 div 上色/裁圓角
 const SYSTEM_CARDS: { key: string; href: string | null; iconSrc: string }[] = [
-  { key: SYSTEM.FUND, href: "/", iconSrc: "/icon-fund.png" },
   { key: SYSTEM.CAR_SPEC_CHANGE, href: "/accessory", iconSrc: "/icon-car-spec-change.png" },
 ];
 
 export default async function PortalPage() {
   const user = await requireUser();
   const mySystems = new Set(user.systems.split(",").map((s) => s.trim()).filter(Boolean));
-  const cards = SYSTEM_CARDS.filter((c) => mySystems.has(c.key));
+  const cards = [
+    ...(mySystems.has(SYSTEM.FUND)
+      ? [{ key: SYSTEM.FUND, href: fundHref(user.role), iconSrc: "/icon-fund.png" }]
+      : []),
+    ...SYSTEM_CARDS.filter((c) => mySystems.has(c.key)),
+  ];
   const isAdmin = canAdmin(user);
 
   return (

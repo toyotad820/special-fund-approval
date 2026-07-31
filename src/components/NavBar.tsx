@@ -69,7 +69,7 @@ export default function NavBar({
           <div className="flex items-start sm:items-center justify-between gap-3">
             {/* items-start sm:items-center：手機版 2 行的 4 字標籤跟 1 行的 2 字標籤混在同一排時，
                 items-center 會把矮的單行項目往下壓置中，改頂部對齊才會齊頭；電腦版都單行維持原本置中 */}
-            <nav className="flex items-start sm:items-center flex-wrap gap-0.5 text-sm min-w-0 -ml-2 sm:-ml-3">
+            <nav className="flex items-start sm:items-center flex-wrap gap-x-0.5 gap-y-0 text-sm min-w-0 -ml-1 sm:-ml-3">
               {items.map((it) => {
                 const active = isActive(it.href);
                 // 4 字標籤只在手機版用 max-w 斷成「2+2」兩行（不是靠 flex-shrink 擠壓，
@@ -79,7 +79,7 @@ export default function NavBar({
                   <Link
                     key={it.href}
                     href={it.href}
-                    className={`${longLabel ? "text-balance max-w-[3.75rem] sm:max-w-none text-center sm:text-left leading-tight sm:whitespace-nowrap" : "whitespace-nowrap"} px-2 sm:px-3 py-1.5 rounded-lg font-medium transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
+                    className={`${longLabel ? "text-balance max-w-[2.7rem] sm:max-w-none text-center sm:text-left leading-tight sm:whitespace-nowrap px-0.5" : "whitespace-nowrap px-2"} sm:px-3 py-1.5 rounded-lg font-medium transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 ${
                       active
                         ? "bg-blue-50 text-blue-700"
                         : "text-slate-500 hover:text-slate-800 hover:bg-slate-100"

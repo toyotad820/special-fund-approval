@@ -185,8 +185,9 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
   const canSubmit = !pending && !!fields.dataNo.trim();
 
   // 送出成功 → 導回列表（編輯模式回該案件明細）
+  // 注意：新增模式不能導去 /accessory，該路徑對課長/所長會 redirect 回 /accessory/new，等於繞回空白表單
   if (state.ok && state.requestId) {
-    router.push(isEdit ? `/accessory/${initial!.id}` : "/accessory");
+    router.push(isEdit ? `/accessory/${initial!.id}` : "/accessory/list");
   }
 
   const submit = (intent: "draft" | "submit") => {

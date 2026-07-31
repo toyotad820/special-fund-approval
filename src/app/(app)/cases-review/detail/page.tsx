@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/session";
 import { ROLE, STATUS } from "@/lib/constants";
 import SortableCaseTable from "@/components/SortableCaseTable";
 import MultiSelectDropdown from "@/components/MultiSelectDropdown";
-import { caseInclude, toRow } from "../../page";
+import { caseInclude, toRow } from "@/lib/case-helpers";
 
 function currentMonth(): string {
   const d = new Date();

@@ -91,7 +91,7 @@ async function generateCategoryNo(
     }),
   ]);
   const abbr = (category?.name ?? "").slice(0, 2) || "特案";
-  return `${abbr}${count + 1}`;
+  return `${abbr}${String(count + 1).padStart(2, "0")}`;
 }
 
 // 取得目前有效的特案類別 id / 車名清單，用於驗證下拉選單送出的值未被竄改

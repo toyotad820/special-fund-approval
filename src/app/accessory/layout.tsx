@@ -25,7 +25,7 @@ export default async function AccessoryLayout({
     items.push({ href: "/accessory/new", label: "新增申請" });
   }
   if (user.role === ROLE.BUZHUGUAN) {
-    items.push({ href: "/accessory/review", label: "待審核" });
+    items.push({ href: "/accessory/review", label: "待審案件" });
   }
   if (user.role === ROLE.PEIJIAN) {
     items.push({ href: "/accessory/confirm", label: "待確認" });
