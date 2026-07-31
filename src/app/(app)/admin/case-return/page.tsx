@@ -24,7 +24,7 @@ export default async function AdminCaseReturnPage({
   const c = orderNo
     ? await prisma.case.findUnique({
         where: { orderNo },
-        include: { submittedBy: true, category: true },
+        include: { submittedBy: { select: { name: true } }, category: true },
       })
     : null;
 

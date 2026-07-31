@@ -189,11 +189,16 @@ function parseVisionText(text: string, pages: unknown[]): OcrFields {
   const words = pages.flatMap(extractWords);
   const rows = reconstructRows(words);
 
+  // 「業代」「客戶」抓到的內容常常還黏著完整標籤的後半段（「編號:」「名稱:」），
+  // 因為實際印刷標籤是「業代編號」「客戶名稱」，只是前半段被拿來當比對關鍵字，
+  // 抓出來的值要把這段殘留的標籤文字去掉
+  const stripLabelTail = (v: string) => v.replace(/^(編號|名稱)[:：]\s*/, "").trim();
+
   return {
     dataNo,
     storeCode: dataNo.slice(0, 3),
-    salesName: grab("業代"),
-    customerName: grab("客戶"),
+    salesName: stripLabelTail(grab("業代")),
+    customerName: stripLabelTail(grab("客戶")),
     carModel: grab("車名"),
     accessoryNameQty: extractAccessoryItems(rows),
     remarks: grabRemarks(),

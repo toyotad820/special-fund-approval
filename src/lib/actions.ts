@@ -61,6 +61,35 @@ export async function logout() {
   redirect("/login");
 }
 
+export type ChangePasswordState = { error?: string; ok?: boolean; message?: string };
+
+// 使用者自行變更密碼（需先驗證目前密碼；管理員重設密碼另見 admin-actions.ts updateUser）
+export async function changePassword(
+  _prev: ChangePasswordState,
+  formData: FormData
+): Promise<ChangePasswordState> {
+  const user = await requireUser();
+  const current = String(formData.get("current") ?? "");
+  const next = String(formData.get("next") ?? "");
+  const confirm = String(formData.get("confirm") ?? "");
+
+  if (!current || !next || !confirm) return { error: "請填寫所有欄位" };
+  if (next.length < 4) return { error: "新密碼至少 4 碼" };
+  if (next !== confirm) return { error: "兩次輸入的新密碼不一致" };
+
+  const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
+  if (!dbUser || !(await bcrypt.compare(current, dbUser.passwordHash))) {
+    return { error: "目前密碼不正確" };
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { passwordHash: await bcrypt.hash(next, 10) },
+  });
+
+  return { ok: true, message: "密碼已更新，下次登入請使用新密碼。" };
+}
+
 // ---------- 案件欄位驗證 ----------
 
 type CaseData = {

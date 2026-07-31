@@ -126,7 +126,7 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
       const elapsed = Date.now() - t0;
       if (!res.ok) {
         setOcrDataNo("");
-        setOcrMsg(`[${provider}] ${res.error || "辨識失敗，請重新上傳清晰的工單圖片"}（${elapsed}ms）`);
+        setOcrMsg(`${res.error || "辨識失敗，請重新上傳清晰的工單圖片"}（${elapsed}ms）`);
         return;
       }
       const f = res.fields;
@@ -160,7 +160,7 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
       setImages((prev) =>
         prev.map((img, idx) => (idx === 0 ? { ...img, ocrRaw: res.raw } : img))
       );
-      setOcrMsg(`[${provider}] 辨識完成（${elapsed}ms），請核對欄位後送出。`);
+      setOcrMsg(`辨識完成（${elapsed}ms），請核對欄位後送出。`);
     } finally {
       setOcrRunning(false);
     }

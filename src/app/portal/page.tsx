@@ -46,6 +46,12 @@ export default async function PortalPage() {
             <span className="text-slate-600 truncate hidden sm:inline max-w-[8rem]">
               {user.name}
             </span>
+            <Link
+              href="/account/password"
+              className="whitespace-nowrap text-slate-400 hover:text-slate-700 transition-colors font-bold"
+            >
+              修改密碼
+            </Link>
             <form action={logout}>
               <button className="whitespace-nowrap text-slate-400 hover:text-rose-600 transition-colors font-bold">
                 登出

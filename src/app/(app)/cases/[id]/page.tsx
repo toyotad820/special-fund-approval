@@ -37,7 +37,7 @@ export default async function CaseDetailPage({
     where: { id },
     include: {
       category: true,
-      submittedBy: true,
+      submittedBy: { select: { name: true } },
       logs: {
         include: { reviewer: { select: { name: true } } },
         orderBy: { createdAt: "asc" },
