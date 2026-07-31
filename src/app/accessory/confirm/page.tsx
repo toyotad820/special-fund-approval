@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { ROLE, ACC_STATUS } from "@/lib/constants";
+import { assignedStoreSet } from "@/lib/dal";
 import SortableTable, { type SortCol, type SortRow } from "@/components/SortableTable";
 
 const COLUMNS: SortCol[] = [
@@ -20,17 +21,13 @@ export default async function AccessoryConfirmPage() {
   if (user.role !== ROLE.PEIJIAN) notFound();
 
   // 負責所別過濾（空=全部）
-  const stores = (user.assignedStores ?? "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
+  const stores = assignedStoreSet(user);
 
   const requests = await prisma.accessoryRequest.findMany({
     where: {
       status: ACC_STATUS.APPROVED,
-      ...(stores.length > 0 ? { storeCode: { in: stores } } : {}),
+      ...(stores.size > 0 ? { storeCode: { in: [...stores] } } : {}),
     },
-    include: { submittedBy: true },
     orderBy: { submittedAt: "desc" },
   });
 

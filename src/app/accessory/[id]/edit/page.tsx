@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { canResubmitAccessory } from "@/lib/dal";
+import { canResubmitAccessory, getDeptCodesForStore } from "@/lib/dal";
 import AccessoryForm, { type AccessoryInitial } from "@/components/AccessoryForm";
 
 export default async function EditAccessoryPage({
@@ -20,18 +20,14 @@ export default async function EditAccessoryPage({
 
   if (!r || !canResubmitAccessory(user, r)) notFound();
 
+  // 課長自動帶出課別；所長需下拉選（只列本所的課別，不是全系統）
   const isKezhang = user.role === "KEZHANG";
-  const deptOptions = !isKezhang
-    ? (
-        await prisma.unitTarget.findMany({
-          where: { deptCode: { not: "0" } },
-          select: { deptCode: true },
-          distinct: ["deptCode"],
-        })
-      )
-        .map((t) => ({ code: t.deptCode, label: `${t.deptCode}課` }))
-        .sort((a, b) => a.code.localeCompare(b.code))
-    : [];
+  const deptOptions = isKezhang
+    ? []
+    : (await getDeptCodesForStore(user.storeCode)).map((code) => ({
+        code,
+        label: `${code}課`,
+      }));
 
   const initial: AccessoryInitial = {
     id: r.id,

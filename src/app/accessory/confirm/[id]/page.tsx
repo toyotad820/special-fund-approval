@@ -41,7 +41,7 @@ export default async function AccessoryConfirmDetailPage({
   const r = await prisma.accessoryRequest.findUnique({
     where: { id },
     include: {
-      submittedBy: true,
+      submittedBy: { select: { name: true } },
       images: { orderBy: { sortOrder: "asc" } },
       logs: {
         include: { reviewer: { select: { name: true } } },

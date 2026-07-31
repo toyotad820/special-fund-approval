@@ -1,27 +1,21 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/session";
-import { prisma } from "@/lib/prisma";
-import { canSubmitAccessory } from "@/lib/dal";
+import { canSubmitAccessory, getDeptCodesForStore } from "@/lib/dal";
 import AccessoryForm from "@/components/AccessoryForm";
 
 export default async function NewAccessoryPage() {
   const user = await requireUser();
   if (!canSubmitAccessory(user)) redirect("/accessory");
 
-  // 課長自動帶出課別；所長需下拉選
+  // 課長自動帶出課別；所長需下拉選（只列本所的課別，不是全系統）
   const isKezhang = user.role === "KEZHANG";
-  const deptOptions = !isKezhang
-    ? (
-        await prisma.unitTarget.findMany({
-          where: { deptCode: { not: "0" } },
-          select: { deptCode: true },
-          distinct: ["deptCode"],
-        })
-      )
-        .map((t) => ({ code: t.deptCode, label: `${t.deptCode}課` }))
-        .sort((a, b) => a.code.localeCompare(b.code))
-    : [];
+  const deptOptions = isKezhang
+    ? []
+    : (await getDeptCodesForStore(user.storeCode)).map((code) => ({
+        code,
+        label: `${code}課`,
+      }));
 
   return (
     <div className="max-w-3xl mx-auto space-y-4">

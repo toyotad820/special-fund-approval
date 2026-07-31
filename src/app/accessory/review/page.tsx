@@ -20,7 +20,7 @@ export default async function AccessoryReviewPage() {
 
   const requests = await prisma.accessoryRequest.findMany({
     where: { status: ACC_STATUS.PENDING_REVIEW },
-    include: { submittedBy: true },
+    include: { submittedBy: { select: { name: true } } },
     orderBy: { submittedAt: "desc" },
   });
 

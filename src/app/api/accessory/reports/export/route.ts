@@ -43,7 +43,7 @@ export async function GET(request: Request) {
 
   const requests = await prisma.accessoryRequest.findMany({
     where,
-    include: { submittedBy: true },
+    include: { submittedBy: { select: { name: true } } },
     orderBy: [{ month: "asc" }, { submittedAt: "asc" }],
   });
 
