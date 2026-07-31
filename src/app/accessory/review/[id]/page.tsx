@@ -8,6 +8,7 @@ import { dt } from "@/lib/format";
 import AccStatusBadge from "@/components/AccStatusBadge";
 import ImageLightbox from "@/components/ImageLightbox";
 import ReviewForm from "@/components/ReviewForm";
+import { checkAccessoryBlocks } from "@/lib/accessory-validate";
 
 function Row({
   label,
@@ -51,6 +52,18 @@ export default async function AccessoryReviewDetailPage({
   });
 
   if (!r || !canReviewAccessory(user, r)) notFound();
+
+  // 用現行規則即時重算，避免規則更新後舊案件顯示已經過時的警示文字
+  const warnings = checkAccessoryBlocks(
+    {
+      dataNo: r.dataNo,
+      accessoryBefore: r.accessoryBefore,
+      accessoryAfter: r.accessoryAfter,
+      changeDescription: r.changeDescription,
+      accessoryNameQty: r.accessoryNameQty,
+    },
+    r.dataNo
+  );
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
@@ -145,10 +158,10 @@ export default async function AccessoryReviewDetailPage({
         </div>
       )}
 
-      {/* 送出時的警示（命中規則但仍可送出，審核時提醒覆核） */}
-      {r.warningFlag && r.warningText && (
+      {/* 警示（依現行規則即時判斷，命中仍可核准，供審核時提醒覆核） */}
+      {warnings.length > 0 && (
         <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 text-sm text-rose-700">
-          ⚠ {r.warningText}
+          ⚠ {warnings.join("；")}
         </div>
       )}
 
