@@ -7,7 +7,7 @@ import SortableTable, { type SortCol, type SortRow } from "@/components/Sortable
 
 const COLUMNS: SortCol[] = [
   { key: "storeCode", label: "所別" },
-  { key: "salesName", label: "業務姓名" },
+  { key: "salesName", label: "員編/姓名" },
   { key: "customerName", label: "客戶", kind: "link", width: "6rem" },
   { key: "carModel", label: "車名" },
   { key: "changeDescription", label: "更換說明", grow: true },

@@ -6,7 +6,7 @@ import type { OcrFields, OcrResult } from "./ocr";
 // 圖片辨識 — Google Cloud Vision API 測試版（DOCUMENT_TEXT_DETECTION）
 //
 // 與 ocr.ts（Gemini，production 使用中）並存，互不影響。
-// 純文字辨識後依固定標籤（訂單編號/業代編號/客戶名稱/車名/備註）正則硬解欄位。
+// 純文字辨識後依固定標籤（訂單編號/業代/客戶名稱/車名/備註）正則硬解欄位。
 //
 // 環境變數：
 //   GOOGLE_VISION_SERVICE_ACCOUNT_KEY  服務帳號 JSON（base64）
@@ -141,7 +141,9 @@ function extractAccessoryItems(rows: string[]): string {
     let name = namePart.replace(/\s+/g, "").trim();
     name = name.replace(/^[^\p{L}]+/u, ""); // 去掉開頭殘留的列號/逗號等雜訊
     if (!name) continue;
-    const qtyMatches = row.match(/(?<![\d,])\d(?![\d,])/g);
+    // 數量欄一定是獨立的一個位數字（前後都不能接數字/逗號/英文字母），
+    // 避免誤吃到配件料號或車型代號裡剛好出現的數字（例如「RAV4」的 4、「XTR20」的 20）
+    const qtyMatches = row.match(/(?<![\d,\p{L}])\d(?![\d,\p{L}])/gu);
     const qty = qtyMatches ? qtyMatches[qtyMatches.length - 1] : "1";
     items.push(`${name} x${qty}`);
   }
@@ -165,7 +167,7 @@ function parseVisionText(text: string, pages: unknown[]): OcrFields {
   return {
     dataNo,
     storeCode: dataNo.slice(0, 3),
-    salesName: grab("業代編號"),
+    salesName: grab("業代"),
     customerName: grab("客戶名稱"),
     carModel: grab("車名"),
     accessoryNameQty: extractAccessoryItems(rows),

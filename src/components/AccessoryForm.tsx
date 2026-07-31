@@ -87,6 +87,7 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
   const [ocrDataNo, setOcrDataNo] = useState("");
   const [ocrRunning, setOcrRunning] = useState(false);
   const [ocrMsg, setOcrMsg] = useState<string | null>(null);
+  const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
   const set = (k: keyof Fields, v: string) =>
     setFields((f) => ({ ...f, [k]: v }));
@@ -181,8 +182,17 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
     [fields, ocrDataNo]
   );
 
-  // 只檢查資料編號（警示不阻擋送出）
-  const canSubmit = !pending && !!fields.dataNo.trim();
+  // 正式送出必填：資料編號/所別/課別(所長可留空視為所層級)/員編姓名/客戶名稱/車名/更換說明；
+  // OCR 沒辨識出來就要求手動填，不能空著送出（警示規則另外處理，不擋送）
+  const canSubmit =
+    !pending &&
+    !!fields.dataNo.trim() &&
+    !!fields.storeCode.trim() &&
+    (isKezhang || !!fields.deptCode.trim()) &&
+    !!fields.salesName.trim() &&
+    !!fields.customerName.trim() &&
+    !!fields.carModel.trim() &&
+    !!fields.changeDescription.trim();
 
   // 送出成功 → 導回列表（編輯模式回該案件明細）
   // 注意：新增模式不能導去 /accessory，該路徑對課長/所長會 redirect 回 /accessory/new，等於繞回空白表單
@@ -235,12 +245,18 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
           <div className="flex flex-wrap gap-3">
             {images.map((img, i) => (
               <div key={i} className="relative">
-                {/* eslint-disable-next-line @next/next/no-img-element -- 本機預覽 base64 縮圖 */}
-                <img
-                  src={`data:${img.mimeType};base64,${img.data}`}
-                  alt={img.name}
-                  className="w-24 h-32 object-cover rounded-lg border border-slate-200"
-                />
+                <button
+                  type="button"
+                  onClick={() => setPreviewIndex(i)}
+                  className="block"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element -- 本機預覽 base64 縮圖 */}
+                  <img
+                    src={`data:${img.mimeType};base64,${img.data}`}
+                    alt={img.name}
+                    className="w-24 h-32 object-cover rounded-lg border border-slate-200"
+                  />
+                </button>
                 <button
                   type="button"
                   onClick={() => removeImage(i)}
@@ -265,6 +281,30 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
           {ocrMsg && <span className="text-xs text-slate-500">{ocrMsg}</span>}
         </div>
       </section>
+
+      {/* 上傳圖片全螢幕預覽（點縮圖開啟，點背景或叉叉關閉） */}
+      {previewIndex !== null && images[previewIndex] && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-2"
+          onClick={() => setPreviewIndex(null)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element -- 本機預覽 base64 大圖 */}
+          <img
+            src={`data:${images[previewIndex].mimeType};base64,${images[previewIndex].data}`}
+            alt={images[previewIndex].name}
+            className="max-w-full max-h-full object-contain rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button
+            type="button"
+            onClick={() => setPreviewIndex(null)}
+            className="absolute top-4 right-4 w-10 h-10 grid place-items-center rounded-full bg-black/50 text-white text-lg hover:bg-black/70 transition-colors"
+            aria-label="關閉"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* 辨識中：置中小視窗 */}
       {ocrRunning && (
@@ -338,7 +378,7 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
             </select>
           )}
         </Field>
-        <Field label="業務姓名" required error={err("salesName")}>
+        <Field label="員編/姓名" required error={err("salesName")}>
           <input
             name="salesName"
             value={fields.salesName}

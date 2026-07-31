@@ -78,7 +78,7 @@ export default async function AccessoryReviewDetailPage({
           <AccStatusBadge status={r.status} />
         </div>
         <Row label="所別">{r.storeCode}</Row>
-        <Row label="業務姓名">{r.salesName}</Row>
+        <Row label="員編/姓名">{r.salesName}</Row>
         <Row label="客戶名稱">{r.customerName}</Row>
         <Row label="車名">{r.carModel}</Row>
       </div>

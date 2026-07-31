@@ -52,7 +52,7 @@ export async function GET(request: Request) {
     "月份",
     "所別",
     "課別",
-    "業務姓名",
+    "員編/姓名",
     "客戶名稱",
     "車名",
     "配件名稱/數量",

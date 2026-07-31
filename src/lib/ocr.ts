@@ -15,7 +15,7 @@ import "server-only";
 export type OcrFields = {
   dataNo: string; // 資料編號（訂單編號，Dxx 開頭 13 碼）
   storeCode: string; // 所別（Dxx）
-  salesName: string; // 業務姓名
+  salesName: string; // 員編/姓名
   customerName: string; // 客戶名稱
   carModel: string; // 車名
   accessoryNameQty: string; // 配件名稱／數量（工單表格逐項配件，換行分隔）

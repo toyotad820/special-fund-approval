@@ -176,10 +176,15 @@ export async function createAccessoryRequest(
     }
   }
 
-  // ---- 正式送出：最小必填驗證 ----
+  // ---- 正式送出：必填驗證（OCR 沒辨識出來就要求手動填，不能空著送出）----
   const fieldErrors: Record<string, string> = {};
   if (!dataNo) fieldErrors.dataNo = "必填";
+  if (!values.storeCode.trim()) fieldErrors.storeCode = "必填";
   if (!values.deptCode.trim()) fieldErrors.deptCode = "必填";
+  if (!values.salesName.trim()) fieldErrors.salesName = "必填";
+  if (!values.customerName.trim()) fieldErrors.customerName = "必填";
+  if (!values.carModel.trim()) fieldErrors.carModel = "必填";
+  if (!values.changeDescription.trim()) fieldErrors.changeDescription = "必填";
   if (Object.keys(fieldErrors).length > 0) return { fieldErrors, values };
 
   // ---- 警示規則（命中只標紅字警告，仍可送出）----
@@ -257,7 +262,14 @@ export async function editAccessoryRequest(
 
   const fieldErrors: Record<string, string> = {};
   if (!dataNo) fieldErrors.dataNo = "資料編號必填";
-  if (isSubmit && !values.deptCode.trim()) fieldErrors.deptCode = "必填";
+  if (isSubmit) {
+    if (!values.storeCode.trim()) fieldErrors.storeCode = "必填";
+    if (!values.deptCode.trim()) fieldErrors.deptCode = "必填";
+    if (!values.salesName.trim()) fieldErrors.salesName = "必填";
+    if (!values.customerName.trim()) fieldErrors.customerName = "必填";
+    if (!values.carModel.trim()) fieldErrors.carModel = "必填";
+    if (!values.changeDescription.trim()) fieldErrors.changeDescription = "必填";
+  }
   if (Object.keys(fieldErrors).length > 0) return { fieldErrors, values };
 
   try {
