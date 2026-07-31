@@ -115,36 +115,44 @@ const STOP_PATTERN = new RegExp(
   `(?:${spacedPattern("客付")}|${spacedPattern("寄付")}|${spacedPattern("公司贈送")})`
 );
 
+// 不依賴「列」的邊界（Vision 分列常常跟表格視覺列對不上：配件代碼被拆成兩列、
+// 名稱過長換行、或兩個品項的文字被分到同一個 Y 群），改成把所有列接成一長串文字，
+// 直接找出每個「配件代碼」出現的位置，兩個代碼之間的文字就是該項目的完整內容
+// （名稱＋可能跨行的續行＋付費方式＋數量…）。這樣不管代碼本身有沒有被拆成兩列、
+// 續行黏在哪一列，都能正確歸屬到同一個項目。
 function extractAccessoryItems(rows: string[]): string {
-  // 配件名稱過長時 Vision 會拆成兩列輸出，續行沒有配件代碼；
-  // 只要前一列還沒出現付費方式關鍵字，就視為續行併回去
-  const merged: string[] = [];
-  for (const row of rows) {
-    const prev = merged[merged.length - 1];
-    const prevHasCode = prev && CODE_PATTERN.test(prev);
-    const prevHasStop = prev && STOP_PATTERN.test(prev);
-    if (prevHasCode && !prevHasStop && !CODE_PATTERN.test(row)) {
-      merged[merged.length - 1] = `${prev} ${row}`;
-    } else {
-      merged.push(row);
-    }
-  }
+  const blob = rows.join(" ");
+  const codeMatches = [...blob.matchAll(new RegExp(CODE_PATTERN.source, "g"))];
 
   const items: string[] = [];
-  for (const row of merged) {
-    const codeMatch = row.match(CODE_PATTERN);
-    if (!codeMatch) continue;
-    const after = row.slice(codeMatch.index! + codeMatch[0].length).trim();
+  for (let i = 0; i < codeMatches.length; i++) {
+    const m = codeMatches[i];
+    const start = m.index! + m[0].length;
+    const end = i + 1 < codeMatches.length ? codeMatches[i + 1].index! : blob.length;
+    let after = blob.slice(start, end);
+    // 下一個項目的「編號」欄（1~3 位數字）常常會黏在這段文字尾端，先去掉，
+    // 不然會被誤判成這一項的數量
+    after = after.replace(/\s*\d{1,3}\s*$/, "").trim();
     if (!after) continue;
+
+    // 數量欄一定是獨立的一個位數字（前後都不能接數字/逗號/英文字母），
+    // 避免誤吃到配件料號或車型代號裡剛好出現的數字（例如「RAV4」的 4、「XTR20」的 20）
+    const qtyRe = /(?<![\d,\p{L}])\d(?![\d,\p{L}])/gu;
+    const qtyMatches = [...after.matchAll(qtyRe)];
+    const lastQty = qtyMatches[qtyMatches.length - 1];
+    const qty = lastQty ? lastQty[0] : "1";
+
+    // 名稱結尾以「付費方式關鍵字」或「數量」兩者中最早出現的位置為準切掉，
+    // 不然數量／施工方式（安裝）欄的文字會黏在名稱後面
     const stopMatch = after.match(STOP_PATTERN);
-    const namePart = stopMatch ? after.slice(0, stopMatch.index) : after;
+    const cutCandidates = [stopMatch?.index, lastQty?.index].filter(
+      (n): n is number => n !== undefined
+    );
+    const cutAt = cutCandidates.length > 0 ? Math.min(...cutCandidates) : after.length;
+    const namePart = after.slice(0, cutAt);
     let name = namePart.replace(/\s+/g, "").trim();
     name = name.replace(/^[^\p{L}]+/u, ""); // 去掉開頭殘留的列號/逗號等雜訊
     if (!name) continue;
-    // 數量欄一定是獨立的一個位數字（前後都不能接數字/逗號/英文字母），
-    // 避免誤吃到配件料號或車型代號裡剛好出現的數字（例如「RAV4」的 4、「XTR20」的 20）
-    const qtyMatches = row.match(/(?<![\d,\p{L}])\d(?![\d,\p{L}])/gu);
-    const qty = qtyMatches ? qtyMatches[qtyMatches.length - 1] : "1";
     items.push(`${name} x${qty}`);
   }
   return items.join("\n");
@@ -168,7 +176,7 @@ function parseVisionText(text: string, pages: unknown[]): OcrFields {
     dataNo,
     storeCode: dataNo.slice(0, 3),
     salesName: grab("業代"),
-    customerName: grab("客戶名稱"),
+    customerName: grab("客戶"),
     carModel: grab("車名"),
     accessoryNameQty: extractAccessoryItems(rows),
     remarks: grab("備註"),
