@@ -3,12 +3,20 @@
 import { useActionState, useRef, useState } from "react";
 import { reviewCase } from "@/lib/actions";
 
+// 常用審核意見片語，之後要調整內容直接改這個陣列就好
+const QUICK_PHRASES: string[] = [];
+
 export default function ReviewPanel({ caseId }: { caseId: string }) {
   const [state, formAction, pending] = useActionState(reviewCase, {});
   const commentErr = state.fieldErrors?.comment;
   const formRef = useRef<HTMLFormElement>(null);
   const decisionRef = useRef<HTMLInputElement>(null);
   const [confirmDecision, setConfirmDecision] = useState<"APPROVE" | "REJECT" | null>(null);
+  const [comment, setComment] = useState("");
+
+  const insertPhrase = (phrase: string) => {
+    setComment((prev) => (prev ? `${prev}\n${phrase}` : phrase));
+  };
 
   const doConfirm = () => {
     if (decisionRef.current) decisionRef.current.value = confirmDecision ?? "";
@@ -37,10 +45,26 @@ export default function ReviewPanel({ caseId }: { caseId: string }) {
           <label className="block text-sm text-slate-600 mb-1">
             審核意見 / 駁回原因
           </label>
+          {QUICK_PHRASES.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {QUICK_PHRASES.map((phrase) => (
+                <button
+                  key={phrase}
+                  type="button"
+                  onClick={() => insertPhrase(phrase)}
+                  className="text-xs rounded-full border border-slate-300 text-slate-600 px-2.5 py-1 hover:bg-slate-100 transition-colors"
+                >
+                  {phrase}
+                </button>
+              ))}
+            </div>
+          )}
           <textarea
             name="comment"
             rows={3}
             placeholder="駁回時必填"
+            value={comment}
+            onChange={(e) => setComment(e.target.value)}
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           {commentErr && (
