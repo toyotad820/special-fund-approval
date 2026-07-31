@@ -168,6 +168,23 @@ function parseVisionText(text: string, pages: unknown[]): OcrFields {
     return "";
   };
 
+  // 「備註」欄要跟「烤漆備註」（另一個不相關欄位，剛好也含「備註」兩字）分開找，
+  // 而且標籤跟內容有時候會被拆成不同行，這種情況改看下一行的內容
+  const grabRemarks = () => {
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (!line.includes("備註") || line.includes("烤漆")) continue;
+      // 冒號後面沒接內容時，[:：]? 是「可選」的，正則引擎會回溯改成不吃冒號，
+      // 讓 (.+) 只抓到那個冒號本身當內容，所以要濾掉純冒號/空白的假匹配
+      const m = line.match(/備註[:：]?\s*(.+)/);
+      const val = m?.[1]?.trim();
+      if (val && !/^[:：]+$/.test(val)) return val;
+      const next = lines[i + 1]?.replace(/^[:：]\s*/, "").trim();
+      if (next) return next;
+    }
+    return "";
+  };
+
   const dataNo = (text.match(/D\d{12}/) || [""])[0];
   const words = pages.flatMap(extractWords);
   const rows = reconstructRows(words);
@@ -179,7 +196,7 @@ function parseVisionText(text: string, pages: unknown[]): OcrFields {
     customerName: grab("客戶"),
     carModel: grab("車名"),
     accessoryNameQty: extractAccessoryItems(rows),
-    remarks: grab("備註"),
+    remarks: grabRemarks(),
   };
 }
 
