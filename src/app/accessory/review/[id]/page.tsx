@@ -12,7 +12,7 @@ import ReviewForm from "@/components/ReviewForm";
 function Row({
   label,
   children,
-  align = "right",
+  align = "left",
 }: {
   label: string;
   children: React.ReactNode;

@@ -12,7 +12,7 @@ import ConfirmForm from "@/components/ConfirmForm";
 function Row({
   label,
   children,
-  align = "right",
+  align = "left",
 }: {
   label: string;
   children: React.ReactNode;
