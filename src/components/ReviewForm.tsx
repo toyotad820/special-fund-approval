@@ -3,13 +3,8 @@
 import { useState } from "react";
 import { approveAccessory, rejectAccessory } from "@/lib/accessory-actions";
 
-// 常用批示片語，先做幾句試試看，之後要調整內容直接改這個陣列就好
-const QUICK_PHRASES = [
-  "同意",
-  "請確認數量是否正確",
-  "資料不符，請重新確認後送單",
-  "配件變更不符合定義，請修正後重新送單",
-];
+// 常用批示片語，之後要調整內容直接改這個陣列就好
+const QUICK_PHRASES = ["數量不可複數", "配件不可不裝", "套件變更比例過高", "說明不清"];
 
 export default function ReviewForm({ requestId }: { requestId: string }) {
   const [remark, setRemark] = useState("");
