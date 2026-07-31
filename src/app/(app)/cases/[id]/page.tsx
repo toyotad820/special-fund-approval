@@ -129,7 +129,7 @@ export default async function CaseDetailPage({
       </div>
 
       {/* 審核區 */}
-      {canReview(user, c) && <ReviewPanel caseId={c.id} />}
+      {canReview(user, c) && <ReviewPanel caseId={c.id} role={user.role} />}
 
       {/* 撤回 */}
       {canWithdraw(user, c) && (
