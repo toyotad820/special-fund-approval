@@ -74,7 +74,7 @@ export default async function AccessoryDetailPage({
         <Row label="業務姓名">{r.salesName}</Row>
         <Row label="客戶名稱">{r.customerName}</Row>
         <Row label="車名">{r.carModel}</Row>
-        <Row label="配件名稱／數量">{r.accessoryNameQty}</Row>
+        <Row label="配件/數量">{r.accessoryNameQty}</Row>
         <Row label="變更前配件">{r.accessoryBefore}</Row>
         <Row label="變更後配件">{r.accessoryAfter}</Row>
         <Row label="更換說明" align="left">{r.changeDescription}</Row>

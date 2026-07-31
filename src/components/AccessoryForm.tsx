@@ -366,7 +366,7 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
 
       {/* 人工填寫欄位 */}
       <section className="bg-white rounded-2xl border border-slate-200 p-5 space-y-4">
-        <Field label="配件名稱／數量" error={err("accessoryNameQty")}>
+        <Field label="配件/數量" error={err("accessoryNameQty")}>
           <textarea
             name="accessoryNameQty"
             rows={3}
