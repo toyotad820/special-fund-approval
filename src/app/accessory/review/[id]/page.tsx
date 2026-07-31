@@ -58,13 +58,6 @@ export default async function AccessoryReviewDetailPage({
         ← 回待審核清單
       </Link>
 
-      {/* 送出時的警示（命中規則但仍可送出，審核時提醒覆核） */}
-      {r.warningFlag && r.warningText && (
-        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 text-sm text-rose-700">
-          ⚠ {r.warningText}
-        </div>
-      )}
-
       {/* 案件基本資訊 */}
       <div className="bg-white rounded-2xl border border-slate-200 p-5">
         <div className="flex items-center justify-between gap-2 mb-3">
@@ -149,6 +142,13 @@ export default async function AccessoryReviewDetailPage({
               </li>
             ))}
           </ol>
+        </div>
+      )}
+
+      {/* 送出時的警示（命中規則但仍可送出，審核時提醒覆核） */}
+      {r.warningFlag && r.warningText && (
+        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 text-sm text-rose-700">
+          ⚠ {r.warningText}
         </div>
       )}
 
