@@ -129,11 +129,11 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
         return;
       }
       const f = res.fields;
-      // 用「更換/替換/換/改」等字眼分割 remarks 到變更前/後（較長字眼優先比對，避免切錯字）
+      // 用「更換/替換/升級/換/改」等字眼分割 remarks 到變更前/後（較長字眼優先比對，避免切錯字）
       let before = fields.accessoryBefore;
       let after = fields.accessoryAfter;
       if (f.remarks) {
-        const SPLIT_KEYWORDS = ["不裝升級", "更換", "替換", "換", "改"];
+        const SPLIT_KEYWORDS = ["不裝升級", "更換", "替換", "升級", "換", "改"];
         for (const kw of SPLIT_KEYWORDS) {
           const idx = f.remarks.indexOf(kw);
           if (idx > -1) {
@@ -174,6 +174,7 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
           accessoryBefore: fields.accessoryBefore,
           accessoryAfter: fields.accessoryAfter,
           changeDescription: fields.changeDescription,
+          accessoryNameQty: fields.accessoryNameQty,
         },
         ocrDataNo
       ),

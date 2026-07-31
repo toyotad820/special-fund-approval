@@ -189,6 +189,7 @@ export async function createAccessoryRequest(
       accessoryBefore: values.accessoryBefore,
       accessoryAfter: values.accessoryAfter,
       changeDescription: values.changeDescription,
+      accessoryNameQty: values.accessoryNameQty,
     },
     ocrDataNo
   );
