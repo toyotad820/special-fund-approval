@@ -85,11 +85,15 @@ export default async function CasesReviewPage({
     prisma.caseCategory.findMany({ orderBy: { sortOrder: "asc" } }),
   ]);
 
+  // 課長不負責審核，此頁對課長來說只是明細查詢，改標題並保留完整內容；
+  // 所長要審核，本月申請明細另外拆到 /cases-review/detail 獨立頁
+  const pageTitle = user.role === ROLE.KEZHANG ? "案件明細" : "案件審核";
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
-          <h1 className="text-lg font-bold text-slate-800">案件審核</h1>
+          <h1 className="text-lg font-bold text-slate-800">{pageTitle}</h1>
           <p className="text-sm text-slate-500">{subtitle}</p>
         </div>
         <Link
@@ -108,24 +112,26 @@ export default async function CasesReviewPage({
         <SortableCaseTable rows={unresolved.map(toRow)} emptyText="沒有案件" />
       </section>
 
-      <section className="space-y-3">
-        <h2 className="section-title">
-          {scopeName}本月申請明細 · {month}{" "}
-          <span className="text-blue-600">({monthly.length})</span>
-        </h2>
-        <form className="flex flex-wrap items-center gap-2">
-          <MultiSelectDropdown
-            label="特案類型"
-            name="categoryIds"
-            groupName="dashboard-filters"
-            options={categories.map((c) => ({ value: c.id, label: c.name }))}
-          />
-          <button type="submit" className="btn btn-primary">
-            查詢
-          </button>
-        </form>
-        <SortableCaseTable rows={monthly.map(toRow)} emptyText="本月尚無申請" showTotals />
-      </section>
+      {user.role === ROLE.KEZHANG && (
+        <section className="space-y-3">
+          <h2 className="section-title">
+            {scopeName}本月申請明細 · {month}{" "}
+            <span className="text-blue-600">({monthly.length})</span>
+          </h2>
+          <form className="flex flex-wrap items-center gap-2">
+            <MultiSelectDropdown
+              label="特案類型"
+              name="categoryIds"
+              groupName="dashboard-filters"
+              options={categories.map((c) => ({ value: c.id, label: c.name }))}
+            />
+            <button type="submit" className="btn btn-primary">
+              查詢
+            </button>
+          </form>
+          <SortableCaseTable rows={monthly.map(toRow)} emptyText="本月尚無申請" showTotals />
+        </section>
+      )}
     </div>
   );
 }

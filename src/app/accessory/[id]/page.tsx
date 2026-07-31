@@ -11,7 +11,6 @@ import {
 import { ACTION_LABEL } from "@/lib/constants";
 import { dt } from "@/lib/format";
 import AccStatusBadge from "@/components/AccStatusBadge";
-import ImageLightbox from "@/components/ImageLightbox";
 import ApplicantActions from "@/components/ApplicantActions";
 
 function Row({
@@ -82,36 +81,6 @@ export default async function AccessoryDetailPage({
         <Row label="送單人">{r.submittedBy.name}</Row>
         <Row label="送出時間">{dt(r.submittedAt)}</Row>
       </div>
-
-      {r.images.length > 0 && (
-        <div className="bg-white rounded-2xl border border-slate-200 p-5">
-          <h2 className="text-sm font-semibold text-slate-700 mb-3">工單圖片</h2>
-          <ImageLightbox
-            images={r.images
-              .map((img) => {
-                const src = img.imageData
-                  ? `data:${img.mimeType};base64,${img.imageData}`
-                  : null;
-                return src ? { src, alt: "工單圖片" } : null;
-              })
-              .filter(Boolean) as Array<{ src: string; alt: string }>}
-          />
-          {r.images.some((img) => !img.imageData) && (
-            <div className="mt-3 flex flex-wrap gap-3">
-              {r.images
-                .filter((img) => !img.imageData)
-                .map((img) => (
-                  <div
-                    key={img.id}
-                    className="w-40 h-52 grid place-items-center rounded-lg border border-slate-200 text-xs text-slate-400 text-center px-2"
-                  >
-                    已歸檔至 Dropbox
-                  </div>
-                ))}
-            </div>
-          )}
-        </div>
-      )}
 
       <div className="bg-white rounded-2xl border border-slate-200 p-5">
         <h2 className="text-sm font-semibold text-slate-700 mb-3">處理紀錄</h2>
