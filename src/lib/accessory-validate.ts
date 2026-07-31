@@ -34,12 +34,11 @@ export function checkAccessoryBlocks(
   }
 
   const qtyMatches = (v.accessoryNameQty ?? "").match(/x\s*(\d+)/gi) ?? [];
-  const hasQtyOverOne = qtyMatches.some((m) => {
-    const n = parseInt(m.replace(/^x\s*/i, ""), 10);
-    return n > 1;
-  });
-  if (hasQtyOverOne) {
-    reasons.push("配件數量有項目 > 1，請確認是否正確");
+  const overOne = qtyMatches
+    .map((m) => parseInt(m.replace(/^x\s*/i, ""), 10))
+    .filter((n) => n > 1);
+  if (overOne.length > 0) {
+    reasons.push(`配件數量有項目 > 1（x${overOne.join("、x")}），請確認是否正確`);
   }
 
   return reasons;
