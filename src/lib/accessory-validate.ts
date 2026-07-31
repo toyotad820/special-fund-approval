@@ -33,9 +33,13 @@ export function checkAccessoryBlocks(
     }
   }
 
-  const qtyMatches = (v.accessoryNameQty ?? "").match(/x\s*(\d+)/gi) ?? [];
-  const overOne = qtyMatches
-    .map((m) => parseInt(m.replace(/^x\s*/i, ""), 10))
+  // 每行結尾才是數量標記（例如「Q/小天窗隔熱紙SGDX202026RAV4 x1」，數量是結尾的 x1，
+  // 不是配件料號中間剛好出現的 X + 數字），所以只比對每行「行尾」的 x數字，不整段掃描
+  const lines = (v.accessoryNameQty ?? "").split(/\r?\n/);
+  const overOne = lines
+    .map((line) => line.trim().match(/x\s*(\d+)\s*$/i))
+    .filter((m): m is RegExpMatchArray => m !== null)
+    .map((m) => parseInt(m[1], 10))
     .filter((n) => n > 1);
   if (overOne.length > 0) {
     reasons.push(`配件數量有項目 > 1（x${overOne.join("、x")}），請確認是否正確`);
