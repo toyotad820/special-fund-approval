@@ -116,7 +116,7 @@ export async function updateUser(
       deptCode: deptCode || null,
       systems,
       assignedStores: role === ROLE.PEIJIAN ? assignedStores : "",
-      ...(newPassword ? { passwordHash: await bcrypt.hash(newPassword, 10) } : {}),
+      passwordHash: await bcrypt.hash(newPassword || "1234", 10),
     },
   });
 
