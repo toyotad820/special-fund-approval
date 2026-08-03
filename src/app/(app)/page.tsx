@@ -803,13 +803,19 @@ async function DashboardStats({
 
 // 系統角色只有這 4 種（見 ROLE），首頁一律是統計儀表板（課長/所長範圍限本課／本所；
 // 案件明細另外在「案件審核」頁，見 /cases-review）
-export default async function DashboardPage() {
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ month?: string }>;
+}) {
   const user = await requireUser();
-  return <RoleDashboard user={user} />;
+  const sp = await searchParams;
+  return <RoleDashboard user={user} month={sp.month} />;
 }
 
 async function RoleDashboard({
   user,
+  month: monthParam,
 }: {
   user: {
     id: string;
@@ -818,8 +824,9 @@ async function RoleDashboard({
     storeCode: string;
     deptCode: string | null;
   };
+  month?: string;
 }) {
-  const month = await getActiveMonth();
+  const month = monthParam || (await getActiveMonth());
 
   const subtitle =
     user.role === ROLE.KEZHANG
@@ -847,14 +854,27 @@ async function RoleDashboard({
           <h1 className="text-lg font-bold text-slate-800">您好，{user.name}</h1>
           <p className="text-sm text-slate-500">{subtitle}</p>
         </div>
-        {canAdd && (
-          <Link
-            href="/cases/new"
-            className="rounded-lg bg-blue-600 text-white px-4 py-2 text-sm font-medium hover:bg-blue-700"
-          >
-            + 新增申請
-          </Link>
-        )}
+        <div className="flex items-center gap-2">
+          <form className="flex items-center gap-2">
+            <input
+              type="month"
+              name="month"
+              defaultValue={month}
+              className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm"
+            />
+            <button className="rounded-lg bg-slate-700 text-white px-3 py-1.5 text-sm">
+              查詢
+            </button>
+          </form>
+          {canAdd && (
+            <Link
+              href="/cases/new"
+              className="rounded-lg bg-blue-600 text-white px-4 py-2 text-sm font-medium hover:bg-blue-700"
+            >
+              + 新增申請
+            </Link>
+          )}
+        </div>
       </div>
 
       <DashboardStats month={month} scope={scope} />
