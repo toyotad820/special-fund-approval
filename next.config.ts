@@ -3,11 +3,15 @@ import type { NextConfig } from "next";
 // 開發模式（HMR/Fast Refresh）需要 unsafe-eval，正式環境不需要、也不該開
 const isDev = process.env.NODE_ENV === "development";
 
+// script-src 需要 unsafe-inline：Next.js production build 會注入 inline script
+// 做 hydration data（本機 next dev 測試時沒踩到這個問題，實際上 production build
+// 才會這樣做，導致正式站整站互動功能被 CSP 擋掉——沒有用 nonce/middleware 的情況下，
+// 沒有 unsafe-inline 這個 CSP 規則基本上會讓 Next.js app 壞掉，不是可以省略的項目）。
 // img-src 需要 data: 是因為配件變更上傳圖片在送出前用 base64 data URI 預覽；
 // style-src 需要 unsafe-inline 是因為 React 的 style={{...}} 內嵌樣式屬性
 const csp = [
   "default-src 'self'",
-  `script-src 'self'${isDev ? " 'unsafe-eval'" : ""}`,
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data:",
   "font-src 'self' data:",
