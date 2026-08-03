@@ -1,0 +1,21 @@
+version: 2
+updates:
+  # npm 套件：每週檢查一次，安全性更新優先
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      # 非 major 版本更新合併成一個 PR，減少要人工審查的數量；
+      # major 版本各自開 PR（風險較高，需要個別確認相容性）
+      minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # GitHub Actions 版本：同樣每週檢查
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
