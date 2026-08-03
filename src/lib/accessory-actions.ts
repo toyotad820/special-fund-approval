@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import sharp from "sharp";
 import { prisma } from "./prisma";
 import { requireUser } from "./session";
 import {
@@ -101,17 +102,47 @@ function extractValues(fd: FormData): Record<string, string> {
   return v;
 }
 
-function parseImages(fd: FormData): ImageInput[] {
+// 前端只用 accept="image/*" 擋，那個很好繞過，這裡要真的驗證內容：
+// mimeType 白名單 + 大小上限 + 用 sharp 實際解碼確認是真的圖片（不是隨便一個
+// 偽造 mimeType 的檔案），三個都過才收
+const ALLOWED_IMAGE_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024; // 單張 8MB（server action 總上限 10MB）
+
+async function parseImages(
+  fd: FormData
+): Promise<{ images: ImageInput[]; error?: string }> {
+  let arr: unknown;
   try {
-    const raw = String(fd.get("imagesJson") ?? "[]");
-    const arr = JSON.parse(raw);
-    if (!Array.isArray(arr)) return [];
-    return arr
-      .filter((x) => x && typeof x.data === "string" && typeof x.mimeType === "string")
-      .map((x) => ({ data: x.data, mimeType: x.mimeType, ocrRaw: x.ocrRaw }));
+    arr = JSON.parse(String(fd.get("imagesJson") ?? "[]"));
   } catch {
-    return [];
+    return { images: [] };
   }
+  if (!Array.isArray(arr)) return { images: [] };
+
+  const images: ImageInput[] = [];
+  for (const x of arr) {
+    if (!x || typeof x.data !== "string" || typeof x.mimeType !== "string") continue;
+    if (!ALLOWED_IMAGE_MIME_TYPES.has(x.mimeType)) {
+      return { images: [], error: `不支援的圖片格式：${x.mimeType}` };
+    }
+    let buf: Buffer;
+    try {
+      buf = Buffer.from(x.data, "base64");
+    } catch {
+      return { images: [], error: "圖片資料損毀，請重新上傳" };
+    }
+    if (buf.length === 0 || buf.length > MAX_IMAGE_BYTES) {
+      return { images: [], error: "圖片檔案過大或損毀（單張上限 8MB）" };
+    }
+    try {
+      const meta = await sharp(buf).metadata();
+      if (!meta.width || !meta.height) throw new Error("no dimensions");
+    } catch {
+      return { images: [], error: "圖片內容無法辨識，請確認檔案未毀損、重新上傳" };
+    }
+    images.push({ data: x.data, mimeType: x.mimeType, ocrRaw: x.ocrRaw });
+  }
+  return { images };
 }
 
 // 送單／存草稿
@@ -125,7 +156,8 @@ export async function createAccessoryRequest(
   const intent = String(formData.get("intent") ?? "submit");
   const values = extractValues(formData);
   const ocrDataNo = String(formData.get("ocrDataNo") ?? "");
-  const images = parseImages(formData);
+  const { images, error: imageError } = await parseImages(formData);
+  if (imageError) return { error: imageError, values };
   const dataNo = values.dataNo.trim().toUpperCase();
   const month = await getActiveMonth();
 
@@ -254,7 +286,8 @@ export async function editAccessoryRequest(
 
   const intent = String(formData.get("intent") ?? "submit");
   const values = extractValues(formData);
-  const images = parseImages(formData);
+  const { images, error: imageError } = await parseImages(formData);
+  if (imageError) return { error: imageError, values };
   const dataNo = values.dataNo.trim().toUpperCase();
   const isSubmit = intent === "submit";
 
