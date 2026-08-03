@@ -11,7 +11,7 @@ export const APP_VERSION = "1.8.0";
 export const PORTAL_VERSION = "2.0.0";
 
 // 配件變更申請系統自己的版號（獨立計）。
-export const ACCESSORY_VERSION = "1.3.32";
+export const ACCESSORY_VERSION = "1.3.33";
 
 export const CHANGELOG: { version: string; date: string; note: string }[] = [
   {
