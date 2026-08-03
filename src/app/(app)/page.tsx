@@ -5,13 +5,9 @@ import { prisma } from "@/lib/prisma";
 import { ROLE, STATUS } from "@/lib/constants";
 import { CATEGORICAL, CATEGORY_COLOR_BY_NAME } from "@/lib/chartColors";
 import { money } from "@/lib/format";
+import { getActiveMonth } from "@/lib/dal";
 import SimpleDonutChart from "@/components/SimpleDonutChart";
 import SimpleComboChart from "@/components/SimpleComboChart";
-
-function currentMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
 
 type StatRow = { label: string; count: number; sum: number; avg: number };
 
@@ -823,7 +819,7 @@ async function RoleDashboard({
     deptCode: string | null;
   };
 }) {
-  const month = currentMonth();
+  const month = await getActiveMonth();
 
   const subtitle =
     user.role === ROLE.KEZHANG

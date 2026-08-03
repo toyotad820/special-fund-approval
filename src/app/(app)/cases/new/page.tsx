@@ -1,20 +1,15 @@
 import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { canSubmit, getDeptCodesForStore } from "@/lib/dal";
+import { canSubmit, getDeptCodesForStore, getActiveMonth } from "@/lib/dal";
 import { createCase } from "@/lib/actions";
 import CaseForm from "@/components/CaseForm";
-
-function currentMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
 
 export default async function NewCasePage() {
   const user = await requireUser();
   if (!canSubmit(user)) redirect("/");
 
-  const month = currentMonth();
+  const month = await getActiveMonth();
   const deptEditable = !user.deptCode;
   const [categories, cars, window, deptOptions] = await Promise.all([
     prisma.caseCategory.findMany({

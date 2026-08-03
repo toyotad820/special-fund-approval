@@ -5,11 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { canViewReports } from "@/lib/dal";
 import { money } from "@/lib/format";
 import { STATUS } from "@/lib/constants";
-
-function currentMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
+import { getActiveMonth } from "@/lib/dal";
 
 export default async function ReportsPage({
   searchParams,
@@ -20,7 +16,7 @@ export default async function ReportsPage({
   if (!canViewReports(user)) redirect("/");
 
   const sp = await searchParams;
-  const month = sp.month || currentMonth();
+  const month = sp.month || (await getActiveMonth());
 
   // 統計不含草稿／已駁回／已撤回（皆非實際生效案件）
   const reportWhere = {

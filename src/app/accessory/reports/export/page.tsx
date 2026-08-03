@@ -2,12 +2,8 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { ROLE } from "@/lib/constants";
+import { getActiveMonth } from "@/lib/dal";
 import StoreCheckboxGroup from "@/components/StoreCheckboxGroup";
-
-function currentMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
 
 export default async function AccessoryReportExportPage() {
   const user = await requireUser();
@@ -19,7 +15,7 @@ export default async function AccessoryReportExportPage() {
     notFound();
   }
 
-  const month = currentMonth();
+  const month = await getActiveMonth();
 
   const storeRows = await prisma.user.findMany({
     where: { storeCode: { not: "HQ" } },

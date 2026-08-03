@@ -1,12 +1,7 @@
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { canViewReports } from "@/lib/dal";
+import { canViewReports, getActiveMonth } from "@/lib/dal";
 import { STATUS } from "@/lib/constants";
-
-function currentMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
 
 function csvCell(v: string | number): string {
   const s = String(v ?? "");
@@ -30,7 +25,7 @@ export async function GET(request: Request) {
   }
 
   const { searchParams } = new URL(request.url);
-  const month = searchParams.get("month") || currentMonth();
+  const month = searchParams.get("month") || (await getActiveMonth());
   const level: "store" | "dept" = searchParams.get("level") === "dept" ? "dept" : "store";
 
   const categories = await prisma.caseCategory.findMany({ orderBy: { sortOrder: "asc" } });

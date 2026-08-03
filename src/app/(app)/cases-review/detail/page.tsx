@@ -6,11 +6,7 @@ import { ROLE, STATUS } from "@/lib/constants";
 import SortableCaseTable from "@/components/SortableCaseTable";
 import MultiSelectDropdown from "@/components/MultiSelectDropdown";
 import { caseInclude, toRow } from "@/lib/case-helpers";
-
-function currentMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
+import { getActiveMonth } from "@/lib/dal";
 
 export default async function CasesReviewDetailPage({
   searchParams,
@@ -20,7 +16,7 @@ export default async function CasesReviewDetailPage({
   const user = await requireUser();
   if (user.role !== ROLE.SUOZHANG) redirect("/");
 
-  const month = currentMonth();
+  const month = await getActiveMonth();
   const sp = await searchParams;
   const selectedCategoryIds =
     sp.categoryIds === undefined

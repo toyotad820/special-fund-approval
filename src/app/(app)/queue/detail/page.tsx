@@ -5,11 +5,7 @@ import { ROLE, STATUS } from "@/lib/constants";
 import SortableCaseTable from "@/components/SortableCaseTable";
 import MultiSelectDropdown from "@/components/MultiSelectDropdown";
 import { caseInclude, toRow } from "@/lib/case-helpers";
-
-function currentMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
+import { getActiveMonth } from "@/lib/dal";
 
 function toArray(v: string | string[] | undefined): string[] | null {
   if (v === undefined) return null;
@@ -25,7 +21,7 @@ export default async function QueueDetailPage({
   if (user.role !== ROLE.BUZHUGUAN) redirect("/");
 
   const sp = await searchParams;
-  const month = currentMonth();
+  const month = await getActiveMonth();
 
   const [storeRows, categories] = await Promise.all([
     prisma.user.findMany({

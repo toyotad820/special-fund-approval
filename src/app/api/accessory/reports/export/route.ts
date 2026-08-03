@@ -2,12 +2,8 @@ import type { Prisma } from "@prisma/client";
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { ROLE, ACC_STATUS, ACC_STATUS_LABEL } from "@/lib/constants";
+import { getActiveMonth } from "@/lib/dal";
 import { dt } from "@/lib/format";
-
-function currentMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
 
 function csvCell(v: string | number): string {
   const s = String(v ?? "");
@@ -33,7 +29,7 @@ export async function GET(request: Request) {
   const monthFilter: Prisma.AccessoryRequestWhereInput =
     from || to
       ? { month: { gte: from || undefined, lte: to || undefined } }
-      : { month: currentMonth() };
+      : { month: await getActiveMonth() };
 
   const where: Prisma.AccessoryRequestWhereInput = {
     ...monthFilter,
@@ -89,7 +85,7 @@ export async function GET(request: Request) {
   const csv = "﻿" + [header.join(","), ...rows].join("\n");
 
   const rangeLabel =
-    from || to ? `${from || "start"}_to_${to || "end"}` : currentMonth();
+    from || to ? `${from || "start"}_to_${to || "end"}` : await getActiveMonth();
   const storeLabel = storeCodes.length > 0 ? `_${storeCodes.join("-")}` : "";
 
   return new Response(csv, {

@@ -12,6 +12,7 @@ import {
   canWithdraw,
   canDelete,
   getDeptCodesForStore,
+  getActiveMonth,
 } from "./dal";
 import { STATUS, ROLE, ACTION } from "./constants";
 import { normalizeDeptCode } from "./format";
@@ -25,11 +26,6 @@ export type ActionState = {
   // 送出失敗時，把使用者原本填的內容一併帶回，前端才能保留資料不清空
   values?: Record<string, string>;
 };
-
-function currentMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
 
 // ---------- 登入 / 登出 ----------
 
@@ -329,7 +325,7 @@ export async function createCase(
   if (!canSubmit(user)) return { error: "您沒有送單權限" };
 
   const intent = String(formData.get("intent") ?? "submit");
-  const month = currentMonth();
+  const month = await getActiveMonth();
   const requireDeptCode = !user.deptCode;
   const fixedDeptCode = normalizeDeptCode(user.deptCode);
 

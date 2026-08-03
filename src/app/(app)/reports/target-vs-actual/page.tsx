@@ -2,11 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { STATUS } from "@/lib/constants";
 import { money } from "@/lib/format";
 import { CATEGORICAL, CATEGORY_COLOR_BY_NAME } from "@/lib/chartColors";
-
-function currentMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
+import { getActiveMonth } from "@/lib/dal";
 
 type UnitStat = {
   key: string;
@@ -24,7 +20,7 @@ export default async function TargetVsActualPage({
   searchParams: Promise<{ month?: string; level?: string }>;
 }) {
   const sp = await searchParams;
-  const month = sp.month || currentMonth();
+  const month = sp.month || (await getActiveMonth());
   const level: "store" | "dept" = sp.level === "dept" ? "dept" : "store";
 
   // 統計不含草稿／已駁回／已撤回（跟首頁、報表總覽的口徑一致）

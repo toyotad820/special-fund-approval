@@ -1,10 +1,6 @@
 import { prisma } from "@/lib/prisma";
+import { getActiveMonth } from "@/lib/dal";
 import TargetImportForm from "@/components/admin/TargetImportForm";
-
-function currentMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
 
 export default async function AdminTargetsPage({
   searchParams,
@@ -12,7 +8,7 @@ export default async function AdminTargetsPage({
   searchParams: Promise<{ month?: string }>;
 }) {
   const sp = await searchParams;
-  const month = sp.month || currentMonth();
+  const month = sp.month || (await getActiveMonth());
 
   const targets = await prisma.unitTarget.findMany({
     where: { month },

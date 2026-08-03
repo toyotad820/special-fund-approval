@@ -2,11 +2,7 @@ import { Fragment } from "react";
 import { prisma } from "@/lib/prisma";
 import { STATUS } from "@/lib/constants";
 import { money } from "@/lib/format";
-
-function currentMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
+import { getActiveMonth } from "@/lib/dal";
 
 type CatStat = { sum: number; count: number };
 
@@ -25,7 +21,7 @@ export default async function CategoryUsagePage({
   searchParams: Promise<{ month?: string; level?: string }>;
 }) {
   const sp = await searchParams;
-  const month = sp.month || currentMonth();
+  const month = sp.month || (await getActiveMonth());
   const level: "store" | "dept" = sp.level === "dept" ? "dept" : "store";
 
   const categories = await prisma.caseCategory.findMany({

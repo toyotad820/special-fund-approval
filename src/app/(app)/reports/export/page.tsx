@@ -1,13 +1,9 @@
 import { prisma } from "@/lib/prisma";
+import { getActiveMonth } from "@/lib/dal";
 import StoreCheckboxGroup from "@/components/StoreCheckboxGroup";
 
-function currentMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
-
 export default async function ReportExportPage() {
-  const month = currentMonth();
+  const month = await getActiveMonth();
 
   const storeRows = await prisma.user.findMany({
     where: { storeCode: { not: "HQ" } },

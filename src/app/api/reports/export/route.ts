@@ -1,14 +1,9 @@
 import type { Prisma } from "@prisma/client";
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
-import { canViewReports } from "@/lib/dal";
+import { canViewReports, getActiveMonth } from "@/lib/dal";
 import { STATUS_LABEL, STATUS } from "@/lib/constants";
 import { dt } from "@/lib/format";
-
-function currentMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
 
 function csvCell(v: string | number): string {
   const s = String(v ?? "");
@@ -33,7 +28,7 @@ export async function GET(request: Request) {
   const monthFilter: Prisma.CaseWhereInput =
     from || to
       ? { month: { gte: from || undefined, lte: to || undefined } }
-      : { month: month || currentMonth() };
+      : { month: month || (await getActiveMonth()) };
 
   const where: Prisma.CaseWhereInput = {
     ...monthFilter,
@@ -43,7 +38,7 @@ export async function GET(request: Request) {
 
   const cases = await prisma.case.findMany({
     where,
-    include: { category: true, submittedBy: true },
+    include: { category: true, submittedBy: { select: { name: true } } },
     orderBy: [{ month: "asc" }, { submittedAt: "asc" }],
   });
 
@@ -98,7 +93,7 @@ export async function GET(request: Request) {
   const rangeLabel =
     from || to
       ? `${from || "start"}_to_${to || "end"}`
-      : month || currentMonth();
+      : month || (await getActiveMonth());
   const storeLabel = storeCodes.length > 0 ? `_${storeCodes.join("-")}` : "";
 
   return new Response(csv, {

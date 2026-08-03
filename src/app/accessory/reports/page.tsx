@@ -3,11 +3,7 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { ROLE, ACC_STATUS } from "@/lib/constants";
-
-function currentMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
+import { getActiveMonth } from "@/lib/dal";
 
 export default async function AccessoryReportsPage({
   searchParams,
@@ -25,7 +21,7 @@ export default async function AccessoryReportsPage({
   }
 
   const sp = await searchParams;
-  const month = sp.month || currentMonth();
+  const month = sp.month || (await getActiveMonth());
   const level: "store" | "dept" = sp.level === "dept" ? "dept" : "store";
 
   // 統計不含草稿／已退件／已撤回（皆非實際生效案件）

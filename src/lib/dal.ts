@@ -4,6 +4,19 @@ import { prisma } from "./prisma";
 import { ROLE, STATUS, ACC_STATUS, OVERDUE_DAYS } from "./constants";
 import { normalizeDeptCode } from "./format";
 
+// 目前生效的申請月份：以「月份開關」目前開放中的最新月份為準（實際切月日期
+// 常常不是月初 1 號，會延後幾天，由管理員手動關前月/開新月決定切換時機），
+// 找不到任何開放月份時 fallback 回日曆當月，避免系統整個卡住
+export async function getActiveMonth(): Promise<string> {
+  const open = await prisma.monthWindow.findFirst({
+    where: { isOpen: true },
+    orderBy: { month: "desc" },
+  });
+  if (open) return open.month;
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
 // 該所目前有效的課別代碼（依課長帳號推得），供所長申請時的課別下拉選單使用
 export async function getDeptCodesForStore(storeCode: string): Promise<string[]> {
   const rows = await prisma.user.findMany({

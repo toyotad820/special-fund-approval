@@ -10,6 +10,7 @@ import {
   canWithdrawAccessory,
   canResubmitAccessory,
   canDeleteAccessory,
+  getActiveMonth,
 } from "./dal";
 import { ACC_STATUS, ACTION_LABEL } from "./constants";
 import { ocrExtractFields, type OcrResult } from "./ocr";
@@ -28,10 +29,6 @@ export type AccActionState = {
   values?: Record<string, string>;
 };
 
-function currentMonth(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
 
 // 圖片辨識：表單「辨識」按鈕呼叫（直接傳 base64＋mime）
 export async function ocrAccessory(
@@ -130,6 +127,7 @@ export async function createAccessoryRequest(
   const ocrDataNo = String(formData.get("ocrDataNo") ?? "");
   const images = parseImages(formData);
   const dataNo = values.dataNo.trim().toUpperCase();
+  const month = await getActiveMonth();
 
   // ---- 草稿：寬鬆存檔，不擋 ----
   if (intent === "draft") {
@@ -142,7 +140,7 @@ export async function createAccessoryRequest(
       const created = await prisma.accessoryRequest.create({
         data: {
           dataNo,
-          month: currentMonth(),
+          month,
           storeCode: values.storeCode.trim().toUpperCase(),
           salesName: values.salesName.trim(),
           customerName: values.customerName.trim(),
@@ -204,7 +202,7 @@ export async function createAccessoryRequest(
     const created = await prisma.accessoryRequest.create({
       data: {
         dataNo,
-        month: currentMonth(),
+        month,
         storeCode: values.storeCode.trim().toUpperCase(),
         salesName: values.salesName.trim(),
         customerName: values.customerName.trim(),
