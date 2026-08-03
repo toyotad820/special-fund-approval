@@ -240,7 +240,7 @@ export async function createAccessoryRequest(
         customerName: values.customerName.trim(),
         carModel: values.carModel.trim(),
         deptCode: values.deptCode.trim() || null,
-        accessoryNameQty: "",
+        accessoryNameQty: values.accessoryNameQty.trim(),
         accessoryBefore: values.accessoryBefore.trim(),
         accessoryAfter: values.accessoryAfter.trim(),
         changeDescription: values.changeDescription.trim(),
