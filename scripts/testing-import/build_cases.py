@@ -25,6 +25,7 @@ CAR_OVERRIDES = {
     "L CRUISER": "LAND CRUISER",
     "VO 豪華版": "VIOS",
     "SPORT": "COROLLA SP",
+    "VS": "VIOS",
 }
 
 CATEGORY_MAP = {"一般車": "一般車", "員購車": "員工車", "營業車": "營業車", "租賃車": "租賃車"}
@@ -79,6 +80,20 @@ def norm_car(raw):
     if s.startswith("CCROSS") or s.startswith("CC") or s.startswith("CROSS"): return "C CROSS HV" if is_hv else "C CROSS"
     if re.match(r'^RA-?H|^RA\d|^RA尊|^RA旗', s): return "RAV4 HV"
     return None
+
+
+def safe_int(raw):
+    """數字欄位轉整數；Excel 欄寬不夠時儲存格可能顯示/存成 '######' 這種壞值，
+    轉換失敗就回傳 None（呼叫端視為該列有問題，整列跳過而不是讓程式炸掉）。"""
+    if raw is None or raw == "":
+        return 0
+    try:
+        return int(raw)
+    except (ValueError, TypeError):
+        try:
+            return int(float(raw))
+        except (ValueError, TypeError):
+            return None
 
 
 def norm_dept(raw):
@@ -139,10 +154,16 @@ def main():
         car_raw = str(row[idx["車名"]]).strip() if row[idx["車名"]] else None
         car = norm_car(car_raw) if car_raw else None
         status = STATUS_MAP.get(str(row[idx["審核狀態"]]).strip()) if row[idx["審核狀態"]] else None
-        if not (re.match(r'^D\d{2}$', store) and dept and cat and car and status):
+        subsidy_dept = safe_int(row[idx["所課支援金"]])
+        gold = safe_int(row[idx["金牌"]])
+        discount = safe_int(row[idx["折讓總額"]])
+        special = safe_int(row[idx["特案支援金額"]])
+        bad_number = any(v is None for v in (subsidy_dept, gold, discount, special))
+        if not (re.match(r'^D\d{2}$', store) and dept and cat and car and status) or bad_number:
             if car_raw and not car:
                 unmatched_cars[car_raw] += 1
-            skipped_bad_field.append((order, store, dept, cat_raw, car_raw, row[idx["審核狀態"]]))
+            reason = "數字欄位格式錯誤（如 Excel 顯示 ######）" if bad_number else ""
+            skipped_bad_field.append((order, store, dept, cat_raw, car_raw, row[idx["審核狀態"]], reason))
             continue
         records.append({
             "orderNo": order,
@@ -152,11 +173,11 @@ def main():
             "category": cat,
             "carModel": car,
             "description": str(row[idx["備註"]]).strip() if row[idx["備註"]] else "",
-            "subsidyDeptCourse": int(row[idx["所課支援金"]]) if row[idx["所課支援金"]] else 0,
-            "goldMedal": int(row[idx["金牌"]]) if row[idx["金牌"]] else 0,
+            "subsidyDeptCourse": subsidy_dept,
+            "goldMedal": gold,
             "silverMedal": 0,  # 原始檔案沒有銀牌欄位
-            "discountTotal": int(row[idx["折讓總額"]]) if row[idx["折讓總額"]] else 0,
-            "specialSubsidy": int(row[idx["特案支援金額"]]) if row[idx["特案支援金額"]] else 0,
+            "discountTotal": discount,
+            "specialSubsidy": special,
             "status": status,
             "submittedAt": date.isoformat(),
             "month": f"{date.year:04d}-{date.month:02d}",
