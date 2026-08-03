@@ -1,3 +1,16 @@
+// CSV 匯出用：處理逗號/換行/引號的標準跳脫，並防「CSV 公式注入」——
+// 文字欄位開頭若是 =、+、-、@，Excel/Sheets 開啟時可能被當公式執行，前面補一個
+// 半形單引號讓試算表強制當文字處理（Excel 顯示上會忽略這個引號，不影響閱讀）。
+// 只對字串型別做這個檢查：數字型別（金額）不會是公式，負數的「-」開頭要維持
+// 是數字，不能被誤加引號變成文字。
+export function csvCell(v: string | number): string {
+  if (typeof v === "number") return String(v);
+  let s = v ?? "";
+  if (/^[=+\-@]/.test(s)) s = `'${s}`;
+  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
 // 自動判斷編碼解碼：UTF-8（含 BOM）優先，失敗則退回 Big5（繁中 Excel 常見）
 export function decodeCsvBytes(buf: Uint8Array): string {
   // UTF-8 BOM

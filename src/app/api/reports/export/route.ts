@@ -4,12 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { canViewReports, getActiveMonth } from "@/lib/dal";
 import { STATUS_LABEL, STATUS } from "@/lib/constants";
 import { dt } from "@/lib/format";
-
-function csvCell(v: string | number): string {
-  const s = String(v ?? "");
-  if (/[",\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
-  return s;
-}
+import { csvCell } from "@/lib/csv";
 
 export async function GET(request: Request) {
   const user = await requireUser();
