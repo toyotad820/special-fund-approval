@@ -29,8 +29,12 @@ export async function importToDb(records, databaseUrlOverride) {
       console.warn("找不到課長帳號，以下所別/課別的案件會被跳過:", [...missing].join(", "));
     }
 
+    // 只刪這次匯入的資料涵蓋到的月份，不是全部一起刪——Excel 來源目前可能只放當月資料，
+    // 若每次都整批刪光只留這次匯入的，Excel 沒放到的月份（如已結案的舊月份）會被沖掉、
+    // 且無法復原。改成「以匯入內容涵蓋的月份為準做覆蓋」，其餘月份維持資料庫現況不動。
+    const monthsInImport = [...new Set(records.map((r) => r.month))];
     const toDelete = await prisma.case.findMany({
-      where: { categoryId: { in: importCatIds } },
+      where: { categoryId: { in: importCatIds }, month: { in: monthsInImport } },
       select: { id: true },
     });
     const deleteIds = toDelete.map((c) => c.id);
