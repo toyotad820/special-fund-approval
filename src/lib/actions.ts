@@ -29,6 +29,10 @@ export type ActionState = {
 
 // ---------- 登入 / 登出 ----------
 
+// 防暴力破解：連續失敗達門檻鎖定一段時間
+const MAX_LOGIN_ATTEMPTS = 5;
+const LOCKOUT_MINUTES = 15;
+
 export async function login(
   _prev: ActionState,
   formData: FormData
@@ -41,8 +45,37 @@ export async function login(
   }
 
   const user = await prisma.user.findUnique({ where: { username } });
-  if (!user || !user.active || !(await bcrypt.compare(password, user.passwordHash))) {
+
+  if (user?.lockedUntil && user.lockedUntil > new Date()) {
+    const minutesLeft = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000);
+    return { error: `帳號已鎖定，請 ${minutesLeft} 分鐘後再試` };
+  }
+
+  const ok =
+    !!user && user.active && (await bcrypt.compare(password, user.passwordHash));
+
+  if (!ok) {
+    if (user) {
+      const attempts = user.failedLoginAttempts + 1;
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          failedLoginAttempts: attempts,
+          lockedUntil:
+            attempts >= MAX_LOGIN_ATTEMPTS
+              ? new Date(Date.now() + LOCKOUT_MINUTES * 60000)
+              : null,
+        },
+      });
+    }
     return { error: "帳號或密碼錯誤" };
+  }
+
+  if (user.failedLoginAttempts > 0 || user.lockedUntil) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { failedLoginAttempts: 0, lockedUntil: null },
+    });
   }
 
   const session = await getSession();

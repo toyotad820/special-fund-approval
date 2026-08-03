@@ -25,6 +25,10 @@ model User {
   active       Boolean  @default(true)
   createdAt    DateTime @default(now())
 
+  // 登入防暴力破解：連續失敗達門檻後鎖定一段時間，見 lib/actions.ts login()
+  failedLoginAttempts Int       @default(0)
+  lockedUntil         DateTime?
+
   submittedCases Case[]        @relation("submitter")
   approvals      ApprovalLog[]
 
