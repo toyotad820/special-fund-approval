@@ -45,6 +45,12 @@ export default async function UsersLayout({
             >
               目標台數
             </Link>
+            <Link
+              href="/users/months"
+              className="px-3 py-2 text-sm text-slate-600 hover:text-blue-600 hover:border-b-2 hover:border-blue-500 -mb-px"
+            >
+              月份開關
+            </Link>
           </nav>
           {children}
         </div>

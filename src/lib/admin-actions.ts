@@ -336,7 +336,7 @@ export async function createMonth(_prev: ActionState, formData: FormData): Promi
   const exists = await prisma.monthWindow.findUnique({ where: { month } });
   if (exists) return { fieldErrors: { month: "已存在" } };
   await prisma.monthWindow.create({ data: { month, isOpen: true } });
-  revalidatePath("/admin/months");
+  revalidatePath("/users/months");
   return { ok: true };
 }
 
@@ -345,7 +345,7 @@ export async function toggleMonth(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const m = await prisma.monthWindow.findUnique({ where: { id } });
   if (m) await prisma.monthWindow.update({ where: { id }, data: { isOpen: !m.isOpen } });
-  revalidatePath("/admin/months");
+  revalidatePath("/users/months");
 }
 
 // ---------- 案件退回（已核准後強制取消，退回申請者修改重送） ----------

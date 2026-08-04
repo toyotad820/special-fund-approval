@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { createMonth, toggleMonth } from "@/lib/admin-actions";
 import SimpleAddForm from "@/components/admin/SimpleAddForm";
 
-export default async function AdminMonthsPage() {
+export default async function UsersMonthsPage() {
   const items = await prisma.monthWindow.findMany({
     orderBy: { month: "desc" },
   });
