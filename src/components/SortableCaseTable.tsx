@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { STATUS_LABEL, STATUS_STYLE, STATUS_DOT, STATUS } from "@/lib/constants";
 import { money } from "@/lib/format";
@@ -27,13 +27,14 @@ export type CaseRowData = {
 };
 
 type ColType = "text" | "number" | "status";
-type Col = { key: keyof CaseRowData; label: string; type: ColType; width?: number };
+type Col = { key: keyof CaseRowData; label: string; type: ColType; width?: number; frozen?: boolean };
 
 // 審核狀態擺第一欄；不含送單人、送出時間、月份
+// 前三欄（審核狀態／所別課別／領牌名稱）凍結，橫向捲動時保持可見
 const COLUMNS: Col[] = [
-  { key: "status", label: "審核狀態", type: "status", width: 110 },
-  { key: "storeDept", label: "所別/課別", type: "text", width: 84 },
-  { key: "plateName", label: "領牌名稱", type: "text", width: 110 },
+  { key: "status", label: "審核狀態", type: "status", width: 110, frozen: true },
+  { key: "storeDept", label: "所別/課別", type: "text", width: 84, frozen: true },
+  { key: "plateName", label: "領牌名稱", type: "text", width: 110, frozen: true },
   { key: "categoryName", label: "特案類別", type: "text", width: 80 },
   { key: "categoryNo", label: "類別編號", type: "text", width: 80 },
   { key: "carModel", label: "車名", type: "text", width: 100 },
@@ -46,6 +47,29 @@ const COLUMNS: Col[] = [
 ];
 
 const NUMBER_KEYS = COLUMNS.filter((c) => c.type === "number").map((c) => c.key);
+
+// 凍結欄的 left 偏移（累加前面凍結欄的寬度），最後一欄加陰影分隔線
+const FROZEN_LEFT = new Map<string, number>();
+{
+  let acc = 0;
+  for (const c of COLUMNS) {
+    if (!c.frozen) continue;
+    FROZEN_LEFT.set(c.key, acc);
+    acc += c.width ?? 0;
+  }
+}
+const LAST_FROZEN_KEY = [...FROZEN_LEFT.keys()].pop();
+
+function frozenStyle(c: Col): CSSProperties | undefined {
+  if (!c.frozen) return undefined;
+  return { left: FROZEN_LEFT.get(c.key), width: c.width, maxWidth: c.width };
+}
+
+function frozenClass(c: Col, base: string, bg: "bg-white" | "bg-slate-50" = "bg-white"): string {
+  if (!c.frozen) return base;
+  const shadow = c.key === LAST_FROZEN_KEY ? " shadow-[2px_0_4px_-2px_rgba(0,0,0,0.15)]" : "";
+  return `${base} sticky z-[1] ${bg}${shadow}`;
+}
 
 const STATUS_ORDER: Record<string, number> = {
   [STATUS.DRAFT]: 0,
@@ -119,10 +143,14 @@ export default function SortableCaseTable({
                 <th
                   key={c.key}
                   onClick={() => toggleSort(c.key)}
-                  style={c.width ? { width: c.width, maxWidth: c.width } : undefined}
-                  className={`px-3 py-2.5 text-xs font-semibold whitespace-nowrap cursor-pointer select-none hover:bg-slate-100 transition-colors ${
-                    active ? "text-blue-700" : "text-slate-500"
-                  } ${c.type === "number" ? "text-center" : "text-left"}`}
+                  style={c.frozen ? frozenStyle(c) : c.width ? { width: c.width, maxWidth: c.width } : undefined}
+                  className={frozenClass(
+                    c,
+                    `px-3 py-2.5 text-xs font-semibold whitespace-nowrap cursor-pointer select-none hover:bg-slate-100 transition-colors ${
+                      active ? "text-blue-700" : "text-slate-500"
+                    } ${c.type === "number" ? "text-center" : "text-left"}`,
+                    "bg-slate-50"
+                  )}
                   title="點擊排序"
                 >
                   {c.label}
@@ -147,8 +175,8 @@ export default function SortableCaseTable({
                   return (
                     <td
                       key={c.key}
-                      style={c.width ? { width: c.width, maxWidth: c.width } : undefined}
-                      className="px-3 py-2 whitespace-nowrap"
+                      style={c.frozen ? frozenStyle(c) : c.width ? { width: c.width, maxWidth: c.width } : undefined}
+                      className={frozenClass(c, "px-3 py-2 whitespace-nowrap")}
                     >
                       <span
                         className={`inline-flex items-center gap-1.5 text-xs font-medium rounded-full px-2.5 py-0.5 ${STATUS_STYLE[r.status] ?? "bg-slate-100 text-slate-600"}`}
@@ -184,8 +212,8 @@ export default function SortableCaseTable({
                 return (
                   <td
                     key={c.key}
-                    style={c.width ? { width: c.width, maxWidth: c.width } : undefined}
-                    className="px-3 py-2 whitespace-nowrap text-slate-800 truncate"
+                    style={c.frozen ? frozenStyle(c) : c.width ? { width: c.width, maxWidth: c.width } : undefined}
+                    className={frozenClass(c, "px-3 py-2 whitespace-nowrap text-slate-800 truncate")}
                   >
                     {v as string}
                   </td>
@@ -210,7 +238,11 @@ export default function SortableCaseTable({
                   );
                 }
                 return (
-                  <td key={c.key} className="px-3 py-2 whitespace-nowrap text-slate-700">
+                  <td
+                    key={c.key}
+                    style={c.frozen ? frozenStyle(c) : undefined}
+                    className={frozenClass(c, "px-3 py-2 whitespace-nowrap text-slate-700", "bg-slate-50")}
+                  >
                     {i === 0 ? `合計 ${rows.length} 筆` : ""}
                   </td>
                 );
