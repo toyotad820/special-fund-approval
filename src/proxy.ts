@@ -3,7 +3,7 @@ import type { NextRequest } from "next/server";
 
 const isDev = process.env.NODE_ENV === "development";
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const nonce = Buffer.from(crypto.randomUUID()).toString("base64");
 
   const csp = [
