@@ -16,9 +16,10 @@ export default function TargetImportForm() {
   return (
     <form action={formAction} className="space-y-3">
       <p className="text-xs text-slate-500">
-        表頭：<code>storeCode,deptCode,weight,targetCount</code>
-        （<code>deptCode</code> 所層級填 <code>0</code>、課別填 1/2/3…，各佔一列，
-        所目標是獨立數值、不會用課加總算出來；<strong>整批覆蓋</strong>
+        表頭：<code>storeCode,deptCode,targetCount</code>
+        （只填課別 1/2/3…目標，<strong>不要填所層級列</strong>；
+        所目標與比重由系統自動算出——所目標＝該所底下各課加總，
+        比重＝該列目標台數佔全公司課目標總和的百分比；<strong>整批覆蓋</strong>
         ——上傳成功後，該月舊資料會整批清掉、以這份檔案為準重建）
         {" "}
         <a href="/unit-target-template.csv" className="text-blue-600 hover:underline">

@@ -406,32 +406,45 @@ export async function importUnitTargets(
   if (records.length === 0) return { error: "檔案沒有資料列" };
 
   const errors: string[] = [];
-  // key 重複時（同一批檔案裡打錯打兩次）以後面那列為準
-  const byKey = new Map<
-    string,
-    { storeCode: string; deptCode: string; weight: number; targetCount: number }
-  >();
+  // key 重複時（同一批檔案裡打錯打兩次）以後面那列為準；只收課別列，所層級由系統加總算出
+  const byKey = new Map<string, { storeCode: string; deptCode: string; targetCount: number }>();
 
   for (let i = 0; i < records.length; i++) {
     const r = records[i];
     const line = i + 2; // 含表頭
     const storeCode = (r.storeCode ?? r["所別"] ?? "").trim();
-    // deptCode="0" 代表所層級的獨立數值（業務編制沒有 0 課，不靠加總課算出來）
     const deptCode = normalizeDeptCode((r.deptCode ?? r["課別"] ?? "").trim());
-    const weight = Number(r.weight ?? r["比重"] ?? "");
     const targetCount = Number(r.targetCount ?? r["目標台數"] ?? "");
 
-    if (!storeCode || !deptCode || !Number.isFinite(weight) || !Number.isFinite(targetCount)) {
-      errors.push(`第 ${line} 列：缺必要欄位或數值格式錯誤`);
+    if (!storeCode || !deptCode || deptCode === "0" || !Number.isFinite(targetCount)) {
+      errors.push(`第 ${line} 列：缺必要欄位、數值格式錯誤，或誤填所層級列（本表只填課別）`);
       continue;
     }
-    byKey.set(`${storeCode} ${deptCode}`, { storeCode, deptCode, weight, targetCount });
+    byKey.set(`${storeCode} ${deptCode}`, { storeCode, deptCode, targetCount });
   }
 
-  const rows = [...byKey.values()];
-  if (rows.length === 0) {
+  const deptRows = [...byKey.values()];
+  if (deptRows.length === 0) {
     return { error: `沒有可用的資料列；${errors.slice(0, 5).join("；")}` };
   }
+
+  // 所層級＝該所底下各課加總（deptCode="0"，業務編制沒有這個課別編號，純粹存所層級的獨立數值）
+  const storeTotals = new Map<string, number>();
+  for (const r of deptRows) {
+    storeTotals.set(r.storeCode, (storeTotals.get(r.storeCode) ?? 0) + r.targetCount);
+  }
+  const storeRows = [...storeTotals.entries()].map(([storeCode, targetCount]) => ({
+    storeCode,
+    deptCode: "0",
+    targetCount,
+  }));
+
+  // 比重＝該列 targetCount 佔全公司課目標總和的百分比（所/課都套同一公式，四捨五入到小數1位）
+  const companyTotal = deptRows.reduce((sum, r) => sum + r.targetCount, 0);
+  const rows = [...deptRows, ...storeRows].map((r) => ({
+    ...r,
+    weight: companyTotal > 0 ? Math.round((r.targetCount / companyTotal) * 1000) / 10 : 0,
+  }));
 
   // 整批覆蓋：上傳成功即以這份檔案為準，清掉該月舊資料再整批寫入
   await prisma.$transaction([
@@ -441,8 +454,9 @@ export async function importUnitTargets(
     }),
   ]);
 
-  revalidatePath("/admin/targets");
+  revalidatePath("/users/targets");
   const msg = `已覆蓋寫入 ${rows.length} 筆` +
     (errors.length ? `；${errors.length} 筆略過：${errors.slice(0, 5).join("；")}` : "");
   return { ok: errors.length === 0, message: msg, error: errors.length ? msg : undefined };
 }
+

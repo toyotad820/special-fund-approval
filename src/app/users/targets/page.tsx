@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { getActiveMonth } from "@/lib/dal";
 import TargetImportForm from "@/components/admin/TargetImportForm";
 
-export default async function AdminTargetsPage({
+export default async function UsersTargetsPage({
   searchParams,
 }: {
   searchParams: Promise<{ month?: string }>;

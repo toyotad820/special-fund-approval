@@ -40,7 +40,7 @@ export default async function UsersLayout({
               人員
             </Link>
             <Link
-              href="/admin/targets"
+              href="/users/targets"
               className="px-3 py-2 text-sm text-slate-600 hover:text-blue-600 hover:border-b-2 hover:border-blue-500 -mb-px"
             >
               目標台數
