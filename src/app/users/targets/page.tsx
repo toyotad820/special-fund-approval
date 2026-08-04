@@ -57,14 +57,14 @@ export default async function UsersTargetsPage({
                   key={t.id}
                   className={`border-t border-slate-100 ${isStoreLevel ? "bg-slate-50/70 font-semibold" : ""}`}
                 >
-                  <td className="py-1.5 text-left text-slate-700">{t.storeCode}</td>
-                  <td className="py-1.5 text-left text-slate-700">
+                  <td className="py-1.5 text-center text-slate-700">{t.storeCode}</td>
+                  <td className="py-1.5 text-center text-slate-700">
                     {isStoreLevel ? "（所）" : `${t.deptCode}課`}
                   </td>
-                  <td className="py-1.5 text-right tabular-nums text-slate-600">
+                  <td className="py-1.5 text-center tabular-nums text-slate-600">
                     {t.weight}%
                   </td>
-                  <td className="py-1.5 text-right tabular-nums text-slate-600">
+                  <td className="py-1.5 text-center tabular-nums text-slate-600">
                     {t.targetCount}
                   </td>
                 </tr>
