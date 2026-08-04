@@ -20,7 +20,7 @@ export async function importToDb(records, databaseUrlOverride) {
     const userMap = new Map(kezhangs.map((u) => [`${u.storeCode}-${u.deptCode}`, u.id]));
 
     const missing = new Set();
-    const usable = records.filter((r) => {
+    const usableRaw = records.filter((r) => {
       const has = userMap.has(`${r.storeCode}-${r.deptCode}`);
       if (!has) missing.add(`${r.storeCode}-${r.deptCode}`);
       return has;
@@ -29,12 +29,25 @@ export async function importToDb(records, databaseUrlOverride) {
       console.warn("找不到課長帳號，以下所別/課別的案件會被跳過:", [...missing].join(", "));
     }
 
+    // orderNo 全域唯一；同一批裡打重時以後面那筆為準
+    const byOrderNo = new Map(usableRaw.map((r) => [r.orderNo, r]));
+    const usable = [...byOrderNo.values()];
+
     // 只刪這次匯入的資料涵蓋到的月份，不是全部一起刪——Excel 來源目前可能只放當月資料，
     // 若每次都整批刪光只留這次匯入的，Excel 沒放到的月份（如已結案的舊月份）會被沖掉、
     // 且無法復原。改成「以匯入內容涵蓋的月份為準做覆蓋」，其餘月份維持資料庫現況不動。
+    // 但 orderNo 是全域唯一鍵，同一張單的 month 可能在兩次匯入之間改變（重新歸類到別月），
+    // 若只靠月份範圍刪除，舊月份那筆不會被清掉，之後 insert 同 orderNo 會撞唯一索引導致整批失敗，
+    // 所以刪除範圍要再聯集「這次匯入清單裡每個 orderNo 目前在資料庫的既有紀錄」，不論它現在在哪個月。
     const monthsInImport = [...new Set(records.map((r) => r.month))];
+    const importOrderNos = usable.map((r) => r.orderNo);
     const toDelete = await prisma.case.findMany({
-      where: { categoryId: { in: importCatIds }, month: { in: monthsInImport } },
+      where: {
+        OR: [
+          { categoryId: { in: importCatIds }, month: { in: monthsInImport } },
+          { orderNo: { in: importOrderNos } },
+        ],
+      },
       select: { id: true },
     });
     const deleteIds = toDelete.map((c) => c.id);
