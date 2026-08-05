@@ -32,8 +32,8 @@ type Col = { key: keyof CaseRowData; label: string; type: ColType; width?: numbe
 // 審核狀態擺第一欄；不含送單人、送出時間、月份
 // 前三欄（審核狀態／所別課別／領牌名稱）凍結，橫向捲動時保持可見
 const COLUMNS: Col[] = [
-  { key: "status", label: "審核狀態", type: "status", width: 110, frozen: true },
-  { key: "storeDept", label: "所別/課別", type: "text", width: 84, frozen: true },
+  { key: "status", label: "審核狀態", type: "status", width: 100, frozen: true },
+  { key: "storeDept", label: "所別/課別", type: "text", width: 78, frozen: true },
   { key: "plateName", label: "領牌名稱", type: "text", width: 110, frozen: true },
   { key: "categoryName", label: "特案類別", type: "text", width: 80 },
   { key: "categoryNo", label: "類別編號", type: "text", width: 80 },
@@ -190,7 +190,7 @@ export default function SortableCaseTable({
                   style={c.frozen ? frozenStyle(c, frozenLeft) : c.width ? { width: c.width, maxWidth: c.width } : undefined}
                   className={frozenClass(
                     c,
-                    `px-3 py-2.5 text-xs font-semibold whitespace-nowrap cursor-pointer select-none hover:bg-slate-100 transition-colors ${
+                    `bg-slate-50 px-3 py-2.5 text-xs font-semibold whitespace-nowrap cursor-pointer select-none hover:bg-slate-100 transition-colors ${
                       active ? "text-blue-700" : "text-slate-500"
                     } ${c.type === "number" ? "text-center" : "text-left"}`,
                     "bg-slate-50"
