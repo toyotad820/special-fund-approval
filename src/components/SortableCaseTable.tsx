@@ -183,6 +183,7 @@ export default function SortableCaseTable({
               )}
               {COLUMNS.map((c) => {
               const active = c.key === sortKey;
+              const highlight = c.key === "specialSubsidy";
               return (
                 <th
                   key={c.key}
@@ -190,8 +191,8 @@ export default function SortableCaseTable({
                   style={c.frozen ? frozenStyle(c, frozenLeft) : c.width ? { width: c.width, maxWidth: c.width } : undefined}
                   className={frozenClass(
                     c,
-                    `bg-slate-50 px-3 py-2.5 text-xs font-semibold whitespace-nowrap cursor-pointer select-none hover:bg-slate-100 transition-colors ${
-                      active ? "text-blue-700" : "text-slate-500"
+                    `${highlight ? "bg-blue-50" : "bg-slate-50"} px-3 py-2.5 text-xs font-semibold whitespace-nowrap cursor-pointer select-none hover:bg-slate-100 transition-colors ${
+                      highlight ? "text-blue-700" : active ? "text-blue-700" : "text-slate-500"
                     } ${c.type === "number" ? "text-center" : "text-left"}`,
                     "bg-slate-50"
                   )}
@@ -250,11 +251,16 @@ export default function SortableCaseTable({
                   );
                 }
                 if (c.type === "number") {
+                  const highlight = c.key === "specialSubsidy";
                   return (
                     <td
                       key={c.key}
                       style={c.width ? { width: c.width, maxWidth: c.width } : undefined}
-                      className="px-3 py-2 text-right whitespace-nowrap tabular-nums text-slate-800"
+                      className={
+                        highlight
+                          ? "px-3 py-2 text-right whitespace-nowrap tabular-nums text-base font-bold text-blue-700 bg-blue-50/60"
+                          : "px-3 py-2 text-right whitespace-nowrap tabular-nums text-slate-800"
+                      }
                     >
                       {money(v as number)}
                     </td>
@@ -291,11 +297,16 @@ export default function SortableCaseTable({
               )}
               {COLUMNS.map((c, i) => {
                 if (c.type === "number") {
+                  const highlight = c.key === "specialSubsidy";
                   return (
                     <td
                       key={c.key}
                       style={c.width ? { width: c.width, maxWidth: c.width } : undefined}
-                      className="px-3 py-2 text-right whitespace-nowrap tabular-nums text-slate-900"
+                      className={
+                        highlight
+                          ? "px-3 py-2 text-right whitespace-nowrap tabular-nums text-base font-bold text-blue-700 bg-blue-50/60"
+                          : "px-3 py-2 text-right whitespace-nowrap tabular-nums text-slate-900"
+                      }
                     >
                       {money(totals[c.key])}
                     </td>
