@@ -81,11 +81,27 @@ function stripProjectCodeLines(v: string): string {
 }
 
 // 工單上列出來的品項數量最少是 1，不會是 0——模型偶爾會把相鄰列（例如上一列
-// 是空白的「專案代碼」列）誤讀成 0，這裡做保底修正，不依賴模型每次都聽指示
+// 是空白的「專案代碼」列）誤讀成 0，這裡做保底修正，不依賴模型每次都聽指示。
+// 不假設「x0」一定黏在行尾（模型偶爾會多回傳空白、標點、或用全形×），
+// 改成抓該行「最後一個」x＋數字的出現位置（就是數量標記，因為配件代碼裡
+// 即使剛好有 x/X 開頭的料號如 XTR40，也一定排在數量標記之前），只換掉那段
 function fixZeroQty(v: string): string {
   return v
     .split(/\r?\n/)
-    .map((line) => line.replace(/x\s*0\s*$/i, "x1"))
+    .map((line) => {
+      // 抓該行「最後一個」x/×＋數字，那才是數量標記（配件代碼裡即使剛好有
+      // x/X 開頭的料號如 XTR40，也一定排在數量標記之前，不會是最後一個）
+      const re = /[x×]\s*([0-9０-９]+)/gi;
+      let last: RegExpExecArray | null = null;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(line))) last = m;
+      if (!last) return line;
+      const digits = last[1];
+      if (digits !== "0" && digits !== "０") return line;
+      const start = last.index;
+      const end = start + last[0].length;
+      return line.slice(0, start) + last[0].replace(/[0０]$/, "1") + line.slice(end);
+    })
     .join("\n");
 }
 

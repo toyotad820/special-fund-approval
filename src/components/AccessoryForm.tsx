@@ -87,6 +87,7 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
   const [ocrDataNo, setOcrDataNo] = useState("");
   const [ocrRunning, setOcrRunning] = useState(false);
   const [ocrMsg, setOcrMsg] = useState<string | null>(null);
+  const [ocrElapsed, setOcrElapsed] = useState<number | null>(null);
   const [previewIndex, setPreviewIndex] = useState<number | null>(null);
 
   const set = (k: keyof Fields, v: string) =>
@@ -111,11 +112,13 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
 
   const runOcr = async (provider: "gemini" | "vision" = "gemini") => {
     if (images.length === 0) {
+      setOcrElapsed(null);
       setOcrMsg("請先上傳工單圖片");
       return;
     }
     setOcrRunning(true);
     setOcrMsg(null);
+    setOcrElapsed(null);
     try {
       const first = images[0];
       const t0 = Date.now();
@@ -126,7 +129,8 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
       const elapsed = Date.now() - t0;
       if (!res.ok) {
         setOcrDataNo("");
-        setOcrMsg(`${res.error || "辨識失敗，請重新上傳清晰的工單圖片"}（${elapsed}ms）`);
+        setOcrElapsed(elapsed);
+        setOcrMsg(res.error || "辨識失敗，請重新上傳清晰的工單圖片");
         return;
       }
       const f = res.fields;
@@ -160,7 +164,8 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
       setImages((prev) =>
         prev.map((img, idx) => (idx === 0 ? { ...img, ocrRaw: res.raw } : img))
       );
-      setOcrMsg(`辨識完成（${elapsed}ms），請核對欄位後送出。`);
+      setOcrElapsed(elapsed);
+      setOcrMsg("辨識完成，請核對欄位後送出。");
     } finally {
       setOcrRunning(false);
     }
@@ -272,13 +277,20 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => runOcr("vision")}
+            onClick={() => runOcr("gemini")}
             disabled={ocrRunning || images.length === 0}
             className="rounded-lg bg-slate-800 text-white px-4 py-2 text-sm font-medium hover:bg-slate-900 disabled:opacity-50"
           >
             辨識圖片
           </button>
-          {ocrMsg && <span className="text-xs text-slate-500">{ocrMsg}</span>}
+          {ocrMsg && (
+            <span className="flex flex-col leading-tight">
+              {ocrElapsed !== null && (
+                <span className="text-sm text-slate-500">{ocrElapsed}ms</span>
+              )}
+              <span className="text-base font-medium text-slate-700">{ocrMsg}</span>
+            </span>
+          )}
         </div>
       </section>
 
