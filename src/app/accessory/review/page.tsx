@@ -3,7 +3,8 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { ROLE, ACC_STATUS } from "@/lib/constants";
-import SortableTable, { type SortCol, type SortRow } from "@/components/SortableTable";
+import { type SortCol, type SortRow } from "@/components/SortableTable";
+import AccessoryReviewTable from "@/components/AccessoryReviewTable";
 
 const COLUMNS: SortCol[] = [
   { key: "storeCode", label: "所別" },
@@ -11,6 +12,7 @@ const COLUMNS: SortCol[] = [
   { key: "customerName", label: "客戶", kind: "link", width: "6rem" },
   { key: "carModel", label: "車名" },
   { key: "changeDescription", label: "更換說明", grow: true },
+  { key: "warningText", label: "系統警示", kind: "warn", width: "10rem" },
 ];
 
 export default async function AccessoryReviewPage() {
@@ -33,10 +35,11 @@ export default async function AccessoryReviewPage() {
         </Link>
       </div>
 
-      <SortableTable
+      <AccessoryReviewTable
         columns={COLUMNS}
         rows={requests.map(
           (r): SortRow => ({
+            id: r.id,
             href: `/accessory/review/${r.id}`,
             dataNo: r.dataNo,
             storeCode: r.storeCode,
@@ -44,12 +47,11 @@ export default async function AccessoryReviewPage() {
             customerName: r.customerName,
             carModel: r.carModel,
             changeDescription: r.changeDescription,
+            warningText: r.warningText,
             submittedBy: r.submittedBy.name,
             submittedAt: r.submittedAt ? r.submittedAt.toISOString() : null,
           })
         )}
-        emptyText="目前沒有待審核案件"
-        minWidth={720}
       />
     </div>
   );

@@ -4,7 +4,8 @@ import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { ROLE, ACC_STATUS } from "@/lib/constants";
 import { assignedStoreSet } from "@/lib/dal";
-import SortableTable, { type SortCol, type SortRow } from "@/components/SortableTable";
+import { type SortCol, type SortRow } from "@/components/SortableTable";
+import AccessoryConfirmTable from "@/components/AccessoryConfirmTable";
 
 const COLUMNS: SortCol[] = [
   { key: "storeCode", label: "所別" },
@@ -13,6 +14,7 @@ const COLUMNS: SortCol[] = [
   { key: "carModel", label: "車名" },
   { key: "changeDescription", label: "更換說明", grow: true },
   { key: "submittedAt", label: "核准時間", kind: "date" },
+  { key: "warningText", label: "系統警示", kind: "warn", width: "10rem" },
 ];
 
 export default async function AccessoryConfirmPage() {
@@ -40,10 +42,11 @@ export default async function AccessoryConfirmPage() {
         </Link>
       </div>
 
-      <SortableTable
+      <AccessoryConfirmTable
         columns={COLUMNS}
         rows={requests.map(
           (r): SortRow => ({
+            id: r.id,
             href: `/accessory/confirm/${r.id}`,
             dataNo: r.dataNo,
             storeCode: r.storeCode,
@@ -52,10 +55,9 @@ export default async function AccessoryConfirmPage() {
             carModel: r.carModel,
             changeDescription: r.changeDescription,
             submittedAt: r.submittedAt ? r.submittedAt.toISOString() : null,
+            warningText: r.warningText,
           })
         )}
-        emptyText="目前沒有待確認案件"
-        minWidth={720}
       />
     </div>
   );

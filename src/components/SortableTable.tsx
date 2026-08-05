@@ -1,20 +1,20 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import AccStatusBadge from "./AccStatusBadge";
 
 export type SortCol = {
   key: string;
   label: string;
-  kind?: "link" | "status" | "date" | "text"; // 預設 text
+  kind?: "link" | "status" | "date" | "text" | "warn"; // 預設 text；warn=有值時顯示紅字
   align?: "left" | "right" | "center";
   grow?: boolean; // 佔滿剩餘寬度（如更換說明）
   mono?: boolean;
   width?: string; // 限寬（如 "6rem"），超過以 truncate 省略
 };
 
-export type SortRow = Record<string, string | number | null> & { href?: string };
+export type SortRow = Record<string, string | number | null> & { href?: string; id?: string };
 
 function fmtDate(v: string | number | null): string {
   if (!v) return "";
@@ -31,6 +31,8 @@ export default function SortableTable({
   defaultSortDir = "desc",
   emptyText = "目前沒有資料",
   minWidth = 640,
+  selectable = false,
+  renderBulkActions,
 }: {
   columns: SortCol[];
   rows: SortRow[];
@@ -38,9 +40,13 @@ export default function SortableTable({
   defaultSortDir?: "asc" | "desc";
   emptyText?: string;
   minWidth?: number;
+  // 開啟後每列前加勾選欄，配合 renderBulkActions 顯示整批操作工具列（rows 需帶 id）
+  selectable?: boolean;
+  renderBulkActions?: (selectedIds: string[], clearSelection: () => void) => ReactNode;
 }) {
   const [sortKey, setSortKey] = useState<string | undefined>(defaultSortKey);
   const [dir, setDir] = useState<"asc" | "desc">(defaultSortDir);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const colOf = (k: string) => columns.find((c) => c.key === k);
 
@@ -79,12 +85,40 @@ export default function SortableTable({
   const alignCls = (a?: string) =>
     a === "right" ? "text-right" : a === "center" ? "text-center" : "text-left";
 
+  const selectedIds = [...selected];
+  const clearSelection = () => setSelected(new Set());
+  const toggleRow = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const toggleAll = () =>
+    setSelected((prev) =>
+      prev.size === sorted.length
+        ? new Set()
+        : new Set(sorted.map((r) => r.id).filter((id): id is string => !!id))
+    );
+
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+    <div className="space-y-2">
+      {selectable && selectedIds.length > 0 && renderBulkActions?.(selectedIds, clearSelection)}
+      <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full" style={{ minWidth }}>
           <thead className="bg-slate-50">
             <tr>
+              {selectable && (
+                <th className="px-3 py-2.5 w-10">
+                  <input
+                    type="checkbox"
+                    checked={selected.size > 0 && selected.size === sorted.length}
+                    onChange={toggleAll}
+                    className="align-middle"
+                  />
+                </th>
+              )}
               {columns.map((c) => {
                 const active = sortKey === c.key;
                 return (
@@ -108,6 +142,18 @@ export default function SortableTable({
           <tbody>
             {sorted.map((r, i) => (
               <tr key={i} className="border-t border-slate-100 hover:bg-slate-50 transition-colors">
+                {selectable && (
+                  <td className="px-3 py-2">
+                    {r.id && (
+                      <input
+                        type="checkbox"
+                        checked={selected.has(r.id)}
+                        onChange={() => toggleRow(r.id!)}
+                        className="align-middle"
+                      />
+                    )}
+                  </td>
+                )}
                 {columns.map((c) => {
                   const v = r[c.key];
                   const style = c.width ? { maxWidth: c.width, width: c.width } : undefined;
@@ -135,6 +181,18 @@ export default function SortableTable({
                       </td>
                     );
                   }
+                  if (c.kind === "warn") {
+                    return (
+                      <td
+                        key={c.key}
+                        className={`${base} ${v ? "text-rose-600 font-medium" : "text-slate-300"}`}
+                        style={style}
+                        title={c.width ? String(v ?? "") : undefined}
+                      >
+                        {v || "—"}
+                      </td>
+                    );
+                  }
                   return (
                     <td key={c.key} className={`${base} text-slate-800`} style={style} title={c.width ? String(v ?? "") : undefined}>
                       {v}
@@ -145,13 +203,17 @@ export default function SortableTable({
             ))}
             {sorted.length === 0 && (
               <tr>
-                <td colSpan={columns.length} className="px-3 py-8 text-center text-sm text-slate-400">
+                <td
+                  colSpan={columns.length + (selectable ? 1 : 0)}
+                  className="px-3 py-8 text-center text-sm text-slate-400"
+                >
                   {emptyText}
                 </td>
               </tr>
             )}
           </tbody>
         </table>
+      </div>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import sharp from "sharp";
 import { prisma } from "./prisma";
 import { requireUser } from "./session";
@@ -13,7 +14,7 @@ import {
   canDeleteAccessory,
   getActiveMonth,
 } from "./dal";
-import { ACC_STATUS, ACTION_LABEL } from "./constants";
+import { ACC_STATUS, ACTION_LABEL, ROLE } from "./constants";
 import { ocrExtractFields, type OcrResult } from "./ocr";
 import { ocrExtractFieldsVision } from "./ocr-vision";
 import { checkAccessoryBlocks } from "./accessory-validate";
@@ -449,6 +450,47 @@ export async function approveAccessory(formData: FormData): Promise<void> {
   redirect("/accessory/review");
 }
 
+// ---- 部長整批核准（僅核准，駁回需填原因故維持單筆）----
+export async function bulkApproveAccessory(
+  _prev: AccActionState,
+  formData: FormData
+): Promise<AccActionState> {
+  const user = await requireUser();
+  if (user.role !== ROLE.BUZHUGUAN) return { error: "您沒有權限執行整批核准" };
+
+  const ids = formData.getAll("ids").map(String).filter(Boolean);
+  if (ids.length === 0) return { error: "請先選擇要核准的案件" };
+
+  const requests = await prisma.accessoryRequest.findMany({
+    where: { id: { in: ids } },
+    include: { images: { orderBy: { sortOrder: "asc" } } },
+  });
+  const reviewable = requests.filter((r) => canReviewAccessory(user, r));
+  if (reviewable.length === 0) return { error: "所選案件已不在待審核狀態，請重新整理" };
+
+  for (const r of reviewable) {
+    const firstImg = r.images[0];
+    let stampedData: string | null = null;
+    if (firstImg?.imageData) {
+      const date = new Date().toLocaleDateString("zh-TW");
+      stampedData = await stampImage(firstImg.imageData, firstImg.mimeType, user.name, date);
+    }
+    await prisma.accessoryRequest.update({
+      where: { id: r.id },
+      data: {
+        status: ACC_STATUS.APPROVED,
+        ...(firstImg && stampedData
+          ? { images: { update: { where: { id: firstImg.id }, data: { stampedData } } } }
+          : {}),
+        logs: { create: { step: "APPROVED", action: "APPROVE", reviewerId: user.id } },
+      },
+    });
+  }
+
+  revalidatePath("/accessory/review");
+  return { ok: true, message: `已核准 ${reviewable.length} 筆案件` };
+}
+
 // ---- 部長駁回 ----
 export async function rejectAccessory(formData: FormData): Promise<void> {
   const user = await requireUser();
@@ -480,23 +522,28 @@ export async function rejectAccessory(formData: FormData): Promise<void> {
   redirect("/accessory/review");
 }
 
-// ---- 配件中心確認（結案）----
-export async function confirmAccessory(formData: FormData): Promise<void> {
-  const user = await requireUser();
+type ConfirmableRequest = {
+  id: string;
+  dataNo: string;
+  month: string;
+  images: {
+    id: string;
+    mimeType: string;
+    sortOrder: number;
+    driveFileId: string | null;
+    stampedData: string | null;
+    imageData: string | null;
+  }[];
+};
 
-  const id = String(formData.get("id") ?? "");
-  const remark = String(formData.get("remark") ?? "").trim();
-  if (!id) throw new Error("缺少案件 ID");
-
-  const r = await prisma.accessoryRequest.findUnique({
-    where: { id },
-    include: { images: { orderBy: { sortOrder: "asc" } } },
-  });
-  if (!r) throw new Error("案件不存在");
-  if (!canConfirmAccessory(user, r)) throw new Error("您沒有權限確認此案件");
-
+// 確認結案的核心邏輯（單筆／整批共用）：更新狀態、歸檔 Dropbox、清空已歸檔的 base64
+async function confirmOne(
+  r: ConfirmableRequest,
+  user: { id: string; username: string },
+  remark?: string
+): Promise<void> {
   await prisma.accessoryRequest.update({
-    where: { id },
+    where: { id: r.id },
     data: {
       status: ACC_STATUS.CONFIRMED,
       logs: {
@@ -544,11 +591,55 @@ export async function confirmAccessory(formData: FormData): Promise<void> {
 
   // 結案後清空已歸檔 Drive 的 base64（省 DB 空間；未歸檔者保留）
   await prisma.accessoryImage.updateMany({
-    where: { requestId: id, driveFileId: { not: null } },
+    where: { requestId: r.id, driveFileId: { not: null } },
     data: { imageData: null, stampedData: null },
   });
+}
+
+// ---- 配件中心確認（結案）----
+export async function confirmAccessory(formData: FormData): Promise<void> {
+  const user = await requireUser();
+
+  const id = String(formData.get("id") ?? "");
+  const remark = String(formData.get("remark") ?? "").trim();
+  if (!id) throw new Error("缺少案件 ID");
+
+  const r = await prisma.accessoryRequest.findUnique({
+    where: { id },
+    include: { images: { orderBy: { sortOrder: "asc" } } },
+  });
+  if (!r) throw new Error("案件不存在");
+  if (!canConfirmAccessory(user, r)) throw new Error("您沒有權限確認此案件");
+
+  await confirmOne(r, user, remark);
 
   redirect("/accessory/confirm");
+}
+
+// ---- 配件中心整批確認結案（僅結案，退回需填原因故維持單筆）----
+export async function bulkConfirmAccessory(
+  _prev: AccActionState,
+  formData: FormData
+): Promise<AccActionState> {
+  const user = await requireUser();
+  if (user.role !== ROLE.PEIJIAN) return { error: "您沒有權限執行整批確認" };
+
+  const ids = formData.getAll("ids").map(String).filter(Boolean);
+  if (ids.length === 0) return { error: "請先選擇要確認的案件" };
+
+  const requests = await prisma.accessoryRequest.findMany({
+    where: { id: { in: ids } },
+    include: { images: { orderBy: { sortOrder: "asc" } } },
+  });
+  const confirmable = requests.filter((r) => canConfirmAccessory(user, r));
+  if (confirmable.length === 0) return { error: "所選案件已不在待確認狀態，請重新整理" };
+
+  for (const r of confirmable) {
+    await confirmOne(r, user);
+  }
+
+  revalidatePath("/accessory/confirm");
+  return { ok: true, message: `已確認結案 ${confirmable.length} 筆案件` };
 }
 
 // ---- 配件中心退回重審（打回部長）----
