@@ -46,7 +46,7 @@ const PROMPT = `你是 TOYOTA 經銷商「OPT 委託安裝工單」的資料擷�
 - salesName：業代編號＋姓名，保留前面的業代編號一起回傳（例如「B4569 陳建勳」）
 - customerName：客戶名稱
 - carModel：車名（例如 Y CROSS、CAMRY、C CROSS）
-- accessoryNameQty：工單表格中每一項配件的「名稱」與「數量」，逐項列出、每項一行，格式為「名稱 x數量」（例如「LED後座觸控閱讀燈 x1」）。只列有配件名稱的列，忽略純「專案代碼」「精裝碼」「差額」等無配件名稱的列
+- accessoryNameQty：工單表格中每一項配件的「名稱」與「數量」，逐項列出、每項一行，格式為「名稱 x數量」（例如「LED後座觸控閱讀燈 x1」）。只列有配件名稱的列，忽略純「專案代碼」「精裝碼」「差額」等無配件名稱的列。數量欄位一律看該列自己的「數量」直欄，不要被相鄰列（尤其上一列若是「專案代碼」空白列）影響；工單上出現的品項數量最少是 1，絕不會是 0，若讀出來是 0 代表看錯欄位，請重新確認
 - remarks：工單下方「簽決簽審意見」或備註欄的內容，逐字回傳不要省略
 
 只回傳 JSON，不要多餘說明。`;
@@ -71,6 +71,24 @@ const RESPONSE_SCHEMA = {
   ],
 } as const;
 
+// 「專案代碼」列沒有配件名稱，提示詞已經要求模型忽略，但偶爾還是會漏進來，
+// 這裡在程式碼層再濾掉一次，不完全依賴模型每次都聽指示
+function stripProjectCodeLines(v: string): string {
+  return v
+    .split(/\r?\n/)
+    .filter((line) => !line.includes("專案代碼"))
+    .join("\n");
+}
+
+// 工單上列出來的品項數量最少是 1，不會是 0——模型偶爾會把相鄰列（例如上一列
+// 是空白的「專案代碼」列）誤讀成 0，這裡做保底修正，不依賴模型每次都聽指示
+function fixZeroQty(v: string): string {
+  return v
+    .split(/\r?\n/)
+    .map((line) => line.replace(/x\s*0\s*$/i, "x1"))
+    .join("\n");
+}
+
 function coerceFields(obj: unknown): OcrFields {
   const o = (obj ?? {}) as Record<string, unknown>;
   const str = (k: keyof OcrFields) =>
@@ -81,7 +99,7 @@ function coerceFields(obj: unknown): OcrFields {
     salesName: str("salesName"),
     customerName: str("customerName"),
     carModel: str("carModel"),
-    accessoryNameQty: str("accessoryNameQty"),
+    accessoryNameQty: fixZeroQty(stripProjectCodeLines(str("accessoryNameQty"))),
     remarks: str("remarks"),
   };
 }
