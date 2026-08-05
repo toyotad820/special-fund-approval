@@ -120,8 +120,15 @@ const STOP_PATTERN = new RegExp(
 // 直接找出每個「配件代碼」出現的位置，兩個代碼之間的文字就是該項目的完整內容
 // （名稱＋可能跨行的續行＋付費方式＋數量…）。這樣不管代碼本身有沒有被拆成兩列、
 // 續行黏在哪一列，都能正確歸屬到同一個項目。
+// 表格最後一項沒有下一個代碼可以當右邊界，會一路吃到表格外的「應付價格」
+// 結算列（例如「0 + 66,695-0 = 66,695」），裡面的獨立數字（那個 0）會被誤判
+// 成最後一項的數量。「應付價格」一定是表格外的結算文字，先把它跟後面全部切掉。
+const TABLE_END_PATTERN = /應付價格/;
+
 function extractAccessoryItems(rows: string[]): string {
-  const blob = rows.join(" ");
+  const fullBlob = rows.join(" ");
+  const tableEnd = fullBlob.match(TABLE_END_PATTERN);
+  const blob = tableEnd ? fullBlob.slice(0, tableEnd.index) : fullBlob;
   const codeMatches = [...blob.matchAll(new RegExp(CODE_PATTERN.source, "g"))];
 
   const items: string[] = [];
