@@ -11,8 +11,8 @@ const COLUMNS: SortCol[] = [
   { key: "salesName", label: "員編/姓名" },
   { key: "customerName", label: "客戶", kind: "link", width: "6rem" },
   { key: "carModel", label: "車名" },
-  { key: "changeDescription", label: "更換說明", grow: true },
-  { key: "warningText", label: "系統警示", kind: "warn", width: "10rem" },
+  { key: "changeDescription", label: "更換說明", width: "320px" },
+  { key: "warningText", label: "系統警示", kind: "warn", grow: true },
 ];
 
 export default async function AccessoryReviewPage() {
