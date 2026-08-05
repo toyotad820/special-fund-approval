@@ -11,8 +11,8 @@ export type AccessoryCheckValues = {
 
 // 回傳所有命中的警示原因；空陣列＝無警示。
 // 規則：
-//   1. 說明含「換」或「折抵」（意義同「換」）視為正常變更情境，排除不查；
-//      兩者都沒有時，若含「不裝／不安裝／隨車」等字樣才算命中。
+//   1. 說明含「換」「折抵」或「加價多裝」（意義同「換」）視為正常變更情境，排除不查；
+//      都沒有時，若含「不裝／不安裝／隨車」等字樣才算命中。
 //   2. 配件名稱／數量任一項數量 > 1 時命中。
 export function checkAccessoryBlocks(
   v: AccessoryCheckValues,
@@ -22,7 +22,7 @@ export function checkAccessoryBlocks(
 
   const text = [v.accessoryBefore, v.accessoryAfter, v.changeDescription].join("\n");
 
-  if (!text.includes("換") && !text.includes("折抵")) {
+  if (!text.includes("換") && !text.includes("折抵") && !text.includes("加價多裝")) {
     const hit: string[] = [];
     if (text.includes("不裝")) hit.push("不裝");
     if (text.includes("不安裝")) hit.push("不安裝");
