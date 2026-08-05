@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { ROLE, STATUS } from "@/lib/constants";
-import SortableCaseTable from "@/components/SortableCaseTable";
+import QueueTable from "@/components/QueueTable";
 import { caseInclude, toRow } from "@/lib/case-helpers";
 
 export default async function QueuePage() {
@@ -20,7 +20,7 @@ export default async function QueuePage() {
       <h1 className="text-lg font-bold text-slate-800">
         待審案件 <span className="text-blue-600">({cases.length})</span>
       </h1>
-      <SortableCaseTable rows={cases.map(toRow)} emptyText="沒有案件" />
+      <QueueTable rows={cases.map(toRow)} />
     </div>
   );
 }

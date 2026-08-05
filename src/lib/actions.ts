@@ -597,6 +597,38 @@ export async function reviewCase(
   redirect(user.role === ROLE.BUZHUGUAN ? "/queue" : "/cases-review");
 }
 
+// ---------- 整批核准（僅部長，僅核准，駁回需填原因故維持單筆） ----------
+
+export async function bulkApproveCases(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const user = await requireUser();
+  if (user.role !== ROLE.BUZHUGUAN) return { error: "您無權執行整批核准" };
+
+  const caseIds = formData.getAll("caseIds").map(String).filter(Boolean);
+  if (caseIds.length === 0) return { error: "請先選擇要核准的案件" };
+
+  const cases = await prisma.case.findMany({ where: { id: { in: caseIds } } });
+  const reviewable = cases.filter((c) => canReview(user, c));
+  if (reviewable.length === 0) return { error: "所選案件已不在待審核狀態，請重新整理" };
+
+  await prisma.$transaction(
+    reviewable.flatMap((c) => [
+      prisma.case.update({
+        where: { id: c.id },
+        data: { status: STATUS.APPROVED },
+      }),
+      prisma.approvalLog.create({
+        data: { caseId: c.id, step: "BUZHUGUAN", action: "APPROVE", reviewerId: user.id },
+      }),
+    ])
+  );
+
+  revalidatePath("/queue");
+  return { ok: true, message: `已核准 ${reviewable.length} 筆案件` };
+}
+
 // ---------- 撤回 ----------
 
 export async function withdrawCase(formData: FormData) {

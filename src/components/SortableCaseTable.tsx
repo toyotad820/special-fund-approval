@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, type CSSProperties } from "react";
+import { useState, useMemo, type CSSProperties, type ReactNode, type MouseEvent } from "react";
 import { useRouter } from "next/navigation";
 import { STATUS_LABEL, STATUS_STYLE, STATUS_DOT, STATUS } from "@/lib/constants";
 import { money } from "@/lib/format";
@@ -48,21 +48,24 @@ const COLUMNS: Col[] = [
 
 const NUMBER_KEYS = COLUMNS.filter((c) => c.type === "number").map((c) => c.key);
 
-// 凍結欄的 left 偏移（累加前面凍結欄的寬度），最後一欄加陰影分隔線
-const FROZEN_LEFT = new Map<string, number>();
-{
-  let acc = 0;
+const CHECKBOX_COL_WIDTH = 40;
+
+// 凍結欄的 left 偏移（累加前面凍結欄的寬度，勾選欄有開才算進去），最後一欄加陰影分隔線
+function computeFrozenLeft(withCheckbox: boolean): Map<string, number> {
+  const map = new Map<string, number>();
+  let acc = withCheckbox ? CHECKBOX_COL_WIDTH : 0;
   for (const c of COLUMNS) {
     if (!c.frozen) continue;
-    FROZEN_LEFT.set(c.key, acc);
+    map.set(c.key, acc);
     acc += c.width ?? 0;
   }
+  return map;
 }
-const LAST_FROZEN_KEY = [...FROZEN_LEFT.keys()].pop();
+const LAST_FROZEN_KEY = COLUMNS.filter((c) => c.frozen).map((c) => c.key).pop();
 
-function frozenStyle(c: Col): CSSProperties | undefined {
+function frozenStyle(c: Col, frozenLeft: Map<string, number>): CSSProperties | undefined {
   if (!c.frozen) return undefined;
-  return { left: FROZEN_LEFT.get(c.key), width: c.width, maxWidth: c.width };
+  return { left: frozenLeft.get(c.key), width: c.width, maxWidth: c.width };
 }
 
 function frozenClass(c: Col, base: string, bg: "bg-white" | "bg-slate-50" = "bg-white"): string {
@@ -84,14 +87,37 @@ export default function SortableCaseTable({
   rows,
   emptyText = "目前沒有案件",
   showTotals = false,
+  selectable = false,
+  renderBulkActions,
 }: {
   rows: CaseRowData[];
   emptyText?: string;
   showTotals?: boolean;
+  // 開啟後每列前加勾選欄，配合 renderBulkActions 顯示整批操作工具列
+  selectable?: boolean;
+  renderBulkActions?: (selectedIds: string[], clearSelection: () => void) => ReactNode;
 }) {
   const router = useRouter();
   const [sortKey, setSortKey] = useState<keyof CaseRowData | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const frozenLeft = useMemo(() => computeFrozenLeft(selectable), [selectable]);
+
+  function toggleRow(id: string, e: MouseEvent) {
+    e.stopPropagation();
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    setSelected((prev) =>
+      prev.size === sorted.length ? new Set() : new Set(sorted.map((r) => r.id))
+    );
+  }
 
   const sorted = useMemo(() => {
     if (!sortKey) return rows; // 預設維持伺服器排序（送出時間新→舊）
@@ -132,18 +158,36 @@ export default function SortableCaseTable({
     return <p className="text-sm text-slate-400 py-6 text-center">{emptyText}</p>;
   }
 
+  const selectedIds = [...selected];
+  const clearSelection = () => setSelected(new Set());
+
   return (
-    <div className="overflow-auto max-h-[26rem] rounded-2xl border border-slate-200/80 bg-white shadow-sm">
-      <table className="min-w-max text-sm">
-        <thead className="bg-slate-50 sticky top-0 z-10">
-          <tr className="border-b border-slate-200">
-            {COLUMNS.map((c) => {
+    <div className="space-y-2">
+      {selectable && selectedIds.length > 0 && renderBulkActions?.(selectedIds, clearSelection)}
+      <div className="overflow-auto max-h-[26rem] rounded-2xl border border-slate-200/80 bg-white shadow-sm">
+        <table className="min-w-max text-sm">
+          <thead className="bg-slate-50 sticky top-0 z-10">
+            <tr className="border-b border-slate-200">
+              {selectable && (
+                <th
+                  style={{ left: 0, width: CHECKBOX_COL_WIDTH, maxWidth: CHECKBOX_COL_WIDTH }}
+                  className="sticky z-[1] bg-slate-50 px-3 py-2.5"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected.size > 0 && selected.size === sorted.length}
+                    onChange={toggleAll}
+                    className="align-middle"
+                  />
+                </th>
+              )}
+              {COLUMNS.map((c) => {
               const active = c.key === sortKey;
               return (
                 <th
                   key={c.key}
                   onClick={() => toggleSort(c.key)}
-                  style={c.frozen ? frozenStyle(c) : c.width ? { width: c.width, maxWidth: c.width } : undefined}
+                  style={c.frozen ? frozenStyle(c, frozenLeft) : c.width ? { width: c.width, maxWidth: c.width } : undefined}
                   className={frozenClass(
                     c,
                     `px-3 py-2.5 text-xs font-semibold whitespace-nowrap cursor-pointer select-none hover:bg-slate-100 transition-colors ${
@@ -169,13 +213,27 @@ export default function SortableCaseTable({
               onClick={() => router.push(`/cases/${r.id}`)}
               className="border-t border-slate-100 even:bg-slate-50/40 hover:bg-blue-50/70 cursor-pointer transition-colors"
             >
+              {selectable && (
+                <td
+                  style={{ left: 0, width: CHECKBOX_COL_WIDTH, maxWidth: CHECKBOX_COL_WIDTH }}
+                  className="sticky z-[1] bg-white px-3 py-2"
+                  onClick={(e) => toggleRow(r.id, e)}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected.has(r.id)}
+                    onChange={() => {}}
+                    className="align-middle"
+                  />
+                </td>
+              )}
               {COLUMNS.map((c) => {
                 const v = r[c.key];
                 if (c.type === "status") {
                   return (
                     <td
                       key={c.key}
-                      style={c.frozen ? frozenStyle(c) : c.width ? { width: c.width, maxWidth: c.width } : undefined}
+                      style={c.frozen ? frozenStyle(c, frozenLeft) : c.width ? { width: c.width, maxWidth: c.width } : undefined}
                       className={frozenClass(c, "px-3 py-2 whitespace-nowrap")}
                     >
                       <span
@@ -212,7 +270,7 @@ export default function SortableCaseTable({
                 return (
                   <td
                     key={c.key}
-                    style={c.frozen ? frozenStyle(c) : c.width ? { width: c.width, maxWidth: c.width } : undefined}
+                    style={c.frozen ? frozenStyle(c, frozenLeft) : c.width ? { width: c.width, maxWidth: c.width } : undefined}
                     className={frozenClass(c, "px-3 py-2 whitespace-nowrap text-slate-800 truncate")}
                   >
                     {v as string}
@@ -225,6 +283,12 @@ export default function SortableCaseTable({
         {showTotals && (
           <tfoot className="bg-slate-50 border-t-2 border-slate-300 font-semibold">
             <tr>
+              {selectable && (
+                <td
+                  style={{ left: 0, width: CHECKBOX_COL_WIDTH, maxWidth: CHECKBOX_COL_WIDTH }}
+                  className="sticky z-[1] bg-slate-50 px-3 py-2"
+                />
+              )}
               {COLUMNS.map((c, i) => {
                 if (c.type === "number") {
                   return (
@@ -240,7 +304,7 @@ export default function SortableCaseTable({
                 return (
                   <td
                     key={c.key}
-                    style={c.frozen ? frozenStyle(c) : undefined}
+                    style={c.frozen ? frozenStyle(c, frozenLeft) : undefined}
                     className={frozenClass(c, "px-3 py-2 whitespace-nowrap text-slate-700", "bg-slate-50")}
                   >
                     {i === 0 ? `合計 ${rows.length} 筆` : ""}
@@ -250,7 +314,8 @@ export default function SortableCaseTable({
             </tr>
           </tfoot>
         )}
-      </table>
+        </table>
+      </div>
     </div>
   );
 }
