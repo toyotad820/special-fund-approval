@@ -288,7 +288,11 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
               {ocrElapsed !== null && (
                 <span className="text-sm text-slate-500">{ocrElapsed}ms</span>
               )}
-              <span className="text-base font-medium text-slate-700">{ocrMsg}</span>
+              {ocrMsg.split(/(?<=，)/).map((part, i) => (
+                <span key={i} className="text-base font-medium text-slate-700">
+                  {part}
+                </span>
+              ))}
             </span>
           )}
         </div>
