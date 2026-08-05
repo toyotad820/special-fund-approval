@@ -44,11 +44,17 @@ export type Status = (typeof STATUS)[keyof typeof STATUS];
 
 export const STATUS_LABEL: Record<string, string> = {
   DRAFT: "草稿",
-  PENDING_SUOZHANG: "待所長審核",
-  PENDING_BUZHUGUAN: "待部長審核",
+  PENDING_SUOZHANG: "待審核",
+  PENDING_BUZHUGUAN: "待審核",
   APPROVED: "已核准",
   REJECTED: "已駁回",
   WITHDRAWN: "已撤回",
+};
+
+// 待審案件列表用：標籤統一縮短為「待審核」後，用這個補充目前卡在哪個職稱手上
+export const STATUS_STAGE_LABEL: Record<string, string> = {
+  PENDING_SUOZHANG: "待所長審核",
+  PENDING_BUZHUGUAN: "待部長審核",
 };
 
 // 狀態顏色（Tailwind class）
