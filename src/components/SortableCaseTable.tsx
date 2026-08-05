@@ -32,10 +32,10 @@ type Col = { key: keyof CaseRowData; label: string; type: ColType; width?: numbe
 // 審核狀態擺第一欄；不含送單人、送出時間、月份
 // 前三欄（審核狀態／所別課別／領牌名稱）凍結，橫向捲動時保持可見
 const COLUMNS: Col[] = [
-  { key: "status", label: "審核狀態", type: "status", width: 100, frozen: true },
+  { key: "status", label: "審核狀態", type: "status", width: 82, frozen: true },
   { key: "storeDept", label: "所別/課別", type: "text", width: 78, frozen: true },
   { key: "plateName", label: "領牌名稱", type: "text", width: 110, frozen: true },
-  { key: "categoryName", label: "特案類別", type: "text", width: 80 },
+  // 特案類別先隱藏
   { key: "categoryNo", label: "類別編號", type: "text", width: 80 },
   { key: "carModel", label: "車名", type: "text", width: 100 },
   { key: "subsidyDeptCourse", label: "所課支援金", type: "number", width: 96 },
@@ -234,10 +234,10 @@ export default function SortableCaseTable({
                     <td
                       key={c.key}
                       style={c.frozen ? frozenStyle(c, frozenLeft) : c.width ? { width: c.width, maxWidth: c.width } : undefined}
-                      className={frozenClass(c, "px-3 py-2 whitespace-nowrap")}
+                      className={frozenClass(c, "px-2 py-2 whitespace-nowrap")}
                     >
                       <span
-                        className={`inline-flex items-center gap-1.5 text-xs font-medium rounded-full px-2.5 py-0.5 ${STATUS_STYLE[r.status] ?? "bg-slate-100 text-slate-600"}`}
+                        className={`inline-flex items-center gap-1 text-xs font-medium rounded-full px-2 py-0.5 ${STATUS_STYLE[r.status] ?? "bg-slate-100 text-slate-600"}`}
                       >
                         <span
                           className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[r.status] ?? "bg-slate-400"}`}
