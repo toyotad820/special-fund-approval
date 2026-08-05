@@ -283,18 +283,25 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
           >
             辨識圖片
           </button>
-          {ocrMsg && (
-            <span className="flex flex-col leading-tight">
-              {ocrElapsed !== null && (
-                <span className="text-sm text-slate-500">{ocrElapsed}ms</span>
-              )}
-              {ocrMsg.split(/(?<=，)/).map((part, i) => (
-                <span key={i} className="text-base font-medium text-slate-700">
-                  {part}
+          {ocrMsg &&
+            (() => {
+              const [firstLine, ...restLines] = ocrMsg.split(/(?<=，)/);
+              return (
+                <span className="flex flex-col leading-tight">
+                  <span>
+                    {ocrElapsed !== null && (
+                      <span className="text-sm text-slate-500">{ocrElapsed}ms </span>
+                    )}
+                    <span className="text-base font-medium text-slate-700">{firstLine}</span>
+                  </span>
+                  {restLines.map((part, i) => (
+                    <span key={i} className="text-base font-medium text-slate-700">
+                      {part}
+                    </span>
+                  ))}
                 </span>
-              ))}
-            </span>
-          )}
+              );
+            })()}
         </div>
       </section>
 

@@ -123,7 +123,7 @@ const STOP_PATTERN = new RegExp(
 // 表格最後一項沒有下一個代碼可以當右邊界，會一路吃到表格外的「應付價格」
 // 結算列（例如「0 + 66,695-0 = 66,695」），裡面的獨立數字（那個 0）會被誤判
 // 成最後一項的數量。「應付價格」一定是表格外的結算文字，先把它跟後面全部切掉。
-const TABLE_END_PATTERN = /應付價格/;
+const TABLE_END_PATTERN = new RegExp(spacedPattern("應付價格"));
 
 function extractAccessoryItems(rows: string[]): string {
   const fullBlob = rows.join(" ");
