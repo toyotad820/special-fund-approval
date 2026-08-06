@@ -71,7 +71,10 @@ model Case {
   category CaseCategory? @relation(fields: [categoryId], references: [id])
   logs     ApprovalLog[]
 
-  @@unique([storeCode, deptCode, categoryId, categoryNo])
+  // ⚠️ unique constraint 暫時拿掉：2026-08-06 部署時發現正式 DB 已有重複的
+  // (storeCode,deptCode,categoryId,categoryNo)，db push 直接失敗擋住整個部署。
+  // 清掉正式環境的重複資料後再加回來（應用層的撞號重試邏輯還在，仍有部分防護）。
+  // @@unique([storeCode, deptCode, categoryId, categoryNo])
   @@index([status])
   @@index([storeCode])
   @@index([month])

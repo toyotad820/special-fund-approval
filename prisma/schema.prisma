@@ -70,6 +70,9 @@ model Case {
   category CaseCategory? @relation(fields: [categoryId], references: [id])
   logs     ApprovalLog[]
 
+  // 本機 sqlite 保留這個 constraint（本機資料已清過重複，套用沒問題）；
+  // 正式 schema.production.prisma 暫時拿掉了，因為正式 DB 還有重複資料沒清，
+  // 兩份 schema 這裡刻意不同步，清完正式資料後要記得把正式那邊加回來
   @@unique([storeCode, deptCode, categoryId, categoryNo])
   @@index([status])
   @@index([storeCode])
