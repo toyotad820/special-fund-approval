@@ -5,15 +5,11 @@ import { reviewCase } from "@/lib/actions";
 import { ROLE } from "@/lib/constants";
 
 // 常用審核意見片語，依角色分開；課長/所長目前還沒收到片語內容，先留空
-const QUICK_PHRASES_BY_ROLE: Record<string, string[]> = {
+// 每個子陣列一行，強制換行分組（不是靠自動 wrap）
+const QUICK_PHRASES_BY_ROLE: Record<string, string[][]> = {
   [ROLE.BUZHUGUAN]: [
-    "資料有誤",
-    "說明不清",
-    "非支援車種",
-    "支援金額過高",
-    "免扣配件",
-    "免扣乙式",
-    "計實績不計獎金",
+    ["資料有誤", "說明不清", "非支援車種", "支援金額過高"],
+    ["免扣配件", "免扣乙式", "計實績不計獎金"],
   ],
   [ROLE.SUOZHANG]: [],
 };
@@ -25,7 +21,7 @@ export default function ReviewPanel({ caseId, role }: { caseId: string; role: st
   const decisionRef = useRef<HTMLInputElement>(null);
   const [confirmDecision, setConfirmDecision] = useState<"APPROVE" | "REJECT" | null>(null);
   const [comment, setComment] = useState("");
-  const quickPhrases = QUICK_PHRASES_BY_ROLE[role] ?? [];
+  const quickPhraseRows = QUICK_PHRASES_BY_ROLE[role] ?? [];
 
   const insertPhrase = (phrase: string) => {
     setComment((prev) => (prev ? `${prev}\n${phrase}` : phrase));
@@ -58,17 +54,21 @@ export default function ReviewPanel({ caseId, role }: { caseId: string; role: st
           <label className="block text-sm text-slate-600 mb-1">
             審核意見 / 駁回原因
           </label>
-          {quickPhrases.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mb-2">
-              {quickPhrases.map((phrase) => (
-                <button
-                  key={phrase}
-                  type="button"
-                  onClick={() => insertPhrase(phrase)}
-                  className="text-xs rounded-full border border-slate-300 text-slate-600 px-2.5 py-1 hover:bg-slate-100 transition-colors"
-                >
-                  {phrase}
-                </button>
+          {quickPhraseRows.length > 0 && (
+            <div className="space-y-1.5 mb-2">
+              {quickPhraseRows.map((row, i) => (
+                <div key={i} className="flex flex-wrap gap-1.5">
+                  {row.map((phrase) => (
+                    <button
+                      key={phrase}
+                      type="button"
+                      onClick={() => insertPhrase(phrase)}
+                      className="text-xs rounded-full border border-slate-300 text-slate-600 px-2.5 py-1 hover:bg-slate-100 transition-colors"
+                    >
+                      {phrase}
+                    </button>
+                  ))}
+                </div>
               ))}
             </div>
           )}
