@@ -157,11 +157,14 @@ export async function ocrExtractFields(image: {
   });
 
   for (let attempt = 0; attempt < 3; attempt++) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20_000);
     try {
       const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: requestBody,
+        signal: controller.signal,
       });
 
       if (!res.ok) {
@@ -195,15 +198,18 @@ export async function ocrExtractFields(image: {
       const parsed = JSON.parse(text);
       return { fields: coerceFields(parsed), raw: text, ok: true };
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : String(e);
-      if (attempt === 2) {
+      const aborted = e instanceof Error && e.name === "AbortError";
+      const msg = aborted ? "辨識逾時（20 秒），請重新嘗試" : e instanceof Error ? e.message : String(e);
+      if (attempt === 2 || aborted) {
         return {
           fields: { ...EMPTY_FIELDS },
           raw: "",
           ok: false,
-          error: `辨識失敗：${msg}`,
+          error: aborted ? msg : `辨識失敗：${msg}`,
         };
       }
+    } finally {
+      clearTimeout(timeout);
     }
   }
 

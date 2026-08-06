@@ -6,6 +6,7 @@ import { prisma } from "./prisma";
 
 export type SessionData = {
   userId?: string;
+  sessionVersion?: number;
 };
 
 const sessionOptions = {
@@ -29,6 +30,13 @@ export async function getCurrentUser() {
   if (!session.userId) return null;
   const user = await prisma.user.findUnique({ where: { id: session.userId } });
   if (!user || !user.active) return null;
+  // 密碼被改／後台重設過，sessionVersion 會落後，讓這個舊 session 失效
+  // 注意：這裡可能在 render 階段被呼叫（cookies() 唯讀），不能在這裡寫 cookie／
+  // destroy session，直接回 null 讓 requireUser 導去 /login 即可，
+  // 舊 cookie 會在下次成功登入時被新 session 覆蓋掉
+  if (session.sessionVersion !== user.sessionVersion) {
+    return null;
+  }
   return user;
 }
 

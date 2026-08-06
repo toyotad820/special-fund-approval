@@ -80,6 +80,7 @@ export async function login(
 
   const session = await getSession();
   session.userId = user.id;
+  session.sessionVersion = user.sessionVersion;
   await session.save();
   redirect("/portal");
 }
@@ -111,10 +112,18 @@ export async function changePassword(
     return { error: "目前密碼不正確" };
   }
 
-  await prisma.user.update({
+  const updated = await prisma.user.update({
     where: { id: user.id },
-    data: { passwordHash: await bcrypt.hash(next, 10) },
+    data: {
+      passwordHash: await bcrypt.hash(next, 10),
+      sessionVersion: { increment: 1 },
+    },
   });
+
+  // 讓其他裝置的舊 session 失效，但這個 request 自己的 session 換成新版本繼續有效
+  const session = await getSession();
+  session.sessionVersion = updated.sessionVersion;
+  await session.save();
 
   return { ok: true, message: "密碼已更新，下次登入請使用新密碼。" };
 }

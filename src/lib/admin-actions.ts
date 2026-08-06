@@ -116,7 +116,13 @@ export async function updateUser(
       deptCode: deptCode || null,
       systems,
       assignedStores: role === ROLE.PEIJIAN ? assignedStores : "",
-      ...(newPassword ? { passwordHash: await bcrypt.hash(newPassword, 10) } : {}),
+      // 後台重設密碼時順便讓這個人現有的登入（其他裝置）全部失效
+      ...(newPassword
+        ? {
+            passwordHash: await bcrypt.hash(newPassword, 10),
+            sessionVersion: { increment: 1 },
+          }
+        : {}),
     },
   });
 
@@ -181,21 +187,30 @@ export async function deleteUser(formData: FormData) {
   redirect("/users");
 }
 
+const MAX_CSV_SIZE = 2 * 1024 * 1024; // 2 MB，防手殘上傳錯檔
+const MAX_CSV_ROWS = 1000;
+
 // CSV 匯入人員：欄位 username,name,role,storeCode,deptCode,password
 export async function importUsers(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  await requireAdmin();
+  const me = await requireAdmin();
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
     return { error: "請選擇 CSV 檔" };
+  }
+  if (file.size > MAX_CSV_SIZE) {
+    return { error: "CSV 檔案不可超過 2 MB" };
   }
 
   const { parseCsvRecords, decodeCsvBytes } = await import("./csv");
   const text = decodeCsvBytes(new Uint8Array(await file.arrayBuffer()));
   const records = parseCsvRecords(text);
   if (records.length === 0) return { error: "檔案沒有資料列" };
+  if (records.length > MAX_CSV_ROWS) {
+    return { error: `單次最多匯入 ${MAX_CSV_ROWS} 筆資料（本次 ${records.length} 筆）` };
+  }
 
   let created = 0;
   let updated = 0;
@@ -215,6 +230,11 @@ export async function importUsers(
       errors.push(`第 ${line} 列：缺必要欄位或角色無效`);
       continue;
     }
+    // 防止 CSV 意外把匯入者自己的帳號改掉（例如角色/所別打錯字）
+    if (username === me.username) {
+      errors.push(`第 ${line} 列：不可透過 CSV 修改自己的帳號（${username}）`);
+      continue;
+    }
 
     try {
       const existing = await prisma.user.findUnique({ where: { username } });
@@ -226,7 +246,12 @@ export async function importUsers(
             role,
             storeCode,
             deptCode: deptCode || null,
-            ...(password ? { passwordHash: await bcrypt.hash(password, 10) } : {}),
+            ...(password
+              ? {
+                  passwordHash: await bcrypt.hash(password, 10),
+                  sessionVersion: { increment: 1 },
+                }
+              : {}),
           },
         });
         updated++;

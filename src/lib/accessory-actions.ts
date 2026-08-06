@@ -32,28 +32,63 @@ export type AccActionState = {
 };
 
 
+type ImageInput = { data: string; mimeType: string; ocrRaw?: string };
+
+// 前端只用 accept="image/*" 擋，那個很好繞過，這裡要真的驗證內容：
+// mimeType 白名單 + 大小上限 + 用 sharp 實際解碼確認是真的圖片（不是隨便一個
+// 偽造 mimeType 的檔案），三個都過才收。OCR 觸發點跟正式送單都要過這關，
+// 不然畸形/偽造檔案可以繞過送單驗證直接打到 OCR API 浪費額度或讓 sharp 掛掉
+const ALLOWED_IMAGE_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024; // 單張 8MB（server action 總上限 10MB）
+
+async function validateImage(base64: string, mimeType: string): Promise<string | undefined> {
+  if (!ALLOWED_IMAGE_MIME_TYPES.has(mimeType)) {
+    return `不支援的圖片格式：${mimeType}`;
+  }
+  let buf: Buffer;
+  try {
+    buf = Buffer.from(base64, "base64");
+  } catch {
+    return "圖片資料損毀，請重新上傳";
+  }
+  if (buf.length === 0 || buf.length > MAX_IMAGE_BYTES) {
+    return "圖片檔案過大或損毀（單張上限 8MB）";
+  }
+  try {
+    const meta = await sharp(buf).metadata();
+    if (!meta.width || !meta.height) throw new Error("no dimensions");
+  } catch {
+    return "圖片內容無法辨識，請確認檔案未毀損、重新上傳";
+  }
+  return undefined;
+}
+
+function emptyOcrResult(error: string): OcrResult {
+  return {
+    fields: {
+      dataNo: "",
+      storeCode: "",
+      salesName: "",
+      customerName: "",
+      carModel: "",
+      accessoryNameQty: "",
+      remarks: "",
+    },
+    raw: "",
+    ok: false,
+    error,
+  };
+}
+
 // 圖片辨識：表單「辨識」按鈕呼叫（直接傳 base64＋mime）
 export async function ocrAccessory(
   base64: string,
   mimeType: string
 ): Promise<OcrResult> {
   const user = await requireUser();
-  if (!canSubmitAccessory(user)) {
-    return {
-      fields: {
-        dataNo: "",
-        storeCode: "",
-        salesName: "",
-        customerName: "",
-        carModel: "",
-        accessoryNameQty: "",
-        remarks: "",
-      },
-      raw: "",
-      ok: false,
-      error: "您沒有配件變更申請權限",
-    };
-  }
+  if (!canSubmitAccessory(user)) return emptyOcrResult("您沒有配件變更申請權限");
+  const imgError = await validateImage(base64, mimeType);
+  if (imgError) return emptyOcrResult(imgError);
   return ocrExtractFields({ data: base64, mimeType });
 }
 
@@ -63,26 +98,11 @@ export async function ocrAccessoryVision(
   mimeType: string
 ): Promise<OcrResult & { elapsedMs?: number }> {
   const user = await requireUser();
-  if (!canSubmitAccessory(user)) {
-    return {
-      fields: {
-        dataNo: "",
-        storeCode: "",
-        salesName: "",
-        customerName: "",
-        carModel: "",
-        accessoryNameQty: "",
-        remarks: "",
-      },
-      raw: "",
-      ok: false,
-      error: "您沒有配件變更申請權限",
-    };
-  }
+  if (!canSubmitAccessory(user)) return emptyOcrResult("您沒有配件變更申請權限");
+  const imgError = await validateImage(base64, mimeType);
+  if (imgError) return emptyOcrResult(imgError);
   return ocrExtractFieldsVision({ data: base64, mimeType });
 }
-
-type ImageInput = { data: string; mimeType: string; ocrRaw?: string };
 
 const TEXT_FIELDS = [
   "dataNo",
@@ -103,12 +123,6 @@ function extractValues(fd: FormData): Record<string, string> {
   return v;
 }
 
-// 前端只用 accept="image/*" 擋，那個很好繞過，這裡要真的驗證內容：
-// mimeType 白名單 + 大小上限 + 用 sharp 實際解碼確認是真的圖片（不是隨便一個
-// 偽造 mimeType 的檔案），三個都過才收
-const ALLOWED_IMAGE_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
-const MAX_IMAGE_BYTES = 8 * 1024 * 1024; // 單張 8MB（server action 總上限 10MB）
-
 async function parseImages(
   fd: FormData
 ): Promise<{ images: ImageInput[]; error?: string }> {
@@ -123,24 +137,8 @@ async function parseImages(
   const images: ImageInput[] = [];
   for (const x of arr) {
     if (!x || typeof x.data !== "string" || typeof x.mimeType !== "string") continue;
-    if (!ALLOWED_IMAGE_MIME_TYPES.has(x.mimeType)) {
-      return { images: [], error: `不支援的圖片格式：${x.mimeType}` };
-    }
-    let buf: Buffer;
-    try {
-      buf = Buffer.from(x.data, "base64");
-    } catch {
-      return { images: [], error: "圖片資料損毀，請重新上傳" };
-    }
-    if (buf.length === 0 || buf.length > MAX_IMAGE_BYTES) {
-      return { images: [], error: "圖片檔案過大或損毀（單張上限 8MB）" };
-    }
-    try {
-      const meta = await sharp(buf).metadata();
-      if (!meta.width || !meta.height) throw new Error("no dimensions");
-    } catch {
-      return { images: [], error: "圖片內容無法辨識，請確認檔案未毀損、重新上傳" };
-    }
+    const error = await validateImage(x.data, x.mimeType);
+    if (error) return { images: [], error };
     images.push({ data: x.data, mimeType: x.mimeType, ocrRaw: x.ocrRaw });
   }
   return { images };

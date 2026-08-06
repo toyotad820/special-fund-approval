@@ -220,6 +220,8 @@ export async function ocrExtractFieldsVision(image: {
     typeof image.data === "string" ? image.data : image.data.toString("base64");
 
   const t0 = Date.now();
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20_000);
   try {
     const token = await getAccessToken();
     const res = await fetch("https://vision.googleapis.com/v1/images:annotate", {
@@ -234,6 +236,7 @@ export async function ocrExtractFieldsVision(image: {
           },
         ],
       }),
+      signal: controller.signal,
     });
     const elapsedMs = Date.now() - t0;
 
@@ -257,12 +260,17 @@ export async function ocrExtractFieldsVision(image: {
     }
     return { fields: parseVisionText(text, pages), raw: text, ok: true, elapsedMs };
   } catch (e: unknown) {
+    const aborted = e instanceof Error && e.name === "AbortError";
     return {
       fields: { ...EMPTY_FIELDS },
       raw: "",
       ok: false,
       elapsedMs: Date.now() - t0,
-      error: `辨識失敗：${e instanceof Error ? e.message : String(e)}`,
+      error: aborted
+        ? "辨識逾時（20 秒），請重新嘗試"
+        : `辨識失敗：${e instanceof Error ? e.message : String(e)}`,
     };
+  } finally {
+    clearTimeout(timeout);
   }
 }
