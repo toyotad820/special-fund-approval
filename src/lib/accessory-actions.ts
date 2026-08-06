@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import sharp from "sharp";
+import sharp, { type Metadata } from "sharp";
 import { prisma } from "./prisma";
 import { requireUser } from "./session";
 import {
@@ -40,10 +40,22 @@ type ImageInput = { data: string; mimeType: string; ocrRaw?: string };
 // 不然畸形/偽造檔案可以繞過送單驗證直接打到 OCR API 浪費額度或讓 sharp 掛掉
 const ALLOWED_IMAGE_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024; // 單張 8MB（server action 總上限 10MB）
+// base64 比原始 bytes 大約膨脹 4/3，解碼前先擋，不然超大字串在真正檢查大小之前
+// 就已經整個進了記憶體
+const MAX_BASE64_LENGTH = Math.ceil((MAX_IMAGE_BYTES * 4) / 3) + 1024;
+const MAX_IMAGE_PIXELS = 20_000_000; // 檔案可能不大但解壓後像素超大，另外擋
+const FORMAT_TO_MIME: Record<string, string> = {
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+};
 
 async function validateImage(base64: string, mimeType: string): Promise<string | undefined> {
   if (!ALLOWED_IMAGE_MIME_TYPES.has(mimeType)) {
     return `不支援的圖片格式：${mimeType}`;
+  }
+  if (base64.length > MAX_BASE64_LENGTH) {
+    return "圖片資料過大";
   }
   let buf: Buffer;
   try {
@@ -54,11 +66,19 @@ async function validateImage(base64: string, mimeType: string): Promise<string |
   if (buf.length === 0 || buf.length > MAX_IMAGE_BYTES) {
     return "圖片檔案過大或損毀（單張上限 8MB）";
   }
+  let meta: Metadata;
   try {
-    const meta = await sharp(buf).metadata();
+    meta = await sharp(buf).metadata();
     if (!meta.width || !meta.height) throw new Error("no dimensions");
   } catch {
     return "圖片內容無法辨識，請確認檔案未毀損、重新上傳";
+  }
+  if (meta.width * meta.height > MAX_IMAGE_PIXELS) {
+    return "圖片解析度過大";
+  }
+  // 宣告的 mimeType 跟 sharp 實際解出來的格式要一致，不然是偽裝過副檔名/mimeType
+  if (!meta.format || FORMAT_TO_MIME[meta.format] !== mimeType) {
+    return "圖片格式與檔案內容不一致";
   }
   return undefined;
 }
