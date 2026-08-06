@@ -52,7 +52,7 @@ export async function createUser(
   const role = normalizeRole(String(formData.get("role") ?? ""));
   const storeCode = String(formData.get("storeCode") ?? "").trim();
   const deptCode = normalizeDeptCode(String(formData.get("deptCode") ?? "").trim());
-  const password = String(formData.get("password") ?? "").trim() || "1234";
+  const password = String(formData.get("password") ?? "").trim() || "22819125";
   const systems = String(formData.get("systems") ?? "fund").trim() || "fund";
   const assignedStores = String(formData.get("assignedStores") ?? "").trim();
 
@@ -238,7 +238,7 @@ export async function importUsers(
             role,
             storeCode,
             deptCode: deptCode || null,
-            passwordHash: await bcrypt.hash(password || "1234", 10),
+            passwordHash: await bcrypt.hash(password || "22819125", 10),
           },
         });
         created++;

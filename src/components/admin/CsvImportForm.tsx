@@ -13,7 +13,7 @@ export default function CsvImportForm() {
       <p className="text-xs text-slate-500">
         表頭：<code>username,name,role,storeCode,deptCode,password</code>
         （role 用中文：課長／所長／部長／Staff；已存在的帳號會更新，密碼留空則預設
-        1234 / 更新時不變）
+        22819125 / 更新時不變）
         {" "}
         <a href="/user-import-template.csv" className="text-blue-600 hover:underline">
           下載範本

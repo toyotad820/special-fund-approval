@@ -128,7 +128,7 @@ export default function UserForm({
         </div>
         <div>
           <label className="block text-sm font-medium text-slate-600 mb-1">
-            {isEdit ? "重設密碼（留空不變）" : "密碼（留空預設 1234）"}
+            {isEdit ? "重設密碼（留空不變）" : "密碼（留空預設 22819125）"}
           </label>
           <input name="password" type="password" autoComplete="new-password" className={cls} />
         </div>
