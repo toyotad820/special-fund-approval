@@ -6,7 +6,15 @@ import { ROLE } from "@/lib/constants";
 
 // 常用審核意見片語，依角色分開；課長/所長目前還沒收到片語內容，先留空
 const QUICK_PHRASES_BY_ROLE: Record<string, string[]> = {
-  [ROLE.BUZHUGUAN]: ["資料有誤", "說明不清", "非支援車種", "支援金額過高"],
+  [ROLE.BUZHUGUAN]: [
+    "資料有誤",
+    "說明不清",
+    "非支援車種",
+    "支援金額過高",
+    "免扣配件",
+    "免扣乙式",
+    "計實績不計獎金",
+  ],
   [ROLE.SUOZHANG]: [],
 };
 

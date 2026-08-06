@@ -11,7 +11,7 @@ import {
   isOverdue,
 } from "@/lib/dal";
 import { withdrawCase, deleteCase } from "@/lib/actions";
-import { ACTION_LABEL, ROLE_LABEL, STATUS } from "@/lib/constants";
+import { ACTION_LABEL, ROLE, ROLE_LABEL, STATUS } from "@/lib/constants";
 import { money, dt } from "@/lib/format";
 import { StatusBadge } from "@/components/CaseList";
 import ReviewPanel from "@/components/ReviewPanel";
@@ -60,10 +60,18 @@ export default async function CaseDetailPage({
     ["特案支援金額", c.specialSubsidy],
   ] as const;
 
+  // 依角色回上一層清單，不是回真的首頁——部長回待審案件，所長/課長回案件審核
+  const backHref =
+    user.role === ROLE.BUZHUGUAN
+      ? "/queue"
+      : user.role === ROLE.SUOZHANG || user.role === ROLE.KEZHANG
+        ? "/cases-review"
+        : "/";
+
   return (
     <div className="max-w-2xl mx-auto space-y-4">
-      <Link href="/" className="btn btn-secondary btn-sm inline-flex">
-        ← 回首頁
+      <Link href={backHref} className="btn btn-secondary btn-sm inline-flex">
+        ← 回前頁
       </Link>
 
       {rejectLog && (
