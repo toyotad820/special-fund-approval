@@ -55,11 +55,12 @@ export default function NavBar({
               )}
             </Link>
             <div className="flex items-center gap-2.5 text-sm shrink-0">
-              <span className="text-slate-600 truncate hidden sm:inline max-w-[8rem]">
-                {userName}
-              </span>
-              <span className="text-xs bg-slate-100 text-slate-600 rounded-full px-2.5 py-0.5 whitespace-nowrap font-medium">
+              {/* 手機版只顯示姓名（角色隱藏）；電腦版角色排前、姓名排後 */}
+              <span className="text-xs bg-slate-100 text-slate-600 rounded-full px-2.5 py-0.5 whitespace-nowrap font-medium hidden sm:inline">
                 {roleLabel}
+              </span>
+              <span className="text-slate-600 truncate max-w-[8rem]">
+                {userName}
               </span>
             </div>
           </div>
