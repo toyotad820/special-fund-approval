@@ -65,7 +65,7 @@ export async function GET(request: Request) {
       c.deptCode,
       c.plateName,
       c.category?.name ?? "",
-      c.categoryNo,
+      c.categoryNo ?? "",
       c.carModel,
       c.subsidyDeptCourse,
       c.goldMedal,

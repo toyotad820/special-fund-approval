@@ -19,7 +19,7 @@ export type CaseWithRels = {
   storeCode: string;
   deptCode: string;
   plateName: string;
-  categoryNo: string;
+  categoryNo: string | null;
   carModel: string;
   subsidyDeptCourse: number;
   goldMedal: number;
@@ -43,7 +43,7 @@ export function toRow(c: CaseWithRels): CaseRowData {
     storeDept: `${c.storeCode} / ${c.deptCode}`,
     plateName: c.plateName,
     categoryName: c.category?.name ?? "（尚未選擇）",
-    categoryNo: c.categoryNo,
+    categoryNo: c.categoryNo ?? "",
     carModel: c.carModel,
     subsidyDeptCourse: c.subsidyDeptCourse,
     goldMedal: c.goldMedal,

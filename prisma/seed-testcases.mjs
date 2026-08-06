@@ -61,15 +61,21 @@ async function main() {
     plateName,
     description,
   }) {
+    const mySeq = seq++;
     const c = await prisma.case.create({
       data: {
         month,
         storeCode,
         deptCode,
         plateName,
-        orderNo: testOrderNo(seq++),
+        orderNo: testOrderNo(mySeq),
         categoryId: cat(catIdx).id,
-        categoryNo: `${storeCode}-${deptCode}-${String(catIdx + 1).padStart(2, "0")}`,
+        // 加序號尾碼確保跨呼叫不會撞號（categoryNo 現在有 unique constraint）；
+        // 草稿用 null（跟正式送單邏輯一致，unique constraint 允許多個 null 並存）
+        categoryNo:
+          status === "DRAFT"
+            ? null
+            : `${storeCode}-${deptCode}-${String(catIdx + 1).padStart(2, "0")}-${mySeq}`,
         carModel: car(carIdx),
         description,
         subsidyDeptCourse: Math.round(amount * 0.3),

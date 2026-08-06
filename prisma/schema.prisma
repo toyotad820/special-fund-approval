@@ -47,7 +47,8 @@ model Case {
   plateName   String // 領牌名稱
   orderNo     String  @unique // 訂單編號：13碼、第一碼 D、全系統唯一
   categoryId  String? // 特案類別（草稿可留空）
-  categoryNo  String // 類別編號（人工填入）
+  categoryNo  String? // 類別編號（自動產生；草稿留 null，正式送出才產生。
+    // 用 null 而非空字串是因為 unique constraint 允許多個 null 並存，草稿才不會互撞）
   carModel    String // 車名
   description String // 特案內容說明
 
@@ -69,6 +70,7 @@ model Case {
   category CaseCategory? @relation(fields: [categoryId], references: [id])
   logs     ApprovalLog[]
 
+  @@unique([storeCode, deptCode, categoryId, categoryNo])
   @@index([status])
   @@index([storeCode])
   @@index([month])
@@ -208,4 +210,20 @@ model AccessoryLog {
   createdAt  DateTime         @default(now())
 
   @@index([requestId])
+}
+
+// 稽核紀錄：登入成功/失敗＋後台人員管理操作。最小版，先只寫入不做查詢介面，
+// 出事時能查 DB 找出是誰做的即可
+model AuditLog {
+  id            String   @id @default(cuid())
+  actorUserId   String? // 找得到有效使用者時填；登入失敗常常找不到（帳號打錯）
+  actorUsername String? // 帳號字串留底，使用者被刪除／帳號打錯也查得到
+  action        String // LOGIN_SUCCESS | LOGIN_FAIL | CREATE_USER | UPDATE_USER | DELETE_USER | TOGGLE_USER_ACTIVE | IMPORT_USERS
+  targetType    String?
+  targetId      String?
+  summary       String?
+  createdAt     DateTime @default(now())
+
+  @@index([action])
+  @@index([createdAt])
 }

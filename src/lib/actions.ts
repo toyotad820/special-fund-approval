@@ -16,6 +16,7 @@ import {
 } from "./dal";
 import { STATUS, ROLE, ACTION } from "./constants";
 import { normalizeDeptCode } from "./format";
+import { logAudit } from "./audit-log";
 
 export type ActionState = {
   error?: string;
@@ -46,9 +47,11 @@ export async function login(
 
   const user = await prisma.user.findUnique({ where: { username } });
 
+  // 訊息跟一般帳密錯誤故意用同一句：如果鎖定另外回話，等於主動告訴外部「這個
+  // 帳號存在而且已經被鎖定」，反而方便有心人拿已知帳號（如 boss）持續打錯密碼
+  // 把它鎖死。不區分原因，一律回同一句籠統訊息。
   if (user?.lockedUntil && user.lockedUntil > new Date()) {
-    const minutesLeft = Math.ceil((user.lockedUntil.getTime() - Date.now()) / 60000);
-    return { error: `帳號已鎖定，請 ${minutesLeft} 分鐘後再試` };
+    return { error: "帳號或密碼錯誤，請稍後再試" };
   }
 
   const ok =
@@ -68,7 +71,12 @@ export async function login(
         },
       });
     }
-    return { error: "帳號或密碼錯誤" };
+    await logAudit({
+      actorUsername: username,
+      action: "LOGIN_FAIL",
+      summary: user ? "密碼錯誤" : "帳號不存在",
+    });
+    return { error: "帳號或密碼錯誤，請稍後再試" };
   }
 
   if (user.failedLoginAttempts > 0 || user.lockedUntil) {
@@ -82,6 +90,13 @@ export async function login(
   session.userId = user.id;
   session.sessionVersion = user.sessionVersion;
   await session.save();
+
+  await logAudit({
+    actorUserId: user.id,
+    actorUsername: user.username,
+    action: "LOGIN_SUCCESS",
+  });
+
   redirect("/portal");
 }
 
@@ -159,6 +174,17 @@ async function generateCategoryNo(
   ]);
   const abbr = (category?.name ?? "").slice(0, 2) || "特案";
   return `${abbr}${String(count + 1).padStart(2, "0")}`;
+}
+
+// 兩人同時送出可能搶到同一個 categoryNo（見 schema 的 @@unique 說明），
+// 判斷 P2002 撞的是不是 categoryNo 那個 unique constraint，不是 orderNo
+function isUniqueConflictOn(e: unknown, field: string): boolean {
+  if (!e || typeof e !== "object" || !("code" in e)) return false;
+  if ((e as { code?: unknown }).code !== "P2002") return false;
+  const target = (e as { meta?: { target?: unknown } }).meta?.target;
+  if (Array.isArray(target)) return target.includes(field);
+  if (typeof target === "string") return target.includes(field);
+  return false;
 }
 
 // 取得目前有效的特案類別 id / 車名清單，用於驗證下拉選單送出的值未被竄改
@@ -316,7 +342,7 @@ function parseCaseDraft(
   plateName: string;
   orderNo: string;
   categoryId: string | null;
-  categoryNo: string;
+  categoryNo: null;
   carModel: string;
   description: string;
   deptCode: string;
@@ -345,7 +371,7 @@ function parseCaseDraft(
     plateName: str("plateName"),
     orderNo,
     categoryId,
-    categoryNo: "", // 草稿不編號，正式送出時才自動產生
+    categoryNo: null, // 草稿不編號，正式送出時才自動產生（null 而非空字串，見 schema 註解）
     carModel: str("carModel"),
     description: str("description"),
     deptCode,
@@ -429,32 +455,37 @@ export async function createCase(
   });
   if (!data) return { fieldErrors, values: extractRawValues(formData) };
 
-  const categoryNo = await generateCategoryNo(data.categoryId, user.storeCode, data.deptCode);
-
-  let newId: string;
-  try {
-    const created = await prisma.case.create({
-      data: {
-        ...data,
-        categoryNo,
-        month,
-        storeCode: user.storeCode,
-        status: STATUS.PENDING_SUOZHANG,
-        submittedById: user.id,
-        logs: {
-          create: { step: "SUBMIT", action: "SUBMIT", reviewerId: user.id },
+  let newId: string | undefined;
+  for (let attempt = 0; attempt < 3 && newId === undefined; attempt++) {
+    const categoryNo = await generateCategoryNo(data.categoryId, user.storeCode, data.deptCode);
+    try {
+      const created = await prisma.case.create({
+        data: {
+          ...data,
+          categoryNo,
+          month,
+          storeCode: user.storeCode,
+          status: STATUS.PENDING_SUOZHANG,
+          submittedById: user.id,
+          logs: {
+            create: { step: "SUBMIT", action: "SUBMIT", reviewerId: user.id },
+          },
         },
-      },
-    });
-    newId = created.id;
-  } catch (e: unknown) {
-    if (e && typeof e === "object" && "code" in e && e.code === "P2002") {
-      return {
-        fieldErrors: { orderNo: "此訂單編號已存在（全系統唯一）" },
-        values: extractRawValues(formData),
+      });
+      newId = created.id;
+    } catch (e: unknown) {
+      if (isUniqueConflictOn(e, "categoryNo") && attempt < 2) continue; // 撞號，重算一次再試
+      if (e && typeof e === "object" && "code" in e && e.code === "P2002") {
+        return {
+          fieldErrors: { orderNo: "此訂單編號已存在（全系統唯一）" },
+          values: extractRawValues(formData),
       };
+      }
+      throw e;
     }
-    throw e;
+  }
+  if (newId === undefined) {
+    return { error: "類別編號產生失敗（連續撞號），請重新送出" };
   }
 
   return { ok: true, caseId: newId, message: "申請已送出，等待所長審核。" };
@@ -514,38 +545,45 @@ export async function updateCase(
   });
   if (!data) return { fieldErrors, values: extractRawValues(formData) };
 
-  const categoryNo = await generateCategoryNo(
-    data.categoryId,
-    existing.storeCode,
-    data.deptCode
-  );
-
   const step = existing.status === STATUS.DRAFT ? "SUBMIT" : "RESUBMIT";
   const action = existing.status === STATUS.DRAFT ? "SUBMIT" : "RESUBMIT";
 
-  try {
-    await prisma.$transaction([
-      prisma.case.update({
-        where: { id: caseId },
-        data: {
-          ...data,
-          categoryNo,
-          status: STATUS.PENDING_SUOZHANG,
-          stepEnteredAt: new Date(),
-        },
-      }),
-      prisma.approvalLog.create({
-        data: { caseId, step, action, reviewerId: user.id },
-      }),
-    ]);
-  } catch (e: unknown) {
-    if (e && typeof e === "object" && "code" in e && e.code === "P2002") {
-      return {
-        fieldErrors: { orderNo: "此訂單編號已存在（全系統唯一）" },
-        values: extractRawValues(formData),
-      };
+  let done = false;
+  for (let attempt = 0; attempt < 3 && !done; attempt++) {
+    const categoryNo = await generateCategoryNo(
+      data.categoryId,
+      existing.storeCode,
+      data.deptCode
+    );
+    try {
+      await prisma.$transaction([
+        prisma.case.update({
+          where: { id: caseId },
+          data: {
+            ...data,
+            categoryNo,
+            status: STATUS.PENDING_SUOZHANG,
+            stepEnteredAt: new Date(),
+          },
+        }),
+        prisma.approvalLog.create({
+          data: { caseId, step, action, reviewerId: user.id },
+        }),
+      ]);
+      done = true;
+    } catch (e: unknown) {
+      if (isUniqueConflictOn(e, "categoryNo") && attempt < 2) continue; // 撞號，重算一次再試
+      if (e && typeof e === "object" && "code" in e && e.code === "P2002") {
+        return {
+          fieldErrors: { orderNo: "此訂單編號已存在（全系統唯一）" },
+          values: extractRawValues(formData),
+        };
+      }
+      throw e;
     }
-    throw e;
+  }
+  if (!done) {
+    return { error: "類別編號產生失敗（連續撞號），請重新送出" };
   }
 
   return { ok: true, caseId, message: "申請已送出，等待所長審核。" };

@@ -9,8 +9,18 @@ export type SessionData = {
   sessionVersion?: number;
 };
 
+// iron-session 用這把密鑰加密／簽章整個 session cookie；太短或沒設，等於
+// 所有登入狀態都可能被偽造或破解，這裡擋在第一次用到 session 之前就直接炸掉，
+// 不要讓弱密鑰悄悄跑起來
+const SESSION_SECRET = process.env.SESSION_SECRET;
+if (!SESSION_SECRET || SESSION_SECRET.length < 32) {
+  throw new Error(
+    "SESSION_SECRET 未設定或長度不足 32 字元，請確認環境變數（.env.local / Vercel 專案設定）"
+  );
+}
+
 const sessionOptions = {
-  password: process.env.SESSION_SECRET as string,
+  password: SESSION_SECRET,
   cookieName: "sfa_session",
   cookieOptions: {
     httpOnly: true,

@@ -9,6 +9,7 @@ import { canAdmin, canReturnCase } from "./dal";
 import { ROLE, ROLE_LABEL, STATUS } from "./constants";
 import { normalizeDeptCode } from "./format";
 import { STANDARD_CAR_MODELS } from "./carModels";
+import { logAudit } from "./audit-log";
 
 export type ActionState = {
   ok?: boolean;
@@ -45,7 +46,7 @@ export async function createUser(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  await requireAdmin();
+  const me = await requireAdmin();
 
   const username = String(formData.get("username") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
@@ -68,7 +69,7 @@ export async function createUser(
   const exists = await prisma.user.findUnique({ where: { username } });
   if (exists) return { fieldErrors: { username: "帳號已存在" } };
 
-  await prisma.user.create({
+  const created = await prisma.user.create({
     data: {
       username,
       name,
@@ -81,6 +82,15 @@ export async function createUser(
     },
   });
 
+  await logAudit({
+    actorUserId: me.id,
+    actorUsername: me.username,
+    action: "CREATE_USER",
+    targetType: "User",
+    targetId: created.id,
+    summary: `新增帳號 ${username}（角色 ${role}）`,
+  });
+
   revalidatePath("/users");
   redirect("/users");
 }
@@ -89,7 +99,7 @@ export async function updateUser(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
-  await requireAdmin();
+  const me = await requireAdmin();
 
   const id = String(formData.get("id") ?? "");
   const name = String(formData.get("name") ?? "").trim();
@@ -107,7 +117,7 @@ export async function updateUser(
   if (role === ROLE.KEZHANG && !deptCode) fieldErrors.deptCode = "課長需填課別";
   if (Object.keys(fieldErrors).length) return { fieldErrors };
 
-  await prisma.user.update({
+  const updated = await prisma.user.update({
     where: { id },
     data: {
       name,
@@ -124,6 +134,17 @@ export async function updateUser(
           }
         : {}),
     },
+  });
+
+  await logAudit({
+    actorUserId: me.id,
+    actorUsername: me.username,
+    action: newPassword ? "RESET_PASSWORD" : "UPDATE_USER",
+    targetType: "User",
+    targetId: id,
+    summary: newPassword
+      ? `重設 ${updated.username} 的密碼`
+      : `編輯 ${updated.username}（角色 ${role}）`,
   });
 
   revalidatePath("/users");
@@ -160,10 +181,18 @@ export async function toggleUserActive(
   userId: string,
   active: boolean
 ): Promise<void> {
-  await requireAdmin();
-  await prisma.user.update({
+  const me = await requireAdmin();
+  const updated = await prisma.user.update({
     where: { id: userId },
     data: { active },
+  });
+  await logAudit({
+    actorUserId: me.id,
+    actorUsername: me.username,
+    action: "TOGGLE_USER_ACTIVE",
+    targetType: "User",
+    targetId: userId,
+    summary: `${active ? "啟用" : "停用"} ${updated.username}`,
   });
   revalidatePath("/users");
 }
@@ -183,7 +212,16 @@ export async function deleteUser(formData: FormData) {
     redirect("/users?err=inuse");
   }
 
+  const target = await prisma.user.findUnique({ where: { id } });
   await prisma.user.delete({ where: { id } });
+  await logAudit({
+    actorUserId: me.id,
+    actorUsername: me.username,
+    action: "DELETE_USER",
+    targetType: "User",
+    targetId: id,
+    summary: `刪除 ${target?.username ?? id}`,
+  });
   redirect("/users");
 }
 
@@ -276,6 +314,14 @@ export async function importUsers(
   revalidatePath("/admin/users");
   const msg = `新增 ${created} 筆、更新 ${updated} 筆` +
     (errors.length ? `；${errors.length} 筆失敗：${errors.slice(0, 5).join("；")}` : "");
+
+  await logAudit({
+    actorUserId: me.id,
+    actorUsername: me.username,
+    action: "IMPORT_USERS",
+    summary: `CSV 匯入（檔名 ${file.name}，${file.size} bytes）：新增 ${created}、更新 ${updated}、失敗 ${errors.length}`,
+  });
+
   return { ok: errors.length === 0, message: msg, error: errors.length ? msg : undefined };
 }
 

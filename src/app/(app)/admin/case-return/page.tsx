@@ -76,7 +76,7 @@ export default async function AdminCaseReturnPage({
           </Row>
           <Row label="領牌名稱">{c.plateName}</Row>
           <Row label="特案類別">{c.category?.name ?? "（尚未選擇）"}</Row>
-          <Row label="類別編號">{c.categoryNo}</Row>
+          <Row label="類別編號">{c.categoryNo || "-"}</Row>
           <Row label="車名">{c.carModel}</Row>
           {amounts.map(([label, val]) => (
             <Row key={label} label={label}>

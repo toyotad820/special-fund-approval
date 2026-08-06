@@ -109,7 +109,7 @@ export default async function CaseDetailPage({
         </Row>
         <Row label="領牌名稱">{c.plateName}</Row>
         {/* 特案類別先隱藏 */}
-        <Row label="類別編號">{c.categoryNo}</Row>
+        <Row label="類別編號">{c.categoryNo || "-"}</Row>
         <Row label="車名">{c.carModel}</Row>
 
         {/* 四項金額框 */}
