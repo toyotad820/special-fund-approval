@@ -71,10 +71,10 @@ model Case {
   category CaseCategory? @relation(fields: [categoryId], references: [id])
   logs     ApprovalLog[]
 
-  // ⚠️ unique constraint 暫時拿掉：2026-08-06 部署時發現正式 DB 已有重複的
-  // (storeCode,deptCode,categoryId,categoryNo)，db push 直接失敗擋住整個部署。
-  // 清掉正式環境的重複資料後再加回來（應用層的撞號重試邏輯還在，仍有部分防護）。
-  // @@unique([storeCode, deptCode, categoryId, categoryNo])
+  // 2026-08-06 曾因少帶 month 導致跨月撞號、db push 失敗擋部署（categoryNo 其實是
+  // 每月歸零重編，見 generateCategoryNo）。查過正式 DB，95 組重複全是跨月碰撞、
+  // 同月內沒有真正重複，補上 month 後這批歷史資料不會再撞，constraint 加回來。
+  @@unique([month, storeCode, deptCode, categoryId, categoryNo])
   @@index([status])
   @@index([storeCode])
   @@index([month])

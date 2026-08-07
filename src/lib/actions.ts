@@ -160,16 +160,17 @@ type CaseData = {
 };
 
 // 類別編號自動產生：類別名稱前兩字 + 該課（storeCode+deptCode）該類別
-// 目前案件數（不含草稿）+1。所長代送的案件也計入該課的統計。
+// 該月（month）案件數（不含草稿）+1。所長代送的案件也計入該課的統計。
 async function generateCategoryNo(
   categoryId: string,
   storeCode: string,
-  deptCode: string
+  deptCode: string,
+  month: string
 ): Promise<string> {
   const [category, count] = await Promise.all([
     prisma.caseCategory.findUnique({ where: { id: categoryId } }),
     prisma.case.count({
-      where: { storeCode, deptCode, categoryId, status: { not: STATUS.DRAFT } },
+      where: { month, storeCode, deptCode, categoryId, status: { not: STATUS.DRAFT } },
     }),
   ]);
   const abbr = (category?.name ?? "").slice(0, 2) || "特案";
@@ -457,7 +458,7 @@ export async function createCase(
 
   let newId: string | undefined;
   for (let attempt = 0; attempt < 3 && newId === undefined; attempt++) {
-    const categoryNo = await generateCategoryNo(data.categoryId, user.storeCode, data.deptCode);
+    const categoryNo = await generateCategoryNo(data.categoryId, user.storeCode, data.deptCode, month);
     try {
       const created = await prisma.case.create({
         data: {
@@ -553,7 +554,8 @@ export async function updateCase(
     const categoryNo = await generateCategoryNo(
       data.categoryId,
       existing.storeCode,
-      data.deptCode
+      data.deptCode,
+      existing.month
     );
     try {
       await prisma.$transaction([
