@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function ImageLightbox({
   images,
@@ -13,7 +13,7 @@ export default function ImageLightbox({
   const [canZoom, setCanZoom] = useState(false); // 標記是否已放大過（用於判斷點擊行為）
   const [isDesktop, setIsDesktop] = useState(false);
   // 拖曳狀態（不進 state，避免每次移動重繪整棵樹）
-  const drag = useState(() => ({ active: false, moved: false, touch: false, sx: 0, sy: 0, ox: 0, oy: 0 }))[0];
+  const drag = useRef({ active: false, moved: false, touch: false, sx: 0, sy: 0, ox: 0, oy: 0 }).current;
 
   // 電腦版預設放大倍率（直式工單在寬螢幕兩側留白、顯得太小），配合拖曳看全圖
   const DESKTOP_ZOOM = 1.2;
@@ -165,9 +165,7 @@ export default function ImageLightbox({
                   transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
                   touchAction: zoom > 1 ? "none" : "auto",
                 }}
-                className={`max-w-full max-h-full object-contain select-none ${
-                  drag.active ? "cursor-grabbing" : "cursor-grab"
-                }`}
+                className="max-w-full max-h-full object-contain select-none cursor-grab"
               />
             </div>
             <div className="flex items-center justify-between gap-3 mt-2">

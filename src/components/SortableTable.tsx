@@ -48,11 +48,9 @@ export default function SortableTable({
   const [dir, setDir] = useState<"asc" | "desc">(defaultSortDir);
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  const colOf = (k: string) => columns.find((c) => c.key === k);
-
   const sorted = useMemo(() => {
     if (!sortKey) return rows;
-    const col = colOf(sortKey);
+    const col = columns.find((c) => c.key === sortKey);
     const isDate = col?.kind === "date";
     const arr = [...rows];
     arr.sort((a, b) => {
@@ -72,7 +70,7 @@ export default function SortableTable({
       return dir === "asc" ? cmp : -cmp;
     });
     return arr;
-  }, [rows, sortKey, dir]);
+  }, [rows, sortKey, dir, columns]);
 
   const onSort = (k: string) => {
     if (sortKey === k) setDir((d) => (d === "asc" ? "desc" : "asc"));
