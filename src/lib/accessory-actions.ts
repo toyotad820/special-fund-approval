@@ -14,7 +14,7 @@ import {
   canDeleteAccessory,
   getActiveMonth,
 } from "./dal";
-import { ACC_STATUS, ACTION_LABEL, ROLE } from "./constants";
+import { ACC_STATUS, ROLE } from "./constants";
 import { ocrExtractFields, type OcrResult } from "./ocr";
 import { ocrExtractFieldsVision } from "./ocr-vision";
 import { checkAccessoryBlocks } from "./accessory-validate";
@@ -174,7 +174,6 @@ export async function createAccessoryRequest(
 
   const intent = String(formData.get("intent") ?? "submit");
   const values = extractValues(formData);
-  const ocrDataNo = String(formData.get("ocrDataNo") ?? "");
   const { images, error: imageError } = await parseImages(formData);
   if (imageError) return { error: imageError, values };
   const dataNo = values.dataNo.trim().toUpperCase();
@@ -237,16 +236,13 @@ export async function createAccessoryRequest(
   if (Object.keys(fieldErrors).length > 0) return { fieldErrors, values };
 
   // ---- 警示規則（命中只標紅字警告，仍可送出）----
-  const warnings = checkAccessoryBlocks(
-    {
-      dataNo,
-      accessoryBefore: values.accessoryBefore,
-      accessoryAfter: values.accessoryAfter,
-      changeDescription: values.changeDescription,
-      accessoryNameQty: values.accessoryNameQty,
-    },
-    ocrDataNo
-  );
+  const warnings = checkAccessoryBlocks({
+    dataNo,
+    accessoryBefore: values.accessoryBefore,
+    accessoryAfter: values.accessoryAfter,
+    changeDescription: values.changeDescription,
+    accessoryNameQty: values.accessoryNameQty,
+  });
 
   // ---- 建立申請單 ----
   try {

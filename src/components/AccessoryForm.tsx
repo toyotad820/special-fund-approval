@@ -174,17 +174,14 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
   // 即時警示檢查（只顯示紅字警告，不阻擋送出）
   const warnings = useMemo(
     () =>
-      checkAccessoryBlocks(
-        {
-          dataNo: fields.dataNo,
-          accessoryBefore: fields.accessoryBefore,
-          accessoryAfter: fields.accessoryAfter,
-          changeDescription: fields.changeDescription,
-          accessoryNameQty: fields.accessoryNameQty,
-        },
-        ocrDataNo
-      ),
-    [fields, ocrDataNo]
+      checkAccessoryBlocks({
+        dataNo: fields.dataNo,
+        accessoryBefore: fields.accessoryBefore,
+        accessoryAfter: fields.accessoryAfter,
+        changeDescription: fields.changeDescription,
+        accessoryNameQty: fields.accessoryNameQty,
+      }),
+    [fields]
   );
 
   // 正式送出必填：資料編號/所別/課別(所長可留空視為所層級)/員編姓名/客戶名稱/車名/更換說明；

@@ -54,16 +54,13 @@ export default async function AccessoryReviewDetailPage({
   if (!r || !canReviewAccessory(user, r)) notFound();
 
   // 用現行規則即時重算，避免規則更新後舊案件顯示已經過時的警示文字
-  const warnings = checkAccessoryBlocks(
-    {
-      dataNo: r.dataNo,
-      accessoryBefore: r.accessoryBefore,
-      accessoryAfter: r.accessoryAfter,
-      changeDescription: r.changeDescription,
-      accessoryNameQty: r.accessoryNameQty,
-    },
-    r.dataNo
-  );
+  const warnings = checkAccessoryBlocks({
+    dataNo: r.dataNo,
+    accessoryBefore: r.accessoryBefore,
+    accessoryAfter: r.accessoryAfter,
+    changeDescription: r.changeDescription,
+    accessoryNameQty: r.accessoryNameQty,
+  });
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">

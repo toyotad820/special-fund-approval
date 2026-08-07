@@ -14,10 +14,7 @@ export type AccessoryCheckValues = {
 //   1. 說明含「換」「折抵」或「加價多裝」（意義同「換」）視為正常變更情境，排除不查；
 //      都沒有時，若含「不裝／不安裝／隨車」等字樣才算命中。
 //   2. 配件名稱／數量任一項數量 > 1 時命中。
-export function checkAccessoryBlocks(
-  v: AccessoryCheckValues,
-  _ocrDataNo: string
-): string[] {
+export function checkAccessoryBlocks(v: AccessoryCheckValues): string[] {
   const reasons: string[] = [];
 
   const text = [v.accessoryBefore, v.accessoryAfter, v.changeDescription].join("\n");
