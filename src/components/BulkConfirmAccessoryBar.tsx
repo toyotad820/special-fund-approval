@@ -23,12 +23,6 @@ export default function BulkConfirmAccessoryBar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
-  // 送出後才關閉確認視窗；不能在 submit 按鈕的 onClick 裡關閉，
-  // 否則 modal／form 會在瀏覽器觸發原生 submit 前就被卸載，導致送出失效
-  useEffect(() => {
-    if (pending) setConfirmOpen(false);
-  }, [pending]);
-
   return (
     <div className="flex items-center justify-between gap-3 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-2.5">
       <span className="text-sm font-medium text-blue-800">已選 {selectedIds.length} 筆</span>
@@ -55,7 +49,10 @@ export default function BulkConfirmAccessoryBar({
         </button>
       </div>
 
-      {confirmOpen && (
+      {/* pending 一開始 true 代表原生 submit 已經觸發，這時才隱藏 modal；
+          不能在 submit 按鈕的 onClick 或 effect 裡提前關閉，
+          否則 modal／form 會在瀏覽器觸發原生 submit 前就被卸載，導致送出失效 */}
+      {confirmOpen && !pending && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
           onClick={() => setConfirmOpen(false)}

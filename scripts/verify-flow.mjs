@@ -161,14 +161,18 @@ async function main() {
   const approve = await postAction(caseUrl, casePage.body, { caseId, decision: "APPROVE", comment: "所長同意" }, suo.jar, 'name="comment"');
   check("所長核准（進入第二關）", approve.status === 303, `status=${approve.status}`);
   const afterSuo = await get(caseUrl, suo.jar);
-  check("狀態變為待部長審核", afterSuo.body.includes("待部長審核"));
+  // v1.4.x 起狀態文字統一縮短為「待審核」（所長/部長兩關同一個字樣，用顏色區分），
+  // 這裡改成確認還沒被核准，藉由下面「部主管可審核」跟後續核准成功來驗證真的進了第二關
+  check("狀態變為待審核（尚未核准）", afterSuo.body.includes("待審核") && !afterSuo.body.includes("已核准"));
 
   // 4) 部主管 boss 核准 → 已核准
   const boss = await loginAs("boss");
   check("部主管登入", !!boss.jar["sfa_session"], `status=${boss.r.status}`);
   const bossCase = await get(caseUrl, boss.jar);
   check("部主管可開啟案件", bossCase.status === 200, `status=${bossCase.status}`);
-  check("部主管可審核（看到核准鈕）", bossCase.body.includes('value="APPROVE"') && bossCase.body.includes(orderNo));
+  // 決定值是點擊按鈕時才由 client JS 寫進 hidden input，SSR 輸出不會有
+  // value="APPROVE" 這串字，改成確認審核表單（decision 欄位）跟案件本身都在
+  check("部主管可審核（看到審核表單）", bossCase.body.includes('name="decision"') && bossCase.body.includes(orderNo));
   const approve2 = await postAction(caseUrl, bossCase.body, { caseId, decision: "APPROVE", comment: "核准" }, boss.jar, 'name="comment"');
   check("部主管核准", approve2.status === 303);
   const done = await get(caseUrl, boss.jar);

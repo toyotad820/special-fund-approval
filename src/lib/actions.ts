@@ -564,6 +564,9 @@ export async function updateCase(
             categoryNo,
             status: STATUS.PENDING_SUOZHANG,
             stepEnteredAt: new Date(),
+            // 重送等於重新進入審核佇列，佇列排序（/queue 依 submittedAt 排最舊優先）
+            // 應該反映「這次重新送出」的時間，不能還留第一次送出的舊時間
+            submittedAt: new Date(),
           },
         }),
         prisma.approvalLog.create({
@@ -619,16 +622,20 @@ export async function reviewCase(
 
   const step = user.role === ROLE.SUOZHANG ? "SUOZHANG" : "BUZHUGUAN";
 
-  await prisma.$transaction([
-    prisma.case.update({
-      where: { id: caseId },
+  // 條件式更新：where 帶上讀取當下的狀態，如果案件在讀取後、寫入前已經被
+  // 別的審核動作（或撤回）改掉狀態，這裡會影響 0 筆，不會平白蓋掉別人的結果，
+  // 也不會留下對不上實際狀態的 ApprovalLog
+  const changed = await prisma.$transaction(async (tx) => {
+    const { count } = await tx.case.updateMany({
+      where: { id: caseId, status: c.status },
       data: {
         status: nextStatus,
         stepEnteredAt:
           nextStatus === STATUS.PENDING_BUZHUGUAN ? new Date() : c.stepEnteredAt,
       },
-    }),
-    prisma.approvalLog.create({
+    });
+    if (count === 0) return false;
+    await tx.approvalLog.create({
       data: {
         caseId,
         step,
@@ -636,8 +643,13 @@ export async function reviewCase(
         reviewerId: user.id,
         comment: comment || null,
       },
-    }),
-  ]);
+    });
+    return true;
+  });
+
+  if (!changed) {
+    return { error: "案件狀態已被其他人異動，請重新整理後再操作" };
+  }
 
   revalidatePath(`/cases/${caseId}`);
   // 審核完成後回到待審清單，方便繼續審下一筆，而不是留在單一案件頁

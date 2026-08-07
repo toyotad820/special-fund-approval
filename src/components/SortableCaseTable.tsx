@@ -103,22 +103,6 @@ export default function SortableCaseTable({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const frozenLeft = useMemo(() => computeFrozenLeft(selectable), [selectable]);
 
-  function toggleRow(id: string, e: MouseEvent) {
-    e.stopPropagation();
-    setSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
-  function toggleAll() {
-    setSelected((prev) =>
-      prev.size === sorted.length ? new Set() : new Set(sorted.map((r) => r.id))
-    );
-  }
-
   const sorted = useMemo(() => {
     if (!sortKey) return rows; // 預設維持伺服器排序（送出時間新→舊）
     const col = COLUMNS.find((c) => c.key === sortKey);
@@ -137,6 +121,22 @@ export default function SortableCaseTable({
     });
     return arr;
   }, [rows, sortKey, sortDir]);
+
+  function toggleRow(id: string, e: MouseEvent) {
+    e.stopPropagation();
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAll() {
+    setSelected((prev) =>
+      prev.size === sorted.length ? new Set() : new Set(sorted.map((r) => r.id))
+    );
+  }
 
   const totals = useMemo(() => {
     const t: Record<string, number> = {};
