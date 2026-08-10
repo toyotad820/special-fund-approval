@@ -19,7 +19,8 @@ export default async function AppLayout({
   if (user.role === ROLE.SUOZHANG) items.push({ href: "/cases-review", label: "案件審核" });
   if (user.role === ROLE.BUZHUGUAN) items.push({ href: "/queue", label: "待審案件" });
   if (user.role === ROLE.SUOZHANG) items.push({ href: "/cases-review/detail", label: "案件明細" });
-  if (user.role === ROLE.BUZHUGUAN) items.push({ href: "/queue/detail", label: "案件明細" });
+  if (user.role === ROLE.BUZHUGUAN || user.role === ROLE.BENBUZHANG)
+    items.push({ href: "/queue/detail", label: "案件明細" });
   if (canViewReports(user)) items.push({ href: "/reports", label: "報表" });
   if (canAdmin(user)) items.push({ href: "/admin", label: "後台管理" });
 

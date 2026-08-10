@@ -57,7 +57,11 @@ export function canSubmit(user: User): boolean {
 }
 
 export function canViewReports(user: User): boolean {
-  return user.role === ROLE.BUZHUGUAN || user.role === ROLE.STAFF;
+  return (
+    user.role === ROLE.BUZHUGUAN ||
+    user.role === ROLE.BENBUZHANG ||
+    user.role === ROLE.STAFF
+  );
 }
 
 // 後台管理：僅 staff
@@ -76,7 +80,12 @@ export function canViewCase(
 ): boolean {
   if (c.submittedById === user.id) return true;
   if (c.status === STATUS.DRAFT) return false;
-  if (user.role === ROLE.BUZHUGUAN || user.role === ROLE.STAFF) return true;
+  if (
+    user.role === ROLE.BUZHUGUAN ||
+    user.role === ROLE.BENBUZHANG ||
+    user.role === ROLE.STAFF
+  )
+    return true;
   if (user.role === ROLE.SUOZHANG) return c.storeCode === user.storeCode;
   if (user.role === ROLE.KEZHANG)
     return c.storeCode === user.storeCode && c.deptCode === (user.deptCode ?? "");

@@ -3,6 +3,7 @@ export const ROLE = {
   KEZHANG: "KEZHANG", // 課長：只送單（配件系統中代表副所長，可直接送部長）
   SUOZHANG: "SUOZHANG", // 所長：送單 + 第一關審核
   BUZHUGUAN: "BUZHUGUAN", // 部主管：第二關審核
+  BENBUZHANG: "BENBUZHANG", // 本部長：功能同部長（全據點檢視＋報表），但無第二關審核權限
   STAFF: "STAFF", // Staff：全域報表 + 後台設定
   PEIJIAN: "PEIJIAN", // 配件中心：配件變更核准後的明細確認
 } as const;
@@ -13,6 +14,7 @@ export const ROLE_LABEL: Record<string, string> = {
   KEZHANG: "課長",
   SUOZHANG: "所長",
   BUZHUGUAN: "部長",
+  BENBUZHANG: "本部長",
   STAFF: "Staff",
   PEIJIAN: "配件中心",
 };

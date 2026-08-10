@@ -10,6 +10,7 @@ import PortalMark from "@/components/PortalMark";
 function fundHref(role: string): string {
   if (role === ROLE.KEZHANG || role === ROLE.SUOZHANG) return "/cases-review";
   if (role === ROLE.BUZHUGUAN) return "/queue";
+  if (role === ROLE.BENBUZHANG) return "/queue/detail";
   return "/";
 }
 

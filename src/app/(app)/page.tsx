@@ -835,7 +835,9 @@ async function RoleDashboard({
         ? `所長 · ${user.storeCode}`
         : user.role === ROLE.BUZHUGUAN
           ? "部長"
-          : "Staff";
+          : user.role === ROLE.BENBUZHANG
+            ? "本部長"
+            : "Staff";
 
   // 課長：範圍限本課；所長：範圍限本所（各課合併比較）；部長/Staff：不限（跨所全域統計）
   const scope =

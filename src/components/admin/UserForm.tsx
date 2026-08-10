@@ -16,7 +16,7 @@ type Initial = {
   active?: boolean;
 };
 
-const ROLES = ["KEZHANG", "SUOZHANG", "BUZHUGUAN", "STAFF", "PEIJIAN"];
+const ROLES = ["KEZHANG", "SUOZHANG", "BUZHUGUAN", "BENBUZHANG", "STAFF", "PEIJIAN"];
 
 export default function UserForm({
   submitAction,

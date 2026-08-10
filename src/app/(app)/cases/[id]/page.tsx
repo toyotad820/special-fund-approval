@@ -64,9 +64,11 @@ export default async function CaseDetailPage({
   const backHref =
     user.role === ROLE.BUZHUGUAN
       ? "/queue"
-      : user.role === ROLE.SUOZHANG || user.role === ROLE.KEZHANG
-        ? "/cases-review"
-        : "/";
+      : user.role === ROLE.BENBUZHANG
+        ? "/queue/detail"
+        : user.role === ROLE.SUOZHANG || user.role === ROLE.KEZHANG
+          ? "/cases-review"
+          : "/";
 
   return (
     <div className="max-w-2xl mx-auto space-y-4">
