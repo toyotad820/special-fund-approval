@@ -513,30 +513,25 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
   );
 }
 
-// 唯讀色彩預覽：把上方文字框目前的內容拆成單一品項，數量 >1 的標紅，方便一眼看出異常。
-// 不阻擋、不強制格式——文字框本身仍可自由編輯，這裡只是預覽，隨內容即時重算。
+// 唯讀色彩預覽：只列出上方文字框裡數量 >1 的品項，標紅提醒，方便一眼看出異常；
+// 數量正常的品項不重複顯示。不阻擋、不強制格式——文字框本身仍可自由編輯，隨內容即時重算。
 function AccessoryItemsPreview({ text }: { text: string }) {
-  const items = splitAccessoryItems(text);
-  if (items.length === 0) return null;
+  const flagged = splitAccessoryItems(text).filter((item) => {
+    const qty = accessoryItemQty(item);
+    return qty !== null && qty > 1;
+  });
+  if (flagged.length === 0) return null;
 
   return (
     <div className="mt-2 flex flex-wrap gap-1.5">
-      {items.map((item, i) => {
-        const qty = accessoryItemQty(item);
-        const flagged = qty !== null && qty > 1;
-        return (
-          <span
-            key={i}
-            className={`inline-block rounded-md px-2 py-1 text-xs ${
-              flagged
-                ? "bg-rose-100 text-rose-700 font-medium"
-                : "bg-slate-100 text-slate-600"
-            }`}
-          >
-            {item}
-          </span>
-        );
-      })}
+      {flagged.map((item, i) => (
+        <span
+          key={i}
+          className="inline-block rounded-md px-2 py-1 text-xs bg-rose-100 text-rose-700 font-medium"
+        >
+          {item}
+        </span>
+      ))}
     </div>
   );
 }
