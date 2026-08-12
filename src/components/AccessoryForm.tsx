@@ -429,7 +429,7 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
         <Field label="配件/數量" error={err("accessoryNameQty")}>
           <textarea
             name="accessoryNameQty"
-            rows={3}
+            rows={6}
             value={fields.accessoryNameQty}
             onChange={(e) => set("accessoryNameQty", e.target.value)}
             className={inputCls}
