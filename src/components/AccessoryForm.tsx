@@ -9,7 +9,11 @@ import {
   ocrAccessoryVision,
   type AccActionState,
 } from "@/lib/accessory-actions";
-import { checkAccessoryBlocks } from "@/lib/accessory-validate";
+import {
+  checkAccessoryBlocks,
+  splitAccessoryItems,
+  accessoryItemQty,
+} from "@/lib/accessory-validate";
 
 type ImageItem = { data: string; mimeType: string; ocrRaw?: string; name: string };
 
@@ -434,6 +438,7 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
             onChange={(e) => set("accessoryNameQty", e.target.value)}
             className={inputCls}
           />
+          <AccessoryItemsPreview text={fields.accessoryNameQty} />
         </Field>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Field label="變更前配件" error={err("accessoryBefore")}>
@@ -505,6 +510,34 @@ export default function AccessoryForm({ initial }: { initial?: AccessoryInitial 
         </button>
       </div>
     </form>
+  );
+}
+
+// 唯讀色彩預覽：把上方文字框目前的內容拆成單一品項，數量 >1 的標紅，方便一眼看出異常。
+// 不阻擋、不強制格式——文字框本身仍可自由編輯，這裡只是預覽，隨內容即時重算。
+function AccessoryItemsPreview({ text }: { text: string }) {
+  const items = splitAccessoryItems(text);
+  if (items.length === 0) return null;
+
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      {items.map((item, i) => {
+        const qty = accessoryItemQty(item);
+        const flagged = qty !== null && qty > 1;
+        return (
+          <span
+            key={i}
+            className={`inline-block rounded-md px-2 py-1 text-xs ${
+              flagged
+                ? "bg-rose-100 text-rose-700 font-medium"
+                : "bg-slate-100 text-slate-600"
+            }`}
+          >
+            {item}
+          </span>
+        );
+      })}
+    </div>
   );
 }
 

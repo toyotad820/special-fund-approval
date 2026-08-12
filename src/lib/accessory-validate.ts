@@ -1,21 +1,35 @@
 // 配件變更申請「警示」規則（前後端共用，純函式）
 // 命中即顯示紅字警告，但**仍可送出**（不再阻擋）。
 
-// 配件/數量欄位固定每 2 項合成一行的分隔符（OCR 辨識後套用，見 ocr.ts pairAccessoryLines）。
-// 放在這個純函式檔（非 server-only）而不是 ocr.ts，是因為 checkAccessoryBlocks 也要在
-// client 端（AccessoryForm.tsx）用同一個分隔符把行拆回單一項目，才能各自檢查數量。
-export const ACCESSORY_ITEM_SEP = "　|　";
+// 配件/數量欄位的品項分隔符：OCR 辨識完不分行，逐項串成一行、中間用這個分隔，
+// 交給文字框自然換行（電腦版一行能塞幾項算幾項，手機版變窄自然變少，不強制固定數量）。
+// 放在這個純函式檔（非 server-only）而不是 ocr.ts，是因為 AccessoryForm.tsx（client 端）
+// 也要用同一個分隔符把這份文字拆回單一項目，畫出色彩預覽。
+export const ACCESSORY_ITEM_SEP = "｜";
 
-// 把逐項一行的清單，固定每 2 項合成一行（減少行數、電腦/手機看起來都比較緊湊）
-export function pairAccessoryLines(text: string): string {
-  const lines = text.split(/\r?\n/).filter((l) => l.trim() !== "");
-  const paired: string[] = [];
-  for (let i = 0; i < lines.length; i += 2) {
-    const a = lines[i];
-    const b = lines[i + 1];
-    paired.push(b !== undefined ? `${a}${ACCESSORY_ITEM_SEP}${b}` : a);
-  }
-  return paired.join("\n");
+// 把逐項一行的清單，串成一行、項目間用 ACCESSORY_ITEM_SEP 分隔
+export function joinAccessoryItems(text: string): string {
+  return text
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l !== "")
+    .join(` ${ACCESSORY_ITEM_SEP} `);
+}
+
+// 把 accessoryNameQty 這份文字拆回單一項目陣列，供色彩預覽等 UI 使用。
+// 相容舊資料：換行也視為項目分隔（合併前/未經過 OCR 的舊案件仍是逐行存的）。
+export function splitAccessoryItems(text: string): string[] {
+  return text
+    .split(new RegExp(`\\r?\\n|${ACCESSORY_ITEM_SEP}`))
+    .map((s) => s.trim())
+    .filter((s) => s !== "");
+}
+
+// 單一品項字串結尾的「x數量」是否 > 1（例如「RAV4拉桿三件式 x1」→ 1，「另一項配件 x2」→ 2）。
+// 只看字串「結尾」的 x＋數字，不是配件料號中間剛好出現的 X + 數字（例如 XTR40）。
+export function accessoryItemQty(item: string): number | null {
+  const m = item.trim().match(/x\s*(\d+)\s*$/i);
+  return m ? parseInt(m[1], 10) : null;
 }
 
 export type AccessoryCheckValues = {
@@ -27,10 +41,9 @@ export type AccessoryCheckValues = {
 };
 
 // 回傳所有命中的警示原因；空陣列＝無警示。
-// 規則：
-//   1. 說明含「換」「折抵」或「加價多裝」（意義同「換」）視為正常變更情境，排除不查；
-//      都沒有時，若含「不裝／不安裝／隨車」等字樣才算命中。
-//   2. 配件名稱／數量任一項數量 > 1 時命中。
+// 規則：說明含「換」「折抵」或「加價多裝」（意義同「換」）視為正常變更情境，排除不查；
+// 都沒有時，若含「不裝／不安裝／隨車」等字樣才算命中。
+// （原本還有「配件數量 > 1」文字警示，已改用色彩預覽取代，不再重複提醒——見 AccessoryForm.tsx）
 export function checkAccessoryBlocks(v: AccessoryCheckValues): string[] {
   const reasons: string[] = [];
 
@@ -45,22 +58,6 @@ export function checkAccessoryBlocks(v: AccessoryCheckValues): string[] {
     if (hit.length > 0) {
       reasons.push(`說明含「${hit.join("、")}」，不符配件變更定義`);
     }
-  }
-
-  // 每行結尾才是數量標記（例如「Q/小天窗隔熱紙SGDX202026RAV4 x1」，數量是結尾的 x1，
-  // 不是配件料號中間剛好出現的 X + 數字），所以只比對每行「行尾」的 x數字，不整段掃描。
-  // 一行可能是 pairAccessoryLines 合併過的兩個項目，先用同一個分隔符拆開，
-  // 否則前一項的 x 數量會卡在行中間，被行尾比對漏掉
-  const lines = (v.accessoryNameQty ?? "")
-    .split(/\r?\n/)
-    .flatMap((line) => line.split(ACCESSORY_ITEM_SEP));
-  const overOne = lines
-    .map((line) => line.trim().match(/x\s*(\d+)\s*$/i))
-    .filter((m): m is RegExpMatchArray => m !== null)
-    .map((m) => parseInt(m[1], 10))
-    .filter((n) => n > 1);
-  if (overOne.length > 0) {
-    reasons.push(`配件數量有項目 > 1（x${overOne.join("、x")}），請確認是否正確`);
   }
 
   return reasons;
