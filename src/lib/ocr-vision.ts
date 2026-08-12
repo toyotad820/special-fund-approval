@@ -1,6 +1,7 @@
 import "server-only";
 import { JWT } from "google-auth-library";
 import type { OcrFields, OcrResult } from "./ocr";
+import { pairAccessoryLines } from "./accessory-validate";
 
 // ============================================================
 // 圖片辨識 — Google Cloud Vision API 測試版（DOCUMENT_TEXT_DETECTION）
@@ -162,7 +163,7 @@ function extractAccessoryItems(rows: string[]): string {
     if (!name) continue;
     items.push(`${name} x${qty}`);
   }
-  return items.join("\n");
+  return pairAccessoryLines(items.join("\n"));
 }
 
 function parseVisionText(text: string, pages: unknown[]): OcrFields {

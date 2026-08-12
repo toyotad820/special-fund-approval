@@ -1,4 +1,5 @@
 import "server-only";
+import { pairAccessoryLines } from "./accessory-validate";
 
 // ============================================================
 // 圖片辨識介面層（OPT 委託安裝工單 → 結構化欄位）
@@ -115,7 +116,9 @@ function coerceFields(obj: unknown): OcrFields {
     salesName: str("salesName"),
     customerName: str("customerName"),
     carModel: str("carModel"),
-    accessoryNameQty: fixZeroQty(stripProjectCodeLines(str("accessoryNameQty"))),
+    accessoryNameQty: pairAccessoryLines(
+      fixZeroQty(stripProjectCodeLines(str("accessoryNameQty")))
+    ),
     remarks: str("remarks"),
   };
 }
