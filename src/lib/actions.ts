@@ -188,17 +188,18 @@ function isUniqueConflictOn(e: unknown, field: string): boolean {
   return false;
 }
 
-// 取得目前有效的特案類別 id / 車名清單，用於驗證下拉選單送出的值未被竄改
+// 取得目前有效的特案類別（id/name）／車名清單，用於驗證下拉選單送出的值未被竄改，
+// 類別名稱另外拿來判斷「租賃車」是否要放寬金額防呆（見 validateCase）
 async function getValidCategoriesAndCars(): Promise<{
-  validCategoryIds: string[];
+  categories: { id: string; name: string }[];
   validCarModels: string[];
 }> {
   const [categories, cars] = await Promise.all([
-    prisma.caseCategory.findMany({ where: { active: true }, select: { id: true } }),
+    prisma.caseCategory.findMany({ where: { active: true }, select: { id: true, name: true } }),
     prisma.carModel.findMany({ where: { active: true }, select: { name: true } }),
   ]);
   return {
-    validCategoryIds: categories.map((c) => c.id),
+    categories,
     validCarModels: cars.map((c) => c.name),
   };
 }
@@ -236,7 +237,7 @@ function parseAmount(v: FormDataEntryValue | null): number {
 
 // requireDeptCode: 所長沒有固定課別，需在表單中選擇（必填，下拉選單）
 // validDeptCodes: 該所目前有效課別代碼，用於防止表單被竄改送出不存在的課別
-// validCategoryIds / validCarModels: 下拉選單當下的有效選項，防止表單被竄改送出選單以外的值
+// categories / validCarModels: 下拉選單當下的有效選項，防止表單被竄改送出選單以外的值
 function validateCase(
   formData: FormData,
   opts: {
@@ -244,7 +245,7 @@ function validateCase(
     requireDeptCode: boolean;
     fixedDeptCode: string;
     validDeptCodes?: string[];
-    validCategoryIds: string[];
+    categories: { id: string; name: string }[];
     validCarModels: string[];
   }
 ): {
@@ -269,7 +270,7 @@ function validateCase(
     fieldErrors.orderNo = `前 3 碼須為所別 ${storeCode}`;
 
   if (!categoryId) fieldErrors.categoryId = "必填";
-  else if (!opts.validCategoryIds.includes(categoryId))
+  else if (!opts.categories.some((c) => c.id === categoryId))
     fieldErrors.categoryId = "類別選項無效，請重新選擇";
 
   if (!carModel) fieldErrors.carModel = "必填";
@@ -310,8 +311,11 @@ function validateCase(
     else amounts[f] = n;
   }
 
-  // 金額防呆：特案支援金額 > 0 時，(所課支援金 + 金牌金額 + 銀牌金額) 必須 > 0
+  // 金額防呆：特案支援金額 > 0 時，(所課支援金 + 金牌金額 + 銀牌金額) 必須 > 0；
+  // 「租賃車」類別不受此限（租賃車常見特案支援金額 > 0 但三項皆為 0 的正常情境）
+  const categoryName = opts.categories.find((c) => c.id === categoryId)?.name;
   if (
+    categoryName !== "租賃車" &&
     amounts.specialSubsidy > 0 &&
     amounts.subsidyDeptCourse + amounts.goldMedal + amounts.silverMedal <= 0
   ) {
@@ -441,7 +445,7 @@ export async function createCase(
     };
   }
 
-  const [validDeptCodes, { validCategoryIds, validCarModels }] = await Promise.all([
+  const [validDeptCodes, { categories, validCarModels }] = await Promise.all([
     requireDeptCode ? getDeptCodesForStore(user.storeCode) : Promise.resolve(undefined),
     getValidCategoriesAndCars(),
   ]);
@@ -451,7 +455,7 @@ export async function createCase(
     requireDeptCode,
     fixedDeptCode,
     validDeptCodes,
-    validCategoryIds,
+    categories,
     validCarModels,
   });
   if (!data) return { fieldErrors, values: extractRawValues(formData) };
@@ -531,7 +535,7 @@ export async function updateCase(
     }
   }
 
-  const [validDeptCodes, { validCategoryIds, validCarModels }] = await Promise.all([
+  const [validDeptCodes, { categories, validCarModels }] = await Promise.all([
     requireDeptCode ? getDeptCodesForStore(existing.storeCode) : Promise.resolve(undefined),
     getValidCategoriesAndCars(),
   ]);
@@ -541,7 +545,7 @@ export async function updateCase(
     requireDeptCode,
     fixedDeptCode,
     validDeptCodes,
-    validCategoryIds,
+    categories,
     validCarModels,
   });
   if (!data) return { fieldErrors, values: extractRawValues(formData) };
