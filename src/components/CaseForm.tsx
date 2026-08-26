@@ -67,12 +67,22 @@ export default function CaseForm({
   const [modalOpen, setModalOpen] = useState(false);
   // 送出失敗時遞增，強制表單重新掛載以套用 state.values（保留使用者剛填的內容）
   const [formKey, setFormKey] = useState(0);
+  // 送出失敗後，欄位紅框／錯誤文字會綁在「這次送出的結果」上；使用者若接著
+  // 修改某欄位、但還沒重新送出，該欄位的舊錯誤要先清掉，不然看起來像「怎麼改
+  // 都還是錯」（實際上只是還沒送出新內容去檢查，見 orderNo 撞號誤判的案例）
+  const [touched, setTouched] = useState<Set<string>>(new Set());
+  const markTouched = (n: string) =>
+    setTouched((prev) => (prev.has(n) ? prev : new Set(prev).add(n)));
+
   // 渲染中直接比對並調整狀態（React 建議做法），比 useEffect 少一次多餘的渲染
   const [seenState, setSeenState] = useState(state);
   if (state !== seenState) {
     setSeenState(state);
     setModalOpen(true);
-    if (!state.ok) setFormKey((k) => k + 1);
+    if (!state.ok) {
+      setFormKey((k) => k + 1);
+      setTouched(new Set());
+    }
   }
 
   // 送出失敗時，欄位值優先用剛才送出的內容（state.values），否則退回原始資料（initial）
@@ -166,12 +176,16 @@ export default function CaseForm({
   }
 
   const err = (n: string) =>
-    fe[n] ? <p className="text-xs text-rose-600 mt-1">{fe[n]}</p> : null;
+    fe[n] && !touched.has(n) ? (
+      <p className="text-xs text-rose-600 mt-1">{fe[n]}</p>
+    ) : null;
 
   const inputCls = "input";
-  // 有錯誤的欄位加紅框醒目提示
+  // 有錯誤的欄位加紅框醒目提示；使用者已經改過該欄位就不再顯示（見上方 touched 說明）
   const fieldCls = (n: string) =>
-    fe[n] ? `${inputCls} border-rose-400 focus:border-rose-500 focus:ring-rose-500/30` : inputCls;
+    fe[n] && !touched.has(n)
+      ? `${inputCls} border-rose-400 focus:border-rose-500 focus:ring-rose-500/30`
+      : inputCls;
 
   const problemMessages = [
     ...(state.error ? [state.error] : []),
@@ -210,8 +224,11 @@ export default function CaseForm({
                 name="deptCode"
                 required
                 defaultValue={v("deptCode", initial?.deptCode) ?? ""}
+                onChange={() => markTouched("deptCode")}
                 className={`w-full rounded-md border px-2 py-1 text-sm bg-white ${
-                  fe.deptCode ? "border-rose-400" : "border-slate-300"
+                  fe.deptCode && !touched.has("deptCode")
+                    ? "border-rose-400"
+                    : "border-slate-300"
                 }`}
               >
                 <option value="">請選擇</option>
@@ -242,6 +259,7 @@ export default function CaseForm({
           <input
             name="plateName"
             defaultValue={v("plateName", initial?.plateName)}
+            onChange={() => markTouched("plateName")}
             className={fieldCls("plateName")}
           />
           {err("plateName")}
@@ -255,6 +273,7 @@ export default function CaseForm({
             defaultValue={v("orderNo", initial?.orderNo)}
             placeholder={`${storeCode} + 10 碼，共 13 碼`}
             maxLength={13}
+            onChange={() => markTouched("orderNo")}
             className={`${fieldCls("orderNo")} font-mono uppercase`}
           />
           {err("orderNo")}
@@ -266,6 +285,7 @@ export default function CaseForm({
           <select
             name="categoryId"
             defaultValue={v("categoryId", initial?.categoryId) ?? ""}
+            onChange={() => markTouched("categoryId")}
             className={fieldCls("categoryId")}
           >
             <option value="">請選擇</option>
@@ -285,6 +305,7 @@ export default function CaseForm({
           <select
             name="carModel"
             defaultValue={v("carModel", initial?.carModel) ?? ""}
+            onChange={() => markTouched("carModel")}
             className={fieldCls("carModel")}
           >
             <option value="">請選擇</option>
@@ -318,6 +339,7 @@ export default function CaseForm({
                 min={0}
                 step={1}
                 defaultValue={v(a.name, initial?.[a.name] as number | undefined)}
+                onChange={() => markTouched(a.name)}
                 className={fieldCls(a.name)}
               />
               {err(a.name)}
@@ -334,6 +356,7 @@ export default function CaseForm({
           name="description"
           rows={4}
           defaultValue={v("description", initial?.description)}
+          onChange={() => markTouched("description")}
           className={fieldCls("description")}
         />
         {err("description")}
