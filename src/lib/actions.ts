@@ -319,17 +319,8 @@ function validateCase(
     else amounts[f] = n;
   }
 
-  // 金額防呆：特案支援金額 > 0 時，(所課支援金 + 金牌金額 + 銀牌金額) 必須 > 0；
-  // 「租賃車」類別不受此限（租賃車常見特案支援金額 > 0 但三項皆為 0 的正常情境）
-  const categoryName = opts.categories.find((c) => c.id === categoryId)?.name;
-  if (
-    categoryName !== "租賃車" &&
-    amounts.specialSubsidy > 0 &&
-    amounts.subsidyDeptCourse + amounts.goldMedal + amounts.silverMedal <= 0
-  ) {
-    fieldErrors.specialSubsidy =
-      "特案支援金額 > 0 時，所課支援金＋金牌金額＋銀牌金額 必須大於 0";
-  }
+  // 原本「特案支援金額 > 0 時，所課支援金＋金牌金額＋銀牌金額 必須 > 0」的送單防呆
+  // 已取消，不擋送單；改在部長審核頁面對這種情況顯示紅色警告（見 cases/[id]/page.tsx）
 
   if (Object.keys(fieldErrors).length > 0) return { fieldErrors };
 

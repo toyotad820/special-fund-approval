@@ -48,6 +48,11 @@ export default async function CaseDetailPage({
   if (!c || !canViewCase(user, c)) notFound();
 
   const overdue = isOverdue(c);
+  // 特案支援金額 > 0 卻沒有實際支援金額來源（三項皆為 0）——原本送單時會被擋下，
+  // 現在不擋送單，改成部長審核時用紅色警告提醒注意，是否正確由部長自行判斷
+  const amountWarning =
+    c.specialSubsidy > 0 &&
+    c.subsidyDeptCourse + c.goldMedal + c.silverMedal === 0;
   const rejectLog =
     c.status === STATUS.REJECTED
       ? [...c.logs].reverse().find((l) => l.action === "REJECT")
@@ -139,7 +144,16 @@ export default async function CaseDetailPage({
       </div>
 
       {/* 審核區 */}
-      {canReview(user, c) && <ReviewPanel caseId={c.id} role={user.role} />}
+      {canReview(user, c) && (
+        <>
+          {user.role === ROLE.BUZHUGUAN && amountWarning && (
+            <div className="rounded-2xl border border-rose-300 bg-rose-50 p-3 text-sm font-medium text-rose-700">
+              ⚠ 特案支援金額 &gt; 0，但所課支援金＋金牌金額＋銀牌金額為 0，請確認金額是否正確
+            </div>
+          )}
+          <ReviewPanel caseId={c.id} role={user.role} />
+        </>
+      )}
 
       {/* 撤回 */}
       {canWithdraw(user, c) && (
