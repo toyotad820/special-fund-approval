@@ -159,22 +159,30 @@ type CaseData = {
   specialSubsidy: number;
 };
 
-// 類別編號自動產生：類別名稱前兩字 + 該課（storeCode+deptCode）該類別
-// 該月（month）案件數（不含草稿）+1。所長代送的案件也計入該課的統計。
+// 類別編號自動產生：類別名稱前兩字 + 該課（storeCode+deptCode）該類別該月（month）
+// 現有編號（不含草稿）的最大序號 +1。所長代送的案件也計入該課的統計。
+// 用「最大值+1」而非「筆數+1」：舊資料（如每日匯入）留下的編號常常不連續
+// （例如已有 一般3、一般25 但只有 11 筆），用筆數+1 算出來的號碼可能早就被
+// 用掉，且這個公式不會因為重試而改變結果，會連續撞號、永遠好不了。
 async function generateCategoryNo(
   categoryId: string,
   storeCode: string,
   deptCode: string,
   month: string
 ): Promise<string> {
-  const [category, count] = await Promise.all([
+  const [category, existing] = await Promise.all([
     prisma.caseCategory.findUnique({ where: { id: categoryId } }),
-    prisma.case.count({
+    prisma.case.findMany({
       where: { month, storeCode, deptCode, categoryId, status: { not: STATUS.DRAFT } },
+      select: { categoryNo: true },
     }),
   ]);
   const abbr = (category?.name ?? "").slice(0, 2) || "特案";
-  return `${abbr}${String(count + 1).padStart(2, "0")}`;
+  const maxNo = existing.reduce((max, r) => {
+    const n = parseInt(r.categoryNo?.match(/(\d+)$/)?.[1] ?? "0", 10);
+    return Number.isNaN(n) ? max : Math.max(max, n);
+  }, 0);
+  return `${abbr}${String(maxNo + 1).padStart(2, "0")}`;
 }
 
 // 兩人同時送出可能搶到同一個 categoryNo（見 schema 的 @@unique 說明），
@@ -479,7 +487,11 @@ export async function createCase(
       });
       newId = created.id;
     } catch (e: unknown) {
-      if (isUniqueConflictOn(e, "categoryNo") && attempt < 2) continue; // 撞號，重算一次再試
+      // 類別編號撞號一律重算再試（迴圈本身限制最多 3 次，見下方 for 條件），
+      // 不能在最後一次嘗試時漏接、落到下面把它誤判成「訂單編號已存在」
+      // （之前的 bug：外加 attempt < 2 判斷，導致第 3 次撞的若還是 categoryNo，
+      // 會被底下的 P2002 判斷誤標成 orderNo 問題）
+      if (isUniqueConflictOn(e, "categoryNo")) continue;
       if (e && typeof e === "object" && "code" in e && e.code === "P2002") {
         return {
           fieldErrors: { orderNo: "此訂單編號已存在（全系統唯一）" },
@@ -581,7 +593,11 @@ export async function updateCase(
       ]);
       done = true;
     } catch (e: unknown) {
-      if (isUniqueConflictOn(e, "categoryNo") && attempt < 2) continue; // 撞號，重算一次再試
+      // 類別編號撞號一律重算再試（迴圈本身限制最多 3 次，見下方 for 條件），
+      // 不能在最後一次嘗試時漏接、落到下面把它誤判成「訂單編號已存在」
+      // （之前的 bug：外加 attempt < 2 判斷，導致第 3 次撞的若還是 categoryNo，
+      // 會被底下的 P2002 判斷誤標成 orderNo 問題）
+      if (isUniqueConflictOn(e, "categoryNo")) continue;
       if (e && typeof e === "object" && "code" in e && e.code === "P2002") {
         return {
           fieldErrors: { orderNo: "此訂單編號已存在（全系統唯一）" },
