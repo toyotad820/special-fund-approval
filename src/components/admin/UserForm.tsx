@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import type { ActionState } from "@/lib/admin-actions";
-import { ROLE_LABEL, SYSTEM, SYSTEM_LABEL } from "@/lib/constants";
+import { ROLE_LABEL, SYSTEM, SYSTEM_LABEL, DEFAULT_PASSWORD } from "@/lib/constants";
 
 type Initial = {
   id?: string;
@@ -22,14 +22,17 @@ export default function UserForm({
   submitAction,
   initial,
   isEdit = false,
+  isDefaultPassword = false,
   storeList = [],
 }: {
   submitAction: (prev: ActionState, fd: FormData) => Promise<ActionState>;
   initial?: Initial;
   isEdit?: boolean;
+  isDefaultPassword?: boolean;
   storeList?: string[];
 }) {
   const [state, formAction, pending] = useActionState(submitAction, {});
+  const passwordRef = useRef<HTMLInputElement>(null);
   const [systems, setSystems] = useState<string[]>(
     initial?.systems ? initial.systems.split(",").filter(Boolean) : ["fund"]
   );
@@ -128,9 +131,33 @@ export default function UserForm({
         </div>
         <div>
           <label className="block text-sm font-medium text-slate-600 mb-1">
-            {isEdit ? "重設密碼（留空不變）" : "密碼（留空預設 22819125）"}
+            {isEdit ? "重設密碼（留空不變）" : `密碼（留空預設 ${DEFAULT_PASSWORD}）`}
           </label>
-          <input name="password" type="password" autoComplete="new-password" className={cls} />
+          <div className="flex gap-2">
+            <input
+              ref={passwordRef}
+              name="password"
+              type="password"
+              autoComplete="new-password"
+              className={cls}
+            />
+            {isEdit && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (passwordRef.current) passwordRef.current.value = DEFAULT_PASSWORD;
+                }}
+                className="shrink-0 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 whitespace-nowrap"
+              >
+                重設為預設密碼
+              </button>
+            )}
+          </div>
+          {isEdit && isDefaultPassword && (
+            <p className="text-xs text-amber-600 mt-1">
+              ⚠ 目前密碼仍是預設密碼，建議提醒使用者更換
+            </p>
+          )}
         </div>
       </div>
 

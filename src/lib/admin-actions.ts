@@ -6,7 +6,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "./prisma";
 import { requireUser } from "./session";
 import { canAdmin, canReturnCase } from "./dal";
-import { ROLE, ROLE_LABEL, STATUS } from "./constants";
+import { ROLE, ROLE_LABEL, STATUS, DEFAULT_PASSWORD } from "./constants";
 import { normalizeDeptCode } from "./format";
 import { STANDARD_CAR_MODELS } from "./carModels";
 import { logAudit } from "./audit-log";
@@ -54,7 +54,7 @@ export async function createUser(
   const role = normalizeRole(String(formData.get("role") ?? ""));
   const storeCode = String(formData.get("storeCode") ?? "").trim();
   const deptCode = normalizeDeptCode(String(formData.get("deptCode") ?? "").trim());
-  const password = String(formData.get("password") ?? "").trim() || "22819125";
+  const password = String(formData.get("password") ?? "").trim() || DEFAULT_PASSWORD;
   const systems = String(formData.get("systems") ?? "fund").trim() || "fund";
   const assignedStores = String(formData.get("assignedStores") ?? "").trim();
 
@@ -302,7 +302,7 @@ export async function importUsers(
             role,
             storeCode,
             deptCode: deptCode || null,
-            passwordHash: await bcrypt.hash(password || "22819125", 10),
+            passwordHash: await bcrypt.hash(password || DEFAULT_PASSWORD, 10),
           },
         });
         created++;

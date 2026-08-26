@@ -1,8 +1,10 @@
 import Link from "next/link";
+import bcrypt from "bcryptjs";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { updateUser } from "@/lib/admin-actions";
 import { listStoreCodes } from "@/lib/dal";
+import { DEFAULT_PASSWORD } from "@/lib/constants";
 import UserForm from "@/components/admin/UserForm";
 
 export default async function EditUserPage({
@@ -14,6 +16,9 @@ export default async function EditUserPage({
   const user = await prisma.user.findUnique({ where: { id } });
   if (!user) notFound();
   const storeList = await listStoreCodes();
+  // 只比對雜湊是否等於系統預設密碼，不存明碼、也不顯示密碼本身，
+  // 純粹用來提醒管理員「這個人可能還沒換過預設密碼」
+  const isDefaultPassword = await bcrypt.compare(DEFAULT_PASSWORD, user.passwordHash);
 
   return (
     <div className="space-y-4">
@@ -27,6 +32,7 @@ export default async function EditUserPage({
         <UserForm
           submitAction={updateUser}
           isEdit
+          isDefaultPassword={isDefaultPassword}
           storeList={storeList}
           initial={{
             id: user.id,

@@ -19,6 +19,9 @@ export const ROLE_LABEL: Record<string, string> = {
   PEIJIAN: "配件中心",
 };
 
+// 新增人員／CSV 匯入時，密碼欄留空套用的預設密碼
+export const DEFAULT_PASSWORD = "22819125";
+
 // 系統（入口選單用，User.systems 逗號分隔存這裡的 key）
 export const SYSTEM = {
   FUND: "fund", // 特案支援金報備系統
