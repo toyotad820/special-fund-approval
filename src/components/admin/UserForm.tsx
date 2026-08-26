@@ -33,6 +33,7 @@ export default function UserForm({
 }) {
   const [state, formAction, pending] = useActionState(submitAction, {});
   const passwordRef = useRef<HTMLInputElement>(null);
+  const [willReset, setWillReset] = useState(false);
   const [systems, setSystems] = useState<string[]>(
     initial?.systems ? initial.systems.split(",").filter(Boolean) : ["fund"]
   );
@@ -131,9 +132,28 @@ export default function UserForm({
         </div>
         <div>
           <label className="block text-sm font-medium text-slate-600 mb-1">
-            {isEdit ? "重設密碼（留空不變）" : `密碼（留空預設 ${DEFAULT_PASSWORD}）`}
+            {isEdit ? "密碼" : `密碼（留空預設 ${DEFAULT_PASSWORD}）`}
           </label>
-          <div className="flex gap-2">
+          {isEdit ? (
+            // 編輯人員時不手動輸入密碼——管理者本來就不知道、也不該幫使用者
+            // 決定他要用的密碼，只有「重設為預設密碼」這個動作，不點就不變
+            <div className="flex items-center gap-2">
+              <input ref={passwordRef} name="password" type="hidden" />
+              <button
+                type="button"
+                onClick={() => {
+                  if (passwordRef.current) passwordRef.current.value = DEFAULT_PASSWORD;
+                  setWillReset(true);
+                }}
+                className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 whitespace-nowrap"
+              >
+                重設為預設密碼
+              </button>
+              <span className="text-xs text-slate-400">
+                {willReset ? `✓ 送出後將重設為 ${DEFAULT_PASSWORD}` : "不點＝密碼不變"}
+              </span>
+            </div>
+          ) : (
             <input
               ref={passwordRef}
               name="password"
@@ -141,18 +161,7 @@ export default function UserForm({
               autoComplete="new-password"
               className={cls}
             />
-            {isEdit && (
-              <button
-                type="button"
-                onClick={() => {
-                  if (passwordRef.current) passwordRef.current.value = DEFAULT_PASSWORD;
-                }}
-                className="shrink-0 rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 whitespace-nowrap"
-              >
-                重設為預設密碼
-              </button>
-            )}
-          </div>
+          )}
           {isEdit && isDefaultPassword && (
             <p className="text-xs text-amber-600 mt-1">
               ⚠ 目前密碼仍是預設密碼，建議提醒使用者更換
