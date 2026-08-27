@@ -420,7 +420,7 @@ export async function toggleMonth(formData: FormData) {
   revalidatePath("/users/months");
 }
 
-// ---------- 案件退回（已核准後強制取消，退回申請者修改重送） ----------
+// ---------- 案件退回（因故強制取消，退回申請者修改重送；不限案件狀態） ----------
 
 export async function returnCase(
   _prev: ActionState,
@@ -433,7 +433,7 @@ export async function returnCase(
 
   const c = await prisma.case.findUnique({ where: { orderNo } });
   if (!c) return { error: "查無此訂單編號的案件" };
-  if (!canReturnCase(user, c)) return { error: "僅能退回「已核准」狀態的案件" };
+  if (!canReturnCase(user)) return { error: "您沒有權限執行此操作" };
 
   await prisma.$transaction([
     prisma.case.update({

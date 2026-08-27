@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { STATUS, STATUS_LABEL } from "@/lib/constants";
 import { money, dt } from "@/lib/format";
 import { StatusBadge } from "@/components/CaseList";
 import ReturnCaseForm from "@/components/admin/ReturnCaseForm";
@@ -43,7 +42,7 @@ export default async function AdminCaseReturnPage({
       <section className="bg-white rounded-2xl border border-slate-200 p-5">
         <h2 className="text-sm font-semibold text-slate-700 mb-3">查詢案件</h2>
         <p className="text-xs text-slate-500 mb-3">
-          用途：部長核准後因故須強制取消時，將案件退回申請者修改重送。僅能對「已核准」案件操作。
+          用途：案件因故須強制取消時，將案件退回申請者修改重送。不限案件狀態，任何階段皆可操作。
         </p>
         <form className="flex gap-2" action="/admin/case-return">
           <input
@@ -94,13 +93,7 @@ export default async function AdminCaseReturnPage({
         </section>
       )}
 
-      {c && c.status === STATUS.APPROVED && <ReturnCaseForm orderNo={c.orderNo} />}
-
-      {c && c.status !== STATUS.APPROVED && (
-        <p className="text-sm text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-4 py-3">
-          此案件目前狀態為「{STATUS_LABEL[c.status] ?? c.status}」，非「已核准」，無法使用此功能退回。
-        </p>
-      )}
+      {c && <ReturnCaseForm orderNo={c.orderNo} />}
     </div>
   );
 }

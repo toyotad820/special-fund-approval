@@ -128,9 +128,9 @@ export function canDelete(user: User, c: CaseLike): boolean {
   );
 }
 
-// 後台：staff 能否強制將已核准案件退回申請者
-export function canReturnCase(user: User, c: CaseLike): boolean {
-  return user.role === ROLE.STAFF && c.status === STATUS.APPROVED;
+// 後台：staff 能否強制將案件退回申請者（任何狀態皆可，不限已核准）
+export function canReturnCase(user: User): boolean {
+  return user.role === ROLE.STAFF;
 }
 
 // 是否逾期（進入目前關卡超過門檻天數且尚在待審）
