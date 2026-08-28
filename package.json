@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "start:internal": "next start -H 0.0.0.0 -p 8081",
     "lint": "eslint",
     "db:push": "prisma db push",
     "db:seed": "node prisma/seed.mjs",
