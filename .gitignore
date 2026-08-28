@@ -47,3 +47,6 @@ prisma/dev.db-journal
 
 .vercel
 .env*
+# .env.example 是範本檔（只有 placeholder，無密鑰），刻意排除在上面的 .env* 規則外，
+# 這樣 clone repo 的人才抓得到，README 的 cp .env.example .env 才有東西可複製
+!.env.example
