@@ -18,7 +18,12 @@ export default async function QueueDetailPage({
   searchParams: Promise<{ storeCodes?: string | string[]; categoryIds?: string | string[] }>;
 }) {
   const user = await requireUser();
-  if (user.role !== ROLE.BUZHUGUAN && user.role !== ROLE.BENBUZHANG) redirect("/");
+  if (
+    user.role !== ROLE.BUZHUGUAN &&
+    user.role !== ROLE.BENBUZHANG &&
+    user.role !== ROLE.STAFF
+  )
+    redirect("/");
 
   const sp = await searchParams;
   const month = await getActiveMonth();
