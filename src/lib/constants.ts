@@ -62,6 +62,14 @@ export const STATUS_STAGE_LABEL: Record<string, string> = {
   PENDING_BUZHUGUAN: "待部長審核",
 };
 
+// 案件明細列表／CSV 匯出用的簡化狀態：只分「卡在哪一關審核」或「已結案」，
+// 核准／駁回／撤回都算已結案，不細分（顏色仍依實際狀態，見 STATUS_STYLE/STATUS_DOT）
+export function simpleStatusLabel(status: string): string {
+  if (status === STATUS.PENDING_SUOZHANG) return "所長審核";
+  if (status === STATUS.PENDING_BUZHUGUAN) return "部長審核";
+  return "已結案";
+}
+
 // 狀態顏色（Tailwind class）
 export const STATUS_STYLE: Record<string, string> = {
   DRAFT: "bg-violet-100 text-violet-700",

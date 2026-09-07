@@ -2,7 +2,7 @@
 
 import { useState, useMemo, type CSSProperties, type ReactNode, type MouseEvent } from "react";
 import { useRouter } from "next/navigation";
-import { STATUS_LABEL, STATUS_STAGE_LABEL, STATUS_STYLE, STATUS_DOT, STATUS } from "@/lib/constants";
+import { STATUS_STYLE, STATUS_DOT, STATUS, simpleStatusLabel } from "@/lib/constants";
 import { money } from "@/lib/format";
 
 export type CaseRowData = {
@@ -243,9 +243,7 @@ export default function SortableCaseTable({
                         <span
                           className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT[r.status] ?? "bg-slate-400"}`}
                         />
-                        {r.status === STATUS.REJECTED && r.rejectedByRole
-                          ? `${r.rejectedByRole}駁回`
-                          : STATUS_STAGE_LABEL[r.status] ?? STATUS_LABEL[r.status] ?? r.status}
+                        {simpleStatusLabel(r.status)}
                       </span>
                     </td>
                   );

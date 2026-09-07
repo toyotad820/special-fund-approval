@@ -2,7 +2,7 @@ import type { Prisma } from "@prisma/client";
 import { requireUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { canViewReports, getActiveMonth } from "@/lib/dal";
-import { STATUS_LABEL, STATUS_STAGE_LABEL, STATUS } from "@/lib/constants";
+import { STATUS, simpleStatusLabel } from "@/lib/constants";
 import { dt } from "@/lib/format";
 import { csvCell } from "@/lib/csv";
 
@@ -72,7 +72,7 @@ export async function GET(request: Request) {
       c.silverMedal,
       c.discountTotal,
       c.specialSubsidy,
-      STATUS_STAGE_LABEL[c.status] ?? STATUS_LABEL[c.status] ?? c.status,
+      simpleStatusLabel(c.status),
       c.submittedBy.name,
       dt(c.submittedAt),
       c.description ?? "",
