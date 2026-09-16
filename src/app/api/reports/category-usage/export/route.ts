@@ -38,7 +38,7 @@ export async function GET(request: Request) {
   if (level === "dept") {
     const grouped = await prisma.case.groupBy({
       by: ["storeCode", "deptCode", "categoryId"],
-      where: { month, status: STATUS.APPROVED },
+      where: { month, status: { notIn: [STATUS.DRAFT, STATUS.REJECTED, STATUS.WITHDRAWN] } },
       _sum: { specialSubsidy: true },
       _count: { _all: true },
     });
@@ -55,7 +55,7 @@ export async function GET(request: Request) {
   } else {
     const grouped = await prisma.case.groupBy({
       by: ["storeCode", "categoryId"],
-      where: { month, status: STATUS.APPROVED },
+      where: { month, status: { notIn: [STATUS.DRAFT, STATUS.REJECTED, STATUS.WITHDRAWN] } },
       _sum: { specialSubsidy: true },
       _count: { _all: true },
     });

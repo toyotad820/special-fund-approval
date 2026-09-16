@@ -42,7 +42,7 @@ export default async function CategoryUsagePage({
   if (level === "dept") {
     const grouped = await prisma.case.groupBy({
       by: ["storeCode", "deptCode", "categoryId"],
-      where: { month, status: STATUS.APPROVED },
+      where: { month, status: { notIn: [STATUS.DRAFT, STATUS.REJECTED, STATUS.WITHDRAWN] } },
       _sum: { specialSubsidy: true },
       _count: { _all: true },
     });
@@ -59,7 +59,7 @@ export default async function CategoryUsagePage({
   } else {
     const grouped = await prisma.case.groupBy({
       by: ["storeCode", "categoryId"],
-      where: { month, status: STATUS.APPROVED },
+      where: { month, status: { notIn: [STATUS.DRAFT, STATUS.REJECTED, STATUS.WITHDRAWN] } },
       _sum: { specialSubsidy: true },
       _count: { _all: true },
     });
@@ -109,7 +109,7 @@ export default async function CategoryUsagePage({
             特案類型統計表 · {month}
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            僅統計已核准案件；平均金額
+            統計不含草稿／已駁回／已撤回；平均金額
             <span className="inline-block mx-1 px-1.5 rounded bg-rose-100 text-rose-700">
               偏高
             </span>
@@ -166,7 +166,7 @@ export default async function CategoryUsagePage({
 
       {unitList.length === 0 ? (
         <p className="text-sm text-slate-400 bg-white rounded-2xl border border-slate-200 py-10 text-center">
-          本月尚無已核准案件
+          本月尚無資料
         </p>
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-slate-200/80 bg-white shadow-sm">
