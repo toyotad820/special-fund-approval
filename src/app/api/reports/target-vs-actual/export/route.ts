@@ -17,6 +17,7 @@ export async function GET(request: Request) {
   const caseWhere = {
     month,
     status: { notIn: [STATUS.DRAFT, STATUS.REJECTED, STATUS.WITHDRAWN] as string[] },
+    specialSubsidy: { not: 0 },
   };
 
   const [grouped, targets, byCategoryOverall, byUnitCategory, categories] = await Promise.all([

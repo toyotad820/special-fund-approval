@@ -42,7 +42,11 @@ export default async function CategoryUsagePage({
   if (level === "dept") {
     const grouped = await prisma.case.groupBy({
       by: ["storeCode", "deptCode", "categoryId"],
-      where: { month, status: { notIn: [STATUS.DRAFT, STATUS.REJECTED, STATUS.WITHDRAWN] } },
+      where: {
+        month,
+        status: { notIn: [STATUS.DRAFT, STATUS.REJECTED, STATUS.WITHDRAWN] },
+        specialSubsidy: { not: 0 },
+      },
       _sum: { specialSubsidy: true },
       _count: { _all: true },
     });
@@ -59,7 +63,11 @@ export default async function CategoryUsagePage({
   } else {
     const grouped = await prisma.case.groupBy({
       by: ["storeCode", "categoryId"],
-      where: { month, status: { notIn: [STATUS.DRAFT, STATUS.REJECTED, STATUS.WITHDRAWN] } },
+      where: {
+        month,
+        status: { notIn: [STATUS.DRAFT, STATUS.REJECTED, STATUS.WITHDRAWN] },
+        specialSubsidy: { not: 0 },
+      },
       _sum: { specialSubsidy: true },
       _count: { _all: true },
     });

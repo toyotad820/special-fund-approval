@@ -23,10 +23,12 @@ export default async function TargetVsActualPage({
   const month = sp.month || (await getActiveMonth());
   const level: "store" | "dept" = sp.level === "dept" ? "dept" : "store";
 
-  // 統計不含草稿／已駁回／已撤回（跟首頁、報表總覽的口徑一致）
+  // 統計不含草稿／已駁回／已撤回（跟首頁、報表總覽的口徑一致）；
+  // 特案支援金額 0 元的案件不計入統計
   const caseWhere = {
     month,
     status: { notIn: [STATUS.DRAFT, STATUS.REJECTED, STATUS.WITHDRAWN] as string[] },
+    specialSubsidy: { not: 0 },
   };
 
   const [grouped, targets, byCategoryOverall, byUnitCategory, categories] = await Promise.all([

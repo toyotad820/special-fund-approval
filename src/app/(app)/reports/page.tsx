@@ -18,10 +18,12 @@ export default async function ReportsPage({
   const sp = await searchParams;
   const month = sp.month || (await getActiveMonth());
 
-  // 統計不含草稿／已駁回／已撤回（皆非實際生效案件）
+  // 統計不含草稿／已駁回／已撤回（皆非實際生效案件）；特案支援金額 0 元的案件
+  // 不計入統計（件數／金額都不算，案件本身仍正常存在、可審核）
   const reportWhere = {
     month,
     status: { notIn: [STATUS.DRAFT, STATUS.REJECTED, STATUS.WITHDRAWN] },
+    specialSubsidy: { not: 0 },
   };
 
   const [byStore, byCategory, total, storeTargets] = await Promise.all([

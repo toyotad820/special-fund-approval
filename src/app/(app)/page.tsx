@@ -574,6 +574,8 @@ async function DashboardStats({
   const baseWhere: Prisma.CaseWhereInput = {
     month,
     status: statusFilter,
+    // 特案支援金額 0 元的案件整筆不計入統計
+    specialSubsidy: { not: 0 },
     ...(scope
       ? { storeCode: scope.storeCode, ...(scope.deptCode ? { deptCode: scope.deptCode } : {}) }
       : {}),
