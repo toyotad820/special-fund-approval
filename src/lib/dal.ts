@@ -128,6 +128,17 @@ export function canDelete(user: User, c: CaseLike): boolean {
   );
 }
 
+// 「新增申請」頁的訂單編號刪除功能：自己送的案件，不限審核狀態，
+// 但僅限案件所屬月份仍是日曆當月（跨月後不可再用此功能刪除）
+export function canDeleteAnytime(
+  user: User,
+  c: { submittedById: string; month: string }
+): boolean {
+  const d = new Date();
+  const currentMonth = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  return c.submittedById === user.id && c.month === currentMonth;
+}
+
 // 後台：staff 能否強制將案件退回申請者（任何狀態皆可，不限已核准）
 export function canReturnCase(user: User): boolean {
   return user.role === ROLE.STAFF;

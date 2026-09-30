@@ -11,6 +11,7 @@ import {
   canSubmit,
   canWithdraw,
   canDelete,
+  canDeleteAnytime,
   getDeptCodesForStore,
   getActiveMonth,
 } from "./dal";
@@ -739,4 +740,60 @@ export async function deleteCase(formData: FormData) {
   ]);
 
   redirect("/");
+}
+
+// ---------- 「新增申請」頁：依訂單編號查詢＋刪除（不限狀態，僅限當月） ----------
+
+export type CaseLookupState = {
+  error?: string;
+  case?: {
+    id: string;
+    orderNo: string;
+    plateName: string;
+    carModel: string;
+    month: string;
+    status: string;
+    specialSubsidy: number;
+  };
+};
+
+export async function lookupCaseForDelete(
+  _prev: CaseLookupState,
+  formData: FormData
+): Promise<CaseLookupState> {
+  const user = await requireUser();
+  const orderNo = String(formData.get("orderNo") ?? "").trim();
+  if (!orderNo) return { error: "請輸入訂單編號" };
+
+  const c = await prisma.case.findUnique({ where: { orderNo } });
+  if (!c || !canDeleteAnytime(user, c)) {
+    return { error: "查無此案件，或該案件不是您本人送出、已超過當月" };
+  }
+
+  return {
+    case: {
+      id: c.id,
+      orderNo: c.orderNo,
+      plateName: c.plateName,
+      carModel: c.carModel,
+      month: c.month,
+      status: c.status,
+      specialSubsidy: c.specialSubsidy,
+    },
+  };
+}
+
+export async function deleteCaseAnytime(formData: FormData) {
+  const user = await requireUser();
+  const caseId = String(formData.get("caseId") ?? "");
+  const c = await prisma.case.findUnique({ where: { id: caseId } });
+  if (!c || !canDeleteAnytime(user, c)) redirect("/cases/new");
+
+  await prisma.$transaction([
+    prisma.approvalLog.deleteMany({ where: { caseId } }),
+    prisma.case.delete({ where: { id: caseId } }),
+  ]);
+
+  revalidatePath("/cases/new");
+  redirect("/cases/new?deleted=1");
 }
