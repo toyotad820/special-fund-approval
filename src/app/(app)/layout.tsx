@@ -14,7 +14,7 @@ export default async function AppLayout({
   const items: NavItem[] = [];
   if (mySystems.length > 1) items.push({ href: "/portal", label: "系統選單" });
   items.push({ href: "/", label: "特案儀表" });
-  if (canSubmit(user)) items.push({ href: "/cases/new", label: "新增申請" });
+  if (canSubmit(user)) items.push({ href: "/cases/new", label: "新增/查詢" });
   if (user.role === ROLE.KEZHANG) items.push({ href: "/cases-review", label: "案件明細" });
   if (user.role === ROLE.SUOZHANG) items.push({ href: "/cases-review", label: "案件審核" });
   if (user.role === ROLE.BUZHUGUAN) items.push({ href: "/queue", label: "待審案件" });

@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useActionState } from "react";
 import { lookupCaseForDelete, deleteCaseAnytime, type CaseLookupState } from "@/lib/actions";
 import { STATUS_LABEL } from "@/lib/constants";
 import { money } from "@/lib/format";
+import Modal from "@/components/Modal";
 
 const initialState: CaseLookupState = {};
 
@@ -20,6 +21,8 @@ export default function DeleteCaseByOrderNo() {
     setClosed(false);
   }
   const showResult = c && !closed;
+  const [confirming, setConfirming] = useState(false);
+  const deleteFormRef = useRef<HTMLFormElement>(null);
 
   return (
     <div className="card p-5">
@@ -58,13 +61,10 @@ export default function DeleteCaseByOrderNo() {
           </div>
           <div className="text-sm text-slate-600">特案支援金額：{money(c.specialSubsidy)}</div>
 
-          <form
-            className="flex gap-2 pt-2"
-            onSubmit={(e) => {
-              if (!confirm(`確定刪除案件 ${c.orderNo}？刪除後無法復原。`)) e.preventDefault();
-            }}
-          >
+          <form ref={deleteFormRef} action={deleteCaseAnytime}>
             <input type="hidden" name="caseId" value={c.id} />
+          </form>
+          <div className="flex gap-2 pt-2">
             <button
               type="button"
               onClick={() => setClosed(true)}
@@ -73,13 +73,35 @@ export default function DeleteCaseByOrderNo() {
               關閉
             </button>
             <button
-              type="submit"
-              formAction={deleteCaseAnytime}
+              type="button"
+              onClick={() => setConfirming(true)}
               className="flex-1 rounded-lg border border-rose-300 text-rose-600 py-2 text-sm hover:bg-rose-50"
             >
               刪除
             </button>
-          </form>
+          </div>
+
+          <Modal open={confirming} onClose={() => setConfirming(false)}>
+            <p className="text-sm text-slate-700 mb-5">
+              確定刪除案件 {c.orderNo}？刪除後無法復原。
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setConfirming(false)}
+                className="flex-1 rounded-lg border border-slate-300 text-slate-600 py-2 text-sm hover:bg-slate-50"
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                onClick={() => deleteFormRef.current?.requestSubmit()}
+                className="flex-1 rounded-lg bg-rose-600 text-white py-2 text-sm font-medium hover:bg-rose-700"
+              >
+                確認刪除
+              </button>
+            </div>
+          </Modal>
         </div>
       )}
     </div>
