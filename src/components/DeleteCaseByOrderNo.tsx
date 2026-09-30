@@ -56,8 +56,9 @@ export default function DeleteCaseByOrderNo() {
             <span className="font-mono text-sm text-slate-800">{c.orderNo}</span>
             <span className="text-xs text-slate-500">{STATUS_LABEL[c.status] ?? c.status}</span>
           </div>
+          <div className="text-sm font-medium text-slate-800">{c.plateName}</div>
           <div className="text-sm text-slate-600">
-            {c.month} · {c.plateName} · {c.carModel}
+            {c.month} · {c.carModel}
           </div>
           <div className="text-sm text-slate-600">特案支援金額：{money(c.specialSubsidy)}</div>
 
