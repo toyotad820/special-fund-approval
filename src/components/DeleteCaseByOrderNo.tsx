@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useActionState } from "react";
 import { lookupCaseForDelete, deleteCaseAnytime, type CaseLookupState } from "@/lib/actions";
 import { STATUS_LABEL } from "@/lib/constants";
@@ -10,6 +11,15 @@ const initialState: CaseLookupState = {};
 export default function DeleteCaseByOrderNo() {
   const [state, lookupAction, pending] = useActionState(lookupCaseForDelete, initialState);
   const c = state.case;
+  // 「關閉」只收起這次查詢的結果；每次送出新查詢（即使查同一張單）都要重新顯示，
+  // 所以用 state 物件參照本身判斷是否為新一次查詢，而不是用案件 id（同一張單再查一次 id 不會變）
+  const [seenState, setSeenState] = useState(state);
+  const [closed, setClosed] = useState(false);
+  if (state !== seenState) {
+    setSeenState(state);
+    setClosed(false);
+  }
+  const showResult = c && !closed;
 
   return (
     <div className="card p-5">
@@ -37,7 +47,7 @@ export default function DeleteCaseByOrderNo() {
         <p className="text-sm text-rose-600 mt-3">{state.error}</p>
       )}
 
-      {c && (
+      {showResult && (
         <div className="mt-4 rounded-lg border border-slate-200 p-4 space-y-1">
           <div className="flex items-center justify-between">
             <span className="font-mono text-sm text-slate-800">{c.orderNo}</span>
@@ -49,18 +59,25 @@ export default function DeleteCaseByOrderNo() {
           <div className="text-sm text-slate-600">特案支援金額：{money(c.specialSubsidy)}</div>
 
           <form
-            className="pt-2"
+            className="flex gap-2 pt-2"
             onSubmit={(e) => {
               if (!confirm(`確定刪除案件 ${c.orderNo}？刪除後無法復原。`)) e.preventDefault();
             }}
           >
             <input type="hidden" name="caseId" value={c.id} />
             <button
+              type="button"
+              onClick={() => setClosed(true)}
+              className="flex-1 rounded-lg border border-slate-300 text-slate-600 py-2 text-sm hover:bg-slate-50"
+            >
+              關閉
+            </button>
+            <button
               type="submit"
               formAction={deleteCaseAnytime}
-              className="w-full rounded-lg border border-rose-300 text-rose-600 py-2 text-sm hover:bg-rose-50"
+              className="flex-1 rounded-lg border border-rose-300 text-rose-600 py-2 text-sm hover:bg-rose-50"
             >
-              刪除此案件
+              刪除
             </button>
           </form>
         </div>
