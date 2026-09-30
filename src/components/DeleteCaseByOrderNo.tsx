@@ -25,7 +25,7 @@ export default function DeleteCaseByOrderNo() {
   const deleteFormRef = useRef<HTMLFormElement>(null);
 
   return (
-    <div className="card p-5">
+    <div>
       <h2 className="text-sm font-semibold text-slate-700 mb-1">刪除案件</h2>
       <p className="text-xs text-slate-400 mb-3">
         輸入自己送出、且案件月份仍在本月的訂單編號即可刪除，不限審核狀態。

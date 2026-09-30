@@ -61,10 +61,10 @@ export default async function NewCasePage({
           allowDraft
           submitLabel="送出申請"
         />
-      </div>
 
-      <div className="mt-4">
-        <DeleteCaseByOrderNo />
+        <div className="mt-6 pt-6 border-t border-slate-200">
+          <DeleteCaseByOrderNo />
+        </div>
       </div>
     </div>
   );
