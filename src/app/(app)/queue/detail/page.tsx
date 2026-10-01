@@ -15,7 +15,11 @@ function toArray(v: string | string[] | undefined): string[] | null {
 export default async function QueueDetailPage({
   searchParams,
 }: {
-  searchParams: Promise<{ storeCodes?: string | string[]; categoryIds?: string | string[] }>;
+  searchParams: Promise<{
+    storeCodes?: string | string[];
+    categoryIds?: string | string[];
+    month?: string;
+  }>;
 }) {
   const user = await requireUser();
   if (
@@ -26,16 +30,27 @@ export default async function QueueDetailPage({
     redirect("/");
 
   const sp = await searchParams;
-  const month = await getActiveMonth();
+  const activeMonth = await getActiveMonth();
 
-  const [storeRows, categories] = await Promise.all([
+  const [storeRows, categories, monthRows] = await Promise.all([
     prisma.user.findMany({
       where: { storeCode: { not: "HQ" } },
       select: { storeCode: true },
       distinct: ["storeCode"],
     }),
     prisma.caseCategory.findMany({ orderBy: { sortOrder: "asc" } }),
+    prisma.case.findMany({
+      distinct: ["month"],
+      select: { month: true },
+      orderBy: { month: "desc" },
+    }),
   ]);
+
+  // 有案件的月份都能選；就算目前開放申請的月份還沒有任何案件，也要讓它能選
+  const months = Array.from(
+    new Set([activeMonth, ...monthRows.map((r) => r.month)])
+  ).sort((a, b) => b.localeCompare(a));
+  const month = sp.month && months.includes(sp.month) ? sp.month : activeMonth;
 
   const stores = storeRows.map((r) => r.storeCode).sort((a, b) => a.localeCompare(b));
 
@@ -64,6 +79,17 @@ export default async function QueueDetailPage({
           <span className="text-blue-600">({monthlyCases.length})</span>
         </h2>
         <form className="flex flex-wrap items-center gap-2">
+          <select
+            name="month"
+            defaultValue={month}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
+          >
+            {months.map((m) => (
+              <option key={m} value={m}>
+                {m}
+              </option>
+            ))}
+          </select>
           <MultiSelectDropdown
             label="所別"
             name="storeCodes"
