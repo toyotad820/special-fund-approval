@@ -127,11 +127,15 @@ export async function updateUser(
       deptCode: deptCode || null,
       systems,
       assignedStores: role === ROLE.PEIJIAN ? assignedStores : "",
-      // 後台重設密碼時順便讓這個人現有的登入（其他裝置）全部失效
+      // 後台重設密碼時順便讓這個人現有的登入（其他裝置）全部失效，
+      // 並立刻解除帳號鎖定（否則之前打錯密碼被鎖的人，就算密碼改對了
+      // 15 分鐘內還是登不進去，且錯誤訊息跟密碼錯誤一樣，容易誤判）
       ...(newPassword
         ? {
             passwordHash: await bcrypt.hash(newPassword, 10),
             sessionVersion: { increment: 1 },
+            failedLoginAttempts: 0,
+            lockedUntil: null,
           }
         : {}),
     },
